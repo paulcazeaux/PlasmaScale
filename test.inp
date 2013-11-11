@@ -1,0 +1,30 @@
+PARAMETRIC INSTABILITY
+Parametric instability from a Langmuir wave to an acoustic oscillation.
+
+nsp-----------l---------dt----------nt------mmax-----l/a----accum
+1        6.283185307    0.000001    150000    14       0        0
+ng----iw--ec--epsi-------a1------a2-------E0-------w0
+4096   2   1   1.00      0.0      0        0        0
+
+SPECIES 3: Cold Ion Plasma
+
+n----nv2---nlg---mode
+65536     0    1    2
+wp----wc-----qm-----vt1----vt2---v0
+.10  0.01   0.01  0.00  0.00  0.01
+x1----v1---thetax--theta
+0.05  0.005   .0    0 
+--nbins---vlower---vupper
+128        -2      2
+
+SPECIES 3: Cold Ion Plasma
+
+n----nv2---nlg---mode
+65536     0    1    4
+wp----wc-----qm-----vt1----vt2---v0
+.10  0.01   0.01  0.00  0.00  0.01
+x1----v1---thetax--theta
+-0.0125  -0.00125   .0    0 
+--nbins---vlower---vupper
+128        -2      2
+

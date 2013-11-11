@@ -1,0 +1,11 @@
+xes1
+*.o
+*.eps
+*.pdf
+doc/*.pdf
+doc/*.aux
+doc/*.toc
+doc/*.dvi
+doc/*.log
+doc/*.eps
+doc/*.gz
