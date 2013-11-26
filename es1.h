@@ -3,16 +3,16 @@
 /* #include <stdlib.h> */
 #include <math.h>
 
-#define PI		3.1415926
-#define K8 		8192
+#define PI		3.14159265359
+#define K8 		62236
 #define NGMAX 		K8
 #define NXV 		K8
 #define NVY 		NXV/2
 #define NSPM 		8	
-#define HISTMAX	        512
-#define NVBINMAX        1024
+#define HISTMAX	        4096
+#define NVBINMAX        8192
 /* #define MAXPARTICLES    920001 */
-#define MAXPARTICLES	2097152
+#define MAXPARTICLES	1073741824
 
 #ifndef DBL_MIN
 #define DBL_MIN 	1E-200

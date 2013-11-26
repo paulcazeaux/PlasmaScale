@@ -42,74 +42,73 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-main(argc, argv)
-int argc;
-char *argv[];
+main(int argc, char **argv)
 {
-  int i;
-  char outfilename[100];
-  int J;
-  double Vmax;
+	int i;
+	char outfilename[100];
+	int J;
+	double Vmax;
 
-  FILE * outfile;
-  display_title();
+	FILE * outfile;
+	display_title();
 
-  /*********************************************************/
-  /* Read input file, and initialize params and vars. This */
-  /* function calls SPECIES and LOAD or Restore            */
-  XGInit(argc, argv, &t);
-  Start(argc,argv);
-  InitWindows(argc, argv);    
+	/*********************************************************/
+	/* Read input file, and initialize params and vars. This */
+	/* function calls SPECIES and LOAD or Restore            */
+	XGInit(argc, argv, &t);
+	Start(argc,argv);
+	InitWindows(argc, argv);    
 /*  history();*/
-  XGStart();
+	XGStart();
 
 }
 
 
 void XGMainLoop()
 {
-  int i;
-  char outfilename[100];
-  int J;
-  double Vmax;
+	int i;
+	char outfilename[100];
+	int J;
+	double Vmax;
 
-  FILE * outfile;
+	FILE * outfile;
 
-  /*********************************************************/
-  /* If collisions are included in the simulation load the */
-  /* ion and electron-neutral collision cros-sections     */
-
-
-
-    p = 0.0;
-    for (i=1; i <= nsp; i++) 
-    {
-      accel(ins[i], ins[i+1]-1, qs[i], ms[i], ts[i], &pxs_hist[i], &kes_hist[i]);
-      p += pxs_hist[i];
-    }
-    for (i=1;i <= ng;i++) rho[i] = rho0;  
-    rho[ng1] = 0.0;
-    rho[ng+2]=rho[0]=0.0;    /* ch:zeroing all extra points */
-    
-    for (i=1; i <= nsp; i++) move(ins[i],ins[i+1]-1,qs[i]);
-
-    rho[1]+=rho[ng1];
-    rho[2]+=rho[ng+2];
-    rho[ng]+=rho[0];
-    rho[ng1]=rho[1];
-    rho[0]=rho[ng];
-    rho[ng+2]=rho[2];
-    t= it*dt;
+	/*********************************************************/
+	/* If collisions are included in the simulation load the */
+	/* ion and electron-neutral collision cros-sections     */
 
 
-    history();
-    velocity();
 
-    fields(ith);
-    
-    ith = ++it -ithl;
-    
+	p = 0.0;
+	for (i=1; i <= nsp; i++) 
+	{
+		accel(ins[i], ins[i+1]-1, qs[i], ms[i], ts[i], &pxs_hist[i], &kes_hist[i]);
+		p += pxs_hist[i];
+	}
+	for (i=1;i <= ng;i++) rho[i] = rho0;  
+	rho[ng1] = 0.0;
+	rho[ng+2]=rho[0]=0.0;    /* ch:zeroing all extra points */
+	
+	for (i=1; i <= nsp; i++)
+	{
+		move(ins[i],ins[i+1]-1,qs[i]);
+	}
 
+	rho[1]+=rho[ng1];
+	rho[2]+=rho[ng+2];
+	rho[ng]+=rho[0];
+	rho[ng1]=rho[1];
+	rho[0]=rho[ng];
+	rho[ng+2]=rho[2];
+	t= it*dt;
+
+
+	history();
+	velocity();
+
+	fields(ith);
+	
+	ith = ++it -ithl;
 }
 
 
@@ -117,315 +116,346 @@ void XGMainLoop()
 
 display_title()
 {
-  printf("\n\nES1 - Electrostatic 1 Dimensional Code\n");
-  printf("version 4.1\n");
-  printf("(c) Copyright 1987-92 Regents of the University of California\n");
-  printf("Plasma Theory and Simulation Group\n");
-  printf("University of California - Berkeley\n");
+	printf("\n\nES1 - Electrostatic 1 Dimensional Code\n");
+	printf("version 4.1\n");
+	printf("(c) Copyright 1987-92 Regents of the University of California\n");
+	printf("Plasma Theory and Simulation Group\n");
+	printf("University of California - Berkeley\n");
 }
 
 /****************************************************************/
 
-Start(argc,argv) 
-int argc;
-char *argv[];
+Start(int argc, char **argv)
 {
-  char a_char[80];
-  int i, j;
+	char a_char[80];
+	int i, j;
 /*  FILE * InputDeck; */
-  
-  /**********************************************************/
-  /* Setting the global parameters to their default values. */
-  
-  l=6.283185307;
-  dt=0.2;
-  nsp=1;
-  
-  epsi=1.0;
-  ng=32;
-  iw=2;
-  ec=0;
-  
-  ins[1] = 1;
-  vbins[1] = 1;  /*  sets up the start of vbin.  */
-  interval=1;
-  /***********************************************************/
-  
-  if (!argc>1) InputDeck = fopen("es1data","r");
-  else {
-    InputDeck = fopen(argv[2],"r");
-  }
-  
-/*  if (argc >1 && !InputDeck)
-  {
-    for (i=0; argv[1][i] != 0; i++) a_char[i] = argv[1][i];
-    a_char[i++] = '.';		
-    a_char[i++] = 'i';
-    a_char[i++] = 'n';
-    a_char[i++] = 'p';
-    a_char[i++] = 0;
-    InputDeck = fopen(a_char,"r");
-  } */
-  if (!InputDeck)
-  {
-    printf("\nCan't find input file %s\n",argv[1]);
-    printf("\nCorrect syntax is: ES1 -i file.inp\n");
-    exit(-1);
-  }
-  
-  /* read lines until we get to numbers */
-  
-  while (fscanf(InputDeck,"%d %lg %lg %d %d %lg %d",
-		&nsp, &l, &dt, &nt, &mmax, &la, &accum) <7)
-    fscanf(InputDeck, "%s", a_char);
-  /* note: la is l/a */
+	
+	/**********************************************************/
+	/* Setting the global parameters to their default values. */
+	
+	l=6.283185307;
+	dt=0.2;
+	nsp=1;
+	
+	epsi=1.0;
+	ng=32;
+	iw=2;
+	ec=0;
+	
+	ins[1] = 1;
+	vbins[1] = 1;  /*  sets up the start of vbin.  */
+	interval=1;
+	/***********************************************************/
+	
+	if (!argc>1) 
+	{
+		InputDeck = fopen("es1data","r");
+	}
+	else 
+	{
+		InputDeck = fopen(argv[2],"r");
+	}
+	
+	if (!InputDeck)
+	{
+		printf("\nCan't find input file %s\n",argv[1]);
+		printf("\nCorrect syntax is: ES1 -i file.inp\n");
+		exit(-1);
+	}
+	
+	/* read lines until we get to numbers */
+	
+	while (fscanf(InputDeck,"%d %lg %lg %d %d %lg %d", &nsp, &l, &dt, &nt, &mmax, &la, &accum) <7)
+	{
+		fscanf(InputDeck, "%s", a_char);
+	}
+	/* note: la is l/a */
 
-  
-  while (fscanf(InputDeck," %d %d %d %lg %lg %lg %lg %lg",
-		&ng, &iw, &ec, &epsi, &a1, &a2, &e0, &w0) < 8)
-    fscanf(InputDeck, "%s", a_char);
-  
-  if (nsp > NSPM) {
-    printf("Number of species nsp cannot exceed NSPM\n");
-    exit(-1);
-  }
+	
+	while (fscanf(InputDeck," %d %d %d %lg %lg %lg %lg %lg", &ng, &iw, &ec, &epsi, &a1, &a2, &e0, &w0) < 8)
+	{
+		fscanf(InputDeck, "%s", a_char);
+	}
+	if (nsp > NSPM) 
+	{
+		printf("Number of species nsp cannot exceed NSPM\n");
+		exit(-1);
+	}
 
-  if(accum<0) { printf("\nError:  accum can't be negative! \n"); exit(1);
-	      }
+	if(accum<0) 
+	{ 
+		printf("\nError:  accum can't be negative! \n"); exit(1);
+	}
 
-  if(!(ec==1||ec==0)) {
-    printf("\n Error:  What are you thinking?  There are only two possible values of ec\n");
-    printf("0 and 1.  %d is not 0 or 1.",ec);
-    exit(1);
-  }
-  if(!iw&&ec) {
-    printf("\nError:  There IS no energy-conserving algorithm for NGP\n");
-    exit(1);
-  }
+	if(!(ec==1||ec==0)) 
+	{
+		printf("\n Error:  What are you thinking?  There are only two possible values of ec\n");
+		printf("0 and 1.  %d is not 0 or 1.",ec);
+		exit(1);
+	}
+	if(!iw&&ec) 
+	{
+		printf("\nError:  There IS no energy-conserving algorithm for NGP\n");
+		exit(1);
+	}
 
 
-  ecconst=0.0;
-  if (ec) {
-           ecconst=0.5;
-  }
-  if(iw>3 || iw<0)
-    {
-      printf("\nError:  bad iw flag!  Please check your input deck!\n");
-      exit(1);
-    }
+	ecconst=0.0;
+	if (ec) 
+	{
+		ecconst=0.5;
+	}
+	if(iw>3 || iw<0)
+	{
+		printf("\nError:  bad iw flag!  Please check your input deck!\n");
+		exit(1);
+	}
 
-  if (ng > NGMAX) {
-    printf("\nNumber of grids ng cannot exceed NGMAX\n");
-    exit(-1);
-  }
-  dx = l/ng;
-  ng1= ng+1;
-  k_hi= ng/2; 
-  
-  /*******************************/
-  /* Allocating space for arrays */
-  
-  nms= (double *)malloc((nsp+1)*sizeof(double));
-  ms = (double *)malloc((nsp+1)*sizeof(double));
-  qs = (double *)malloc((nsp+1)*sizeof(double));
-  ts = (double *)malloc((nsp+1)*sizeof(double));
-  
-  x_array= (double *)malloc((ng+1)*sizeof(double));
-  for (i=0; i<= ng; i++) x_array[i] = i*dx;
-  
-  rho= (double *)malloc((ng+3)*sizeof(double)); 
-  phi= (double *)malloc((ng+2)*sizeof(double)); 
-  phik=(double *)malloc((ng+2)*sizeof(double));
-  
-  k_array= (double *)malloc(ng*sizeof(double));
-  for(i=0; i< k_hi; i++) k_array[i]= i*2*PI/l;
-  
-  e  = (double *)malloc((ng+2)*sizeof(double));
-  acc= (double *)malloc((ng+3)*sizeof(double)); 
+	if (ng > NGMAX) 
+	{
+		printf("\nNumber of grids ng cannot exceed NGMAX\n");
+		exit(-1);
+	}
+	dx = l/ng;
+	ng1= ng+1;
+	k_hi= ng/2; 
+	
+	/*******************************/
+	/* Allocating space for arrays */
+	
+	nms= (double *)malloc((nsp+1)*sizeof(double));
+	ms = (double *)malloc((nsp+1)*sizeof(double));
+	qs = (double *)malloc((nsp+1)*sizeof(double));
+	ts = (double *)malloc((nsp+1)*sizeof(double));
+	
+	x_array= (double *)malloc((ng+1)*sizeof(double));
+	for (i=0; i<= ng; i++) x_array[i] = i*dx;
+	
+	rho= (double *)malloc((ng+3)*sizeof(double)); 
+	phi= (double *)malloc((ng+2)*sizeof(double)); 
+	phik=(double *)malloc((ng+2)*sizeof(double));
+	
+	k_array= (double *)malloc(ng*sizeof(double));
+	for(i=0; i< k_hi; i++) k_array[i]= i*2*PI/l;
+	
+	e  = (double *)malloc((ng+2)*sizeof(double));
+	acc= (double *)malloc((ng+3)*sizeof(double)); 
 
-  t_array= (double *)malloc(HISTMAX*sizeof(double));
-  ese= (double *)malloc(HISTMAX*sizeof(double));
-  ke = (double *)malloc(HISTMAX*sizeof(double));
-  te = (double *)malloc(HISTMAX*sizeof(double));
-  
-  kes_hist= (double *)malloc((nsp+1)*sizeof(double));
-  pxs_hist= (double *)malloc((nsp+1)*sizeof(double));
-  esem_hist=(double *)malloc((mmax+1)*sizeof(double));
-  
-  kes = (double **)malloc(nsp*sizeof(double *));
-  for (i=0; i< nsp; i++) 
-    kes[i] = (double *)malloc(HISTMAX*sizeof(double));
-  
-  pxs = (double **)malloc(nsp*sizeof(double *));
-  for (i=0; i< nsp; i++) 
-    pxs[i] = (double *)malloc(HISTMAX*sizeof(double));
-  
-  esem = (double **)malloc(mmax*sizeof(double *));
-  for (i=0; i< mmax; i++) 
-    esem[i] = (double *)malloc(HISTMAX*sizeof(double));
-  
-  x  = (double *)malloc(MAXPARTICLES*sizeof(double));
-  vx = (double *)malloc(MAXPARTICLES*sizeof(double));
-  vy = (double *)malloc(MAXPARTICLES*sizeof(double));
-  
-  vbint= (double *)malloc(NVBINMAX*sizeof(double));
-  vbin = (double *)malloc(nsp*NVBINMAX*sizeof(double));
-  vbin_inst= (double *)malloc(nsp*NVBINMAX*sizeof(double));
-  dvbin = (double *)malloc((nsp+1)*sizeof(double));
-  vbinstart = (double *)malloc((nsp+1)*sizeof(double));
-  v_array = (double *)malloc( NVBINMAX*nsp * sizeof(double));
-  for(i=0; i<nsp*NVBINMAX; i++) vbin_inst[i]= 0.0;
+	t_array= (double *)malloc(HISTMAX*sizeof(double));
+	ese= (double *)malloc(HISTMAX*sizeof(double));
+	ke = (double *)malloc(HISTMAX*sizeof(double));
+	te = (double *)malloc(HISTMAX*sizeof(double));
+	
+	kes_hist= (double *)malloc((nsp+1)*sizeof(double));
+	pxs_hist= (double *)malloc((nsp+1)*sizeof(double));
+	esem_hist=(double *)malloc((mmax+1)*sizeof(double));
+	
+	kes = (double **)malloc(nsp*sizeof(double *));
+	for (i=0; i< nsp; i++) 
+		kes[i] = (double *)malloc(HISTMAX*sizeof(double));
+	
+	pxs = (double **)malloc(nsp*sizeof(double *));
+	for (i=0; i< nsp; i++) 
+		pxs[i] = (double *)malloc(HISTMAX*sizeof(double));
+	
+	esem = (double **)malloc(mmax*sizeof(double *));
+	for (i=0; i< mmax; i++) 
+		esem[i] = (double *)malloc(HISTMAX*sizeof(double));
+	
+	x  = (double *)malloc(MAXPARTICLES*sizeof(double));
+	vx = (double *)malloc(MAXPARTICLES*sizeof(double));
+	vy = (double *)malloc(MAXPARTICLES*sizeof(double));
+	
+	vbint= (double *)malloc(NVBINMAX*sizeof(double));
+	vbin = (double *)malloc(nsp*NVBINMAX*sizeof(double));
+	vbin_inst= (double *)malloc(nsp*NVBINMAX*sizeof(double));
+	dvbin = (double *)malloc((nsp+1)*sizeof(double));
+	vbinstart = (double *)malloc((nsp+1)*sizeof(double));
+	v_array = (double *)malloc( NVBINMAX*nsp * sizeof(double));
+	for(i=0; i<nsp*NVBINMAX; i++) vbin_inst[i]= 0.0;
 
-  if (!x || !vx || !vy || !vbint || !vbin_inst || !dvbin || !v_array )
-  {
-    printf("START: Could not get enough memory for x or v's.\n");
-    exit(1);
-  }
-  
-  printf(" nsp = %2d     l = %8.5f \n",nsp,l);
-  printf(" dt = %4.5f    nt = %4d \n",dt,nt);
-  printf(" ng = %5d   iw = %2d   ec = %2d  accum = %4d\n",ng,iw,ec,accum);
-  printf(" epsi = %4.2f  a1 = %4.2f  a2 = %4.2f \n",epsi,a1,a2);
-  
-  for (i=1;i <= nsp;i++) 
-    init(&ins[i],&ins[i+1],&ms[i],&qs[i],&ts[i],&nms[i],&vbins[i],&vbins[i+1],&dvbin[i],&vbinstart[i],&nvbin[i]);
-  /* added vbins to param list */
-  fclose(InputDeck);
-  
-  for (i=1; i<= nsp; i++) np[i]= ins[i+1] -ins[i];
-  
-  for (i=0; i < nsp; i++)
-  {
-    for (j=0; j < HISTMAX; j++) 
-    {
-      kes[i][j] = 0.0;
-      pxs[i][j] = 0.0;
-    }
-  }
-  rho[1]+=rho[ng1];   /*  These resolve the periodic boundary conditions.  */
-  rho[2]+=rho[ng+2];
-  rho[ng]+=rho[0];
-  rho[0]=rho[ng];
-  rho[ng+2]=rho[2];
-  rho[ng1] = rho[1];
-  fields(0);
-  
-  for (i=1; i <= nsp; i++) {
-    setv(ins[i], ins[i+1]-1, qs[i], ms[i], ts[i], &pxs_hist[i], &kes_hist[i]);
-    /*  scale all the velocities  properly */
-    dvbin[i] *= dt/dx;
-    vbinstart[i] *= dt/dx;  
-  }
-  startvel();
+	if (!x || !vx || !vy || !vbint || !vbin_inst || !dvbin || !v_array )
+	{
+		printf("START: Could not get enough memory for x or v's.\n");
+		exit(1);
+	}
+	
+	printf(" nsp = %2d     l = %8.5f \n",nsp,l);
+	printf(" dt = %4.5f    nt = %4d \n",dt,nt);
+	printf(" ng = %5d   iw = %2d   ec = %2d  accum = %4d\n",ng,iw,ec,accum);
+	printf(" epsi = %4.2f  a1 = %4.2f  a2 = %4.2f \n",epsi,a1,a2);
+	
+	for (i=1;i <= nsp;i++)
+	{
+		init(&ins[i],&ins[i+1],&ms[i],&qs[i],&ts[i],&nms[i],&vbins[i],&vbins[i+1],&dvbin[i],&vbinstart[i],&nvbin[i]);
+	}
+	/* added vbins to param list */
+	fclose(InputDeck);
+	
+	for (i=1; i<= nsp; i++) 
+	{
+		np[i]= ins[i+1] -ins[i];
+	}
+	
+	for (i=0; i < nsp; i++)
+	{
+		for (j=0; j < HISTMAX; j++) 
+		{
+			kes[i][j] = 0.0;
+			pxs[i][j] = 0.0;
+		}
+	}
+	rho[1]+=rho[ng1];   /*  These resolve the periodic boundary conditions.  */
+	rho[2]+=rho[ng+2];
+	rho[ng]+=rho[0];
+	rho[0]=rho[ng];
+	rho[ng+2]=rho[2];
+	rho[ng1] = rho[1];
+	fields(0);
+	
+	for (i=1; i <= nsp; i++) 
+	{
+		setv(ins[i], ins[i+1]-1, qs[i], ms[i], ts[i], &pxs_hist[i], &kes_hist[i]);
+		/*  scale all the velocities  properly */
+		dvbin[i] *= dt/dx;
+		vbinstart[i] *= dt/dx;  
+	}
+	startvel();
 }
 
 /**************************************************************/
 
 history()
 {
-  int i, j, k;
-  static int count=1;
-  
-  if (--count) return;				/* only accum every interval steps */
-  if (hist_hi >= HISTMAX)			/* comb time histories */
-  {
-    for (j=0; j< nsp; j++)
-    {
-      for (i=1, k=4; i<HISTMAX/4; i++, k+=4)
-      {
-	kes[j][i] = kes[j][k];
-	pxs[j][i] = pxs[j][k];
-      }
-    }
-    for (j=0; j< mmax; j++)
-    {
-      for (i=1, k=4; i<HISTMAX/4; i++, k+=4)
-	esem[j][i] = esem[j][k];
-    }
-    for (i=1, k=4; i<HISTMAX/4; i++, k+=4)
-    {
-      ese[i] = ese[k];
-      ke[i] = ke[k]; 
-      te[i] = te[k];
-      t_array[i] = t_array[k];
-    }
-    hist_hi = i;
-    interval *= 4;
-  }
-  t_array[hist_hi]= t;
-  for (i=0; i< mmax; i++) esem[i][hist_hi] = fabs(esem_hist[i+1]) +1e-30;
-  
-  ke[hist_hi]= 1e-30;
-  for (j=0; j< nsp; j++) {
-    kes[j][hist_hi] = kes_hist[j+1];
-    ke[hist_hi] += kes_hist[j+1];
-    pxs[j][hist_hi] = pxs_hist[j+1];
-  }
-  te[hist_hi] = ke[hist_hi] + ese_hist;
-  ese[hist_hi]= ese_hist+ 1e-30;
-  hist_hi++;
-  count = interval;
+	int i, j, k;
+	static int count=1;
+	
+	if (--count) return;				/* only accum every interval steps */
+	if (hist_hi >= HISTMAX)			/* comb time histories */
+	{
+		for (j=0; j< nsp; j++)
+		{
+			for (i=1, k=4; i<HISTMAX/4; i++, k+=4)
+			{
+				kes[j][i] = kes[j][k];
+				pxs[j][i] = pxs[j][k];
+			}
+		}
+		for (j=0; j< mmax; j++)
+		{
+			for (i=1, k=4; i<HISTMAX/4; i++, k+=4)
+			{
+				esem[j][i] = esem[j][k];
+			}
+		}
+		for (i=1, k=4; i<HISTMAX/4; i++, k+=4)
+		{
+			ese[i] = ese[k];
+			ke[i] = ke[k]; 
+			te[i] = te[k];
+			t_array[i] = t_array[k];
+		}
+		hist_hi = i;
+		interval *= 4;
+	}
+	t_array[hist_hi]= t;
+	for (i=0; i< mmax; i++)
+	{
+		esem[i][hist_hi] = fabs(esem_hist[i+1]) +1e-30;
+	}
+	
+	ke[hist_hi]= 1e-30;
+	for (j=0; j< nsp; j++) 
+	{
+		kes[j][hist_hi] = kes_hist[j+1];
+		ke[hist_hi] += kes_hist[j+1];
+		pxs[j][hist_hi] = pxs_hist[j+1];
+	}
+	te[hist_hi] = ke[hist_hi] + ese_hist;
+	ese[hist_hi]= ese_hist+ 1e-30;
+	hist_hi++;
+	count = interval;
 }
 
 
 /**********************************************************************
-  velocity()
-  This code maintains the velocity distribution code.  
-  It works thusly:  I wanted to accumulate velocities in bins for
-  ten iterations, then slap up a velocity distribution to be seen
-  by the users of xes1.
+	velocity()
+	This code maintains the velocity distribution code.  
+	It works thusly:  I wanted to accumulate velocities in bins for
+	ten iterations, then slap up a velocity distribution to be seen
+	by the users of xes1.
 
-  To do that I had to play the following tricks: 
-  I do all the work in vbin_inst, and I'm always displaying vbin.
-  When I've accumulated velocities for accum timesteps
-  I copy the current accumulated vbin_inst into vbin.
+	To do that I had to play the following tricks: 
+	I do all the work in vbin_inst, and I'm always displaying vbin.
+	When I've accumulated velocities for accum timesteps
+	I copy the current accumulated vbin_inst into vbin.
 
 
 **************************************************************/
 
 velocity()
 {
-  int  s,nbinmaxi;
-  register int i,j;
-  static int count=5;
-  double pval;
-  double *vsps; 	  /*  vsps is a pointer to the part of the
-		      velocity bin array where the species 
-		      starts  */
-  
-  double vst,dvt;		/*  this is the vstart[isp],dv[isp]  */
-  
-  if(!accum) return; /* if the accum is set to zero, don't bother making
+	int  s, nbinmaxi;
+	register int i,j;
+	static int count=5;
+	double pval;
+	double *vsps; 	  /*  vsps is a pointer to the part of the
+					velocity bin array where the species 
+					starts  */
+	
+	double vst,dvt;		/*  this is the vstart[isp],dv[isp]  */
+	
+	if(!accum) return; /* if the accum is set to zero, don't bother making
 			a current velocity distribution profile.  */
-  pval=1.0/accum;
-  /*  This code does the velocity-distribution stuff.  */
-  count--;
-  if(!count ) {
-    for (j=0; j<=nvbin[1];j++) vbint[j]=0.0;
-    for(i=1;i<=nsp;i++) {
-      for (j=vbins[i];j<=vbins[i]+nvbin[i];j++) {
-	vbin[j]=ms[i]*vbin_inst[j];
-	vbin_inst[j]=0.0;
-      }
-      for (j=0; j<=nvbin[1];j++) vbint[j]+= vbin[j+vbins[i]];
-    }
-  }
-  if( !(count)) count=accum;
+	pval=1.0/accum;
+	/*  This code does the velocity-distribution stuff.  */
+	count--;
+	if(!count )
+	{
+		for (j=0; j<=nvbin[1];j++)
+		{
+			vbint[j]=0.0;
+		}
+		for(i=1; i<=nsp; i++)
+		{
+			for (j=vbins[i]; j<=vbins[i]+nvbin[i]; j++)
+			{
+				vbin[j]=ms[i]*vbin_inst[j];
+				vbin_inst[j]=0.0;
+			}
+			for (j=0; j<=nvbin[1];j++)
+			{
+				vbint[j]+= vbin[j+vbins[i]];
+			}
+		}
+	}
+	if( !(count))
+	{
+		count=accum;
+	}
 
-  for(i=1;i<=nsp;i++) {
-    vsps = & (vbin_inst[vbins[i]] );
-    vst=vbinstart[i];
-    dvt=dvbin[i];
-    nbinmaxi=nvbin[i];
-    
-    if(nbinmaxi>0)
-      for (j=ins[i];j<ins[i+1];j++) {
-	s= (vx[j]-vst)/dvt;
-	if(s>=0 && s<nbinmaxi) vsps[s]+=pval;
-      }	
-  }
+	for(i=1;i<=nsp;i++)
+	{
+		vsps = & (vbin_inst[vbins[i]] );
+		vst=vbinstart[i];
+		dvt=dvbin[i];
+		nbinmaxi=nvbin[i];
+		
+		if(nbinmaxi>0)
+		{
+			for (j=ins[i];j<ins[i+1];j++)
+			{
+				s= (vx[j]-vst)/dvt;
+				if(s>=0 && s<nbinmaxi)
+				{
+					vsps[s]+=pval;
+				}
+			}
+		}
+	}
 }
-  
+	
 /************************************************************************/
 /* frand() returns values 0 through 1.                                  */
 /* From "Random number generators: good ones are hard to find", S. Park */
@@ -445,19 +475,21 @@ velocity()
 
 double frand()
 {
-  long a = 16807, m = 2147483647, q = 127773, r = 2836;
-  long hi, lo;
-  static long seed=31207321;
-  double fnumb;
+	long a = 16807, m = 2147483647, q = 127773, r = 2836;
+	long hi, lo;
+	static long seed = 31207321;
+	double fnumb;
 
-  hi = seed/q;
-  lo = seed - q*hi;
-  seed = a*lo - r*hi;
-  /* "seed" will always be a legal integer of 32 bits (including sign). */
-  if(seed <= 0) seed = seed + m;
-  fnumb = seed/2147483646.0;
-
-  return(fnumb);
+	hi = seed/q;
+	lo = seed - q*hi;
+	seed = a*lo - r*hi;
+	/* "seed" will always be a legal integer of 32 bits (including sign). */
+	if(seed <= 0)
+	{
+		seed = seed + m;
+	}
+	fnumb = seed/2147483646.0;
+	return(fnumb);
 }
 
 /***********************************************************************/

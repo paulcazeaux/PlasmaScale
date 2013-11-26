@@ -7,7 +7,7 @@ wavelength noise in the thermal loader; also the particles are loaded
 using the bit reversed loader to fill phase space more evenly.
 
 nsp-----------l---------dt----------nt----mmax----l/a---accum
-1        6.283185307    0.20        300    3	  0	1
+1        6.283185307    0.05        300    3	  0	1
 ng----iw-ec---epsi-------a1------a2---------E0-----w0
 32     2 0   1.00       0.00    1000.00	    0	 0
 

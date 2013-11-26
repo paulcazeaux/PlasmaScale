@@ -12,9 +12,7 @@
 #define acub(x) ((x)*(x)*fabs(x))
 #define cub(x) ((x)*(x)*(x))
 
-setrho(il,iu,q,rhos)
-int il,iu;
-double q,rhos;
+setrho(int il, int iu, double q, double rhos)
 {
    register int i,j;
    double qdx,drho,a,b,c,xii;
@@ -22,7 +20,8 @@ double q,rhos;
 
 	qdx = q/dx;
 	if ( il == 1 ) {
-		for (j=1;j <= ng;j++) rho[j] = rho0; 
+		for (j=1;j <= ng;j++) 
+			rho[j] = rho0; 
 		rho[ng1] = 0.0;
 		rho[0]=rho[ng+2]=0.0;
 		dxi = 1.0/dx;
@@ -30,7 +29,8 @@ double q,rhos;
 	}
 	rho0 -= rhos;
 	for (j=1;j <= ng;j++) rho[j] -= rhos;
-	switch (iw) {
+	switch (iw) 
+	{
 		case Zero_Order :
 			for (i=il;i <= iu;i++) {
 				x[i] *= dxi;
@@ -52,15 +52,18 @@ double q,rhos;
 			}
 			break;
 
-		
-		      case Quadratic_Spline :
+		case Quadratic_Spline :
 			for (i=il;i <= iu;i++) 
-			  {
-			    
-			    
+			{
 			    x[i] *= dxi;
-			    if (x[i] < 0.0) x[i] += xn;
-			    else if (x[i] >= xn) x[i] -= xn;
+			    if (x[i] < 0.0)
+			    {
+			    	x[i] += xn;
+			    }
+			    else if (x[i] >= xn)
+			    {
+			    	x[i] -= xn;
+			    }
 			    xii=x[i];
 			    /*  By looking up x[i] and storing it in xii, save
 				three additions--I must do an addition every
@@ -83,55 +86,58 @@ double q,rhos;
 			    rho[j+1]+=a * qdx;
 			    rho[j+2]+=b * qdx;
 			    rho[j]+=( 1.0 - a - b ) * qdx;
-			  }
-			  break;
+			}
+			break;
 			
-		      case Cubic_Spline :
+		case Cubic_Spline :
 			for (i=il;i<=iu;i++)
-			  {
+			{
 			    x[i] *=dxi;
-			    if (x[i] <0.0) x[i] += xn;
-			    else if (x[i]>=xn) x[i]-=xn;
+			    if (x[i] <0.0)
+			    {
+			    	x[i] += xn;
+			    }
+			    else if (x[i]>=xn)
+			    {
+			    	x[i]-=xn;
+			    }
 			    xii=x[i];
 			    j=xii+.5;
 
 			    if ((j-xii)>=0)
-			      {
-				a=.5*cub(j-xii)-sqr(j-xii)+.6666666667;
-				b= -.5*cub(j-1-xii)-sqr(j-1-xii)+.6666666667;
-				c= -cub(j+1-xii)/6.0+sqr(j+1-xii)-2*(j+1-xii)+1.3333333;
-				rho[j+1]+=a*qdx;
-				rho[j+2]+=c*qdx;
-				rho[j]+=b*qdx;
-				rho[j-1]+=(1.0 -a -b -c) * qdx;
-			      }
+			    {
+					a=.5*cub(j-xii)-sqr(j-xii)+.6666666667;
+					b= -.5*cub(j-1-xii)-sqr(j-1-xii)+.6666666667;
+					c= -cub(j+1-xii)/6.0+sqr(j+1-xii)-2*(j+1-xii)+1.3333333;
+					rho[j+1]+=a*qdx;
+					rho[j+2]+=c*qdx;
+					rho[j]+=b*qdx;
+					rho[j-1]+=(1.0 -a -b -c) * qdx;
+			    }
 			    else
-			      { 
-				a= -.5*cub(j-xii)-sqr(j-xii)+.6666666667;
-				b=.5*cub(j+1-xii)-sqr(j+1-xii)+.6666666667;
-				c= cub(j-1-xii)/6.0+sqr(j-1-xii)+2*(j-1-xii)+1.3333333;
-				rho[j+1]+=a*qdx;
-				rho[j+2]+=b*qdx;
-				rho[j]+=c*qdx;
-				rho[j+3]+=(1.0 -a -b -c) * qdx;
-				
-			      }
-			  }
+			    { 
+					a= -.5*cub(j-xii)-sqr(j-xii)+.6666666667;
+					b=.5*cub(j+1-xii)-sqr(j+1-xii)+.6666666667;
+					c= cub(j-1-xii)/6.0+sqr(j-1-xii)+2*(j-1-xii)+1.3333333;
+					rho[j+1]+=a*qdx;
+					rho[j+2]+=b*qdx;
+					rho[j]+=c*qdx;
+					rho[j+3]+=(1.0 -a -b -c) * qdx;
+				}
+			}
 			break;
 			
 			
-		      default:
-       			printf(" Bad iw switch in setrho. \n");
+		default:
+       		printf(" Bad iw switch in setrho. \n");
 			exit(-1);
 			break;
-		      }
+	}
 }
 
 /****************************************************************/
 
-setv(il, iu, q, m, t, p, ke)
-int il, iu;
-double q, m, t, *p, *ke;
+setv(int il, int iu, double q, double m, double t, double *p, double *ke)
 {
 	register int i;
 	double dtdx, c, s, vxx;
