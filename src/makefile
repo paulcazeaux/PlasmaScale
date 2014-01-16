@@ -3,16 +3,16 @@
 ##
 FILE_EXT = 
 ##
-EXEC= xes1
+EXEC= plasmascale
 ##
-CC = gcc-4.8
+CC = g++
 ##
 ##      C compiler.  Normally cc; is scc on Unicos.
 #
 #  This program needs libtk.a, libtcl.a, libXpm.a, and libXG20.a.
 LIBDIRS = -L/opt/X11/lib -L/usr/local/opt/tcl-tk/lib
 ##
-CFLAGS= -O3 -I/pool/xgrafix/include -I/opt/X11/include
+CFLAGS= -O3 -I/opt/X11/include -std=c++11 -lfftw
 ##
 ##      Flags used for compiling.  -O for optimization, which is optional.
 ##	If the X11 include files are not located in /usr/include/X11, you
@@ -31,15 +31,15 @@ LIBS  = $(LIBDIRS) -lXGC250 -ltk8.6 -ltcl8.6 -lXpm -lX11 -lm -ldl
 ##	problems with differing versions of OS.  Man cc for more information on flags.
 ##
 ##
-ES1OBJ=	fft.o es1.o set.o init.o move.o accel.o fields.o initwin.o 
+PS1OBJ=	tools/Tools.o tools/RandomTools.o tools/Diagnostic.o tools/CurveDiagnostic.o tools/ScatterDiagnostic.o fields/Field.o fields/PlasmaFields.o particles/PopulationOfPopulations.o particles/CollectionOfParticles.o plasma/Plasma.o plasma/State.o plasma/History.o plasma/Simulation.o tools/XGrafixInterface.o PlasmaScale.o
 
-all:	$(ES1OBJ) $(EXEC)
+all: $(EXEC)
 
-.c.o:	es1.h
-	$(CC) -c $(CFLAGS) $*.c
+.cpp.o:	PlasmaScale.h
+	$(CC) -c $(CFLAGS) fields/*.cpp particles/*.cpp plasma/*.cpp tools/*.cpp $*.cpp 
 
-$(EXEC):	$(ES1OBJ)
+$(EXEC):	$(PS1OBJ)
 		$(CC) $(CFLAGS) -o $(EXEC) $(ES1OBJ) $(LIBS)
 
 clean:
-	@rm *.o *~
+	@rm *.o

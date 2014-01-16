@@ -1,4 +1,4 @@
-xes1
+PlasmaScale
 *.o
 *.eps
 *.pdf
@@ -9,3 +9,5 @@ doc/*.dvi
 doc/*.log
 doc/*.eps
 doc/*.gz
+*.swp
+build/

@@ -5,9 +5,9 @@ neutralizing ion background.  Both beams are perturbed in the lowest
 frequency mode for the periodic system (the fastest growing mode).
 
 nsp-----------l---------dt----------nt-----mmax----l/a---accum
-2        6.283185307    0.01       100000	   5       0    	0  
+2        6.283185307    0.01       100000	   5       0    	1  
 ng----iw--ec--epsi-------a1------a2------E0-----w0
-4096  2    0   1.00       0.00    0.00	 0	   0
+4096  1    0   1.00       0.00    0.00	 0	   0
 
 
 SPECIES 1: Cold Electron Beam
