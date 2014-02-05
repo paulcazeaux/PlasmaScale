@@ -31,8 +31,7 @@ class Simulation
 
 		/* pointer on object */
 
-		std::shared_ptr<const Plasma> 	_plasma;
-		std::unique_ptr<State> 			_state;
+		std::unique_ptr<MacroState> 	_state;
 		std::unique_ptr<History>		_history;
 
 		std::vector<std::unique_ptr<Diagnostic>	>	_diagnostics;

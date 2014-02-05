@@ -63,6 +63,11 @@ void History::Compute(const State& state)
 	_size++;
 }
 
+void History::Compute(const MacroState& state)
+{
+	this->Compute(state._micro_state);
+}
+
 void History::Comb()
 {
 	for (int i=1, k=4; k < _size; i++, k+=4)

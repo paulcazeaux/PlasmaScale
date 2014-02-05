@@ -3,7 +3,7 @@
 /* Constructor */
 
 Plasma::Plasma( double length, double dt, double epsilon, double la, double rho0, double E0, double w0, 
-				int number_of_populations, int grid_size, int velocity_accumulation_interval, int max_mode,
+				int number_of_populations, int grid_size, int macro_grid_size, int velocity_accumulation_interval, int max_mode,
 				double filter_parameter_1, double filter_parameter_2, int max_size_history )
 				: _length(length), 
 					_dt(dt),
@@ -19,6 +19,7 @@ Plasma::Plasma( double length, double dt, double epsilon, double la, double rho0
 					_max_size_history(max_size_history)
 {
 	_grid_size = std::unique_ptr<int>(new int(grid_size));
+	_macro_grid_size = std::unique_ptr<int>(new int(macro_grid_size))
 	_dx = _length / static_cast<double>(*_grid_size);
 	_highest_mode = (*_grid_size) / 2; 
 	_inverse_of_particle_radius = la / _length;

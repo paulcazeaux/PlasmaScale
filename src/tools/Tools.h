@@ -12,6 +12,7 @@
 
 /* includes ===================================================================================== */
 #include <iostream>
+#include <vector>
 
 class Tools
 {
@@ -20,6 +21,7 @@ class Tools
 		/* constructor and destructor =========================================================== */
 		static void DisplayTitle();
 
+		static double EvaluateSlope(const std::vector<double> & values );
 };
 
 

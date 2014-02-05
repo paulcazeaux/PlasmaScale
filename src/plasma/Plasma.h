@@ -37,6 +37,7 @@ class Plasma
 
 		/* grid */
 		std::unique_ptr<int> 						_grid_size;
+		std::unique_ptr<int> 						_macro_grid_size;
 		std::unique_ptr<std::vector<double> >		_x_grid;
 		std::unique_ptr<std::vector<double> >		_k_grid;
 		int 										_highest_mode;
@@ -74,7 +75,8 @@ class Plasma
 				double E0 							= 0,
 				double w0 							= 0,
 				int number_of_populations 			= 1,
-				int grid_size 						= 32,
+				int grid_size 						= 128,
+				int macro_grid_size 				= 32,
 				int velocity_accumulation_interval 	= 1,
 				int max_mode 						= 1,
 				double filter_parameter_1			= 0.,
@@ -97,6 +99,7 @@ class Plasma
 
 		/* grid */
 		const int 		get_grid_size()			const { return *_grid_size;	}
+		const int 		get_macro_grid_size()	const { return *_macro_grid_size;	}
 		int *			get_grid_size_ptr()		const { return _grid_size.get(); }
 		double *		get_x_grid_ptr()		const {	return _x_grid->data();	}
 		double *		get_k_grid_ptr()		const {	return _k_grid->data();	}
@@ -129,6 +132,8 @@ class Plasma
 		void			set_E0( double E0 )		{	_E0 = E0;	}
 		void			set_w0( double w0 )		{	_w0 = w0;	}	
 
+		/* Multiscale parameters */
+		void 	set_macro_grid_size( int macro_grid_size)	{ _macro_grid_size = macro_grid_size;	}
 		/* methods ============================================================================== */
 		int 			find_index_on_grid( double x)		const {return static_cast<int>(std::floor(x/_dx)) %  *_grid_size;	}
 		double 			find_position_in_cell(double x) 	const {double xg = x/_dx; return xg - std::floor(xg);	}

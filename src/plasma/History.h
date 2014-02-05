@@ -18,7 +18,6 @@
 #include "plasma/State.h"
 #include "plasma/Plasma.h"
 #include "fields/PlasmaFields.h"
-#include "particles/CollectionOfPopulations.h"
 #include "tools/CurveDiagnostic.h"
 
 class History
@@ -69,6 +68,7 @@ class History
 		/* methods ============================================================================== */
 		void	Resize(int size);
 		void	Compute(const State& state);
+		void	Compute(const MacroState& state);
 		void	Comb();
 		void 	SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics);
 };

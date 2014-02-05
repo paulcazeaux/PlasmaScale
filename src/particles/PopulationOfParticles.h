@@ -19,6 +19,7 @@
 
 #include "fields/PlasmaFields.h"
 #include "plasma/Plasma.h"
+#include "plasma/MacroParameterization.h"
 #include "tools/RandomTools.h"
 
 /* Forward declarations */
@@ -29,14 +30,13 @@ class PlasmaFields;
 
 class PopulationOfParticles
 {
-	friend class CollectionOfPopulations;
+	friend class State;
 
 	private:
 		/* class members ======================================================================== */
 		/* pointer on object */
 		std::shared_ptr<const Plasma>			_plasma;
 		std::shared_ptr<int>					_iteration;
-		std::shared_ptr<double>					_simulation_time;
 
 		/* Parameters */
 		std::unique_ptr<int> 					_population_size;
@@ -59,12 +59,22 @@ class PopulationOfParticles
 		double 									_moment;
 		double 									_kinetic_energy;
 
-		/* velocity profiles ==================================================================== */
-		bool									_profiling_active;
+
+		/* Velocity bins     ==================================================================== */
+
 		std::unique_ptr<int> 					_number_of_bins;
 		double									_bin_width;
 		double									_bin_start;
 		std::unique_ptr<std::vector<double> >	_mid_bin_array;
+
+		/* Density profiles  ==================================================================== */
+
+		std::unique_ptr<std::vector<double> >	_conditional_velocity_density_function;
+
+
+		/* velocity profiles ==================================================================== */
+		bool									_profiling_active;
+
 		std::unique_ptr<std::vector<double> >	_partial_velocity_profile;
 		std::unique_ptr<std::vector<double> >	_accumulated_velocity_profile;
 		int 									_velocity_accumulation_interval;
@@ -74,28 +84,28 @@ class PopulationOfParticles
 	public:
 		/* constuctor and destructor ============================================================ */
 		PopulationOfParticles(std::shared_ptr<const Plasma> plasma,
-			std::shared_ptr<int> iteration, std::shared_ptr<double> simulation_time,
+			std::shared_ptr<int> iteration,
 			double population_size, double unit_mass, double unit_charge, double cyclotronic_rotation_parameter);
+		PopulationOfParticles(const MacroParameterization parameterization, const int index, std::shared_ptr<int> iteration);
 
 		~PopulationOfParticles() {}
 
 		/* getters */
-		double get_unit_charge()							const { return _unit_charge;}
-		double get_unit_mass()								const { return _unit_mass;	}
-		double get_size()									const { return *_population_size;	}
-		double get_cyclotronic_parameter()					const { return _cyclotronic_rotation_parameter;	}
+		double	get_unit_charge()							const { return _unit_charge;}
+		double	get_unit_mass()								const { return _unit_mass;	}
+		double	get_size()									const { return *_population_size;	}
+		double	get_cyclotronic_parameter()					const { return _cyclotronic_rotation_parameter;	}
 
-		double get_kinetic_energy()							const { return _kinetic_energy;	}
-		double get_moment()									const { return _moment;	}
+		double	get_kinetic_energy()						const { return _kinetic_energy;	}
+		double	get_moment()								const { return _moment;	}
 
 		bool	is_velocity_profiling_active()				const { return _profiling_active;	}
 		int    	get_number_of_bins()						const { return *_number_of_bins;	}
 
 		/* methods ============================================================================== */
 		void 	Reset();
-		void 	ChangeTime(std::shared_ptr<double> simulation_time, std::shared_ptr<int> iteration);
-		void	Load(int group_size, double v0, double vt1, double vt2, 
-					int mode, double x1, double thetax, double v1, double thetav, int quiet_start_exponent);
+		bool	CheckParameters(const int size, const double unit_mass, const double unit_charge, const double cyclotronic_rotation_parameter);
+		void 	ComputeAggregateParameters();
 		void 	Perturbate(const int mode, const double x1, const double v1, const double thetax = 0., const double thetav = 0. );
 		void 	Accelerate(const PlasmaFields &fields, double factor = 1.0);
 		void	Move();
@@ -104,6 +114,7 @@ class PopulationOfParticles
 		void	Prepare(const PlasmaFields	&fields);
 
 		void 	SetupVelocityDiagnostics(int nbins, int velocity_accumulation_interval, double vupper, double vlower, double v0, double vt1, double vt2);
+		void 	SetupVelocityDiagnostics(const MacroParameterization parameterization, const int index);
 		void	ComputeVelocityProfile();
 		
 };
