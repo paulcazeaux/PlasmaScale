@@ -19,12 +19,8 @@
 
 #include "fields/PlasmaFields.h"
 #include "plasma/Plasma.h"
-#include "plasma/MacroParameterization.h"
+#include "parameterization/MacroParameterization.h"
 #include "tools/RandomTools.h"
-
-/* Forward declarations */
-class PlasmaFields;
-
 
 /* Declarations */
 
@@ -86,7 +82,7 @@ class PopulationOfParticles
 		PopulationOfParticles(std::shared_ptr<const Plasma> plasma,
 			std::shared_ptr<int> iteration,
 			double population_size, double unit_mass, double unit_charge, double cyclotronic_rotation_parameter);
-		PopulationOfParticles(const MacroParameterization parameterization, const int index, std::shared_ptr<int> iteration);
+		PopulationOfParticles(const MacroParameterization & parameterization, const int index, std::shared_ptr<int> iteration);
 
 		~PopulationOfParticles() {}
 
@@ -106,7 +102,6 @@ class PopulationOfParticles
 		void 	Reset();
 		bool	CheckParameters(const int size, const double unit_mass, const double unit_charge, const double cyclotronic_rotation_parameter);
 		void 	ComputeAggregateParameters();
-		void 	Perturbate(const int mode, const double x1, const double v1, const double thetax = 0., const double thetav = 0. );
 		void 	Accelerate(const PlasmaFields &fields, double factor = 1.0);
 		void	Move();
 		void	Weigh(PlasmaFields	&fields);
@@ -114,7 +109,7 @@ class PopulationOfParticles
 		void	Prepare(const PlasmaFields	&fields);
 
 		void 	SetupVelocityDiagnostics(int nbins, int velocity_accumulation_interval, double vupper, double vlower, double v0, double vt1, double vt2);
-		void 	SetupVelocityDiagnostics(const MacroParameterization parameterization, const int index);
+		void 	SetupVelocityDiagnostics(const MacroParameterization & parameterization, const int index);
 		void	ComputeVelocityProfile();
 		
 };

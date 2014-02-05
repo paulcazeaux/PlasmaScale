@@ -17,8 +17,13 @@
 
 #include "plasma/Plasma.h"
 #include "fields/PlasmaFields.h"
+#include "particles/PopulationOfParticles.h"
+#include "parameterization/MacroParameterization.h"
 #include "tools/CurveDiagnostic.h"
 #include "tools/ScatterDiagnostic.h"
+
+/* Forward declarations */
+class MacroParameterization;
 
 class State
 {
@@ -80,7 +85,7 @@ class State
 
 		void Prepare()
 		{
-			_fields.ComputeAndFilter();
+			_fields->ComputeAndFilter();
 			for (auto & population : _populations)
 			{
 				population->Prepare(*_fields);
@@ -119,8 +124,9 @@ class State
 
 		void ComputeVelocityProfile();
 
-		void PushBackKineticEnergy(std::vector<double> &kinetic_energy, std::vector<std::vector<double> >	&kinetic_energy_by_population);
-		void PushBackMoment(std::vector<double> &moment, std::vector<std::vector<double> >	&moment_by_population);
+		void PushBackElectrostaticEnergy(std::vector<double>& electrostatic_energy, std::vector<std::vector<double>	>& electrostatic_energy_by_mode) const;
+		void PushBackKineticEnergy(std::vector<double> &kinetic_energy, std::vector<std::vector<double> >	&kinetic_energy_by_population) const;
+		void PushBackMoment(std::vector<double> &moment, std::vector<std::vector<double> >	&moment_by_population) const;
 };
 
 

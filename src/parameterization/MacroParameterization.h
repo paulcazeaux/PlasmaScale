@@ -15,9 +15,12 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "plasma/Plasma.h"
-#include "plasma.State.h"
+
+/* Forward declarations */
+class State;
 
 /* Declarations */
 
@@ -41,7 +44,7 @@ class MacroParameterization
 	public:
 		/* constuctor and destructor ============================================================ */
 
-		virtual MacroParameterization() {}
+		MacroParameterization() {}
 		virtual ~MacroParameterization() {}
 
 		/* move constuctor and assignment ======================================================= */
@@ -61,15 +64,18 @@ class MacroParameterization
 
 		/* virtual methods ====================================================================== */
 
-		virtual void Load(State * state);
+		virtual void Load(State * state) const 
+		{
+			std::cout << "A Load function should be implemented for your choice of parameterization !" << std::endl;
+		}
 
 		virtual void RestrictAndPushback(State * state_) {}
-		virtual void ExtrapolateAndLoad() {}
+		virtual void ExtrapolateAndLift() {}
 
-		virtual bool Have_Velocity_Diagnostics()	{return false;	}
-		virtual double 	GetBinStart()				{return 0.;		}
-		virtual	double	GetBinWidth()				{return 0.;		}
-		virtual	int		GetNumberOfBins()			{return 0;		}
+		virtual bool HaveVelocityDiagnostics()					const 	{return false;	}
+		virtual double 	GetBinStart(int)						const 	{return 0.;		}
+		virtual	double	GetBinWidth(int)						const 	{return 0.;		}
+		virtual	int		GetNumberOfBins(int)					const 	{return 0;		}
 };
 
 #endif

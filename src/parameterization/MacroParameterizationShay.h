@@ -9,13 +9,16 @@
  *  
  * ============================================================================= */
 
-#ifndef DEF_PLASMASCALE_MACROPARAMETERIZATION
-#define DEF_PLASMASCALE_MACROPARAMETERIZATION
+#ifndef DEF_PLASMASCALE_MACROPARAMETERIZATIONSHAY
+#define DEF_PLASMASCALE_MACROPARAMETERIZATIONSHAY
 
-#include "particles/MacroParameterization.h"
+#include "parameterization/MacroParameterization.h"
+#include "plasma/State.h"
+#include "tools/Tools.h"
 #include <exception>
 #include <iostream>
 #include <stdexcept>
+#include <cassert>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -56,9 +59,9 @@ class MacroParameterizationShay : public MacroParameterization
 
 	public:
 		/* constructor  ========================================================================= */
-
+		MacroParameterizationShay() {}
 		MacroParameterizationShay(MacroParameterization & parameterization, double electron_temperature, int number_of_microsteps);
-		MacroParameterizationShay();
+		virtual ~MacroParameterizationShay() {}
 
 		/* move constuctor and assignment ======================================================= */
 
@@ -67,7 +70,7 @@ class MacroParameterizationShay : public MacroParameterization
 
 		/* methods ============================================================================== */
 
-		virtual void Load(State * state);
+		virtual void Load(State * state) const;
 
 		virtual void RestrictAndPushback(State * state);
 		virtual void ExtrapolateAndLift(int macro_to_micro_dt_ratio);

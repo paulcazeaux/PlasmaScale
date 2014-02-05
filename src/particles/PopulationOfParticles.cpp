@@ -26,22 +26,22 @@ PopulationOfParticles::PopulationOfParticles(std::shared_ptr<const Plasma> plasm
 	_profiling_active = false;
 }
 
-PopulationOfParticles::PopulationOfParticles(const MacroParameterization parameterization, const int index,
+PopulationOfParticles::PopulationOfParticles(const MacroParameterization & parameterization, const int index,
 					std::shared_ptr<int> iteration) :
 		_plasma(parameterization.get_plasma()),
 		_iteration(iteration),
-		_unit_mass(parameterization.get_unit_mass()),
-		_unit_charge(parameterization.get_unit_charge()),
-		_cyclotronic_rotation_parameter(parameterization.get_cyclotronic_rotation_parameter()),
+		_unit_mass(parameterization.get_unit_mass(index)),
+		_unit_charge(parameterization.get_unit_charge(index)),
+		_cyclotronic_rotation_parameter(parameterization.get_cyclotronic_rotation_parameter(index)),
 		_magnetized(_cyclotronic_rotation_parameter!=0.)
 
 {
-	_population_size = std::unique_ptr<int> (new int(parameterization.get_population_size()));
+	_population_size = std::unique_ptr<int> (new int(parameterization.get_population_size(index)));
 	_total_mass = _unit_mass * (*_population_size);
 	_total_weight = *_population_size;
-	_mean_density = (*_population_size)*unit_charge/plasma->get_length();
+	_mean_density = (*_population_size)*_unit_charge/_plasma->get_length();
 
-	this->SetupVelocityDiagnostics(parameterization);
+	this->SetupVelocityDiagnostics(parameterization, index);
 }
 
 void PopulationOfParticles::Reset()
@@ -54,7 +54,7 @@ void PopulationOfParticles::Reset()
 
 bool PopulationOfParticles::CheckParameters(const int size, const double unit_mass, const double unit_charge, const double cyclotronic_rotation_parameter)
 {
-	return ((size==_population_size) && (unit_charge==_unit_charge) && (unit_mass==_unit_mass) && (cyclotronic_rotation_parameter==_cyclotronic_rotation_parameter));
+	return ((size==*_population_size) && (unit_charge==_unit_charge) && (unit_mass==_unit_mass) && (cyclotronic_rotation_parameter==_cyclotronic_rotation_parameter));
 }
 
 void PopulationOfParticles::ComputeAggregateParameters()
@@ -68,25 +68,6 @@ void PopulationOfParticles::ComputeAggregateParameters()
 	_total_mass = total_weight * _unit_mass;
 	_mean_density = _total_weight * _unit_charge/_plasma->get_length();
 }
-
-void PopulationOfParticles::Perturbate(const int mode, const double x1, const double v1, const double thetax /* = 0. */, const double thetav /* = 0. */)
-{
-	double plasma_length = _plasma->get_length();
-	auto it_vel_x 	= _velocity_x->begin();
-	auto it_weights = _weights->begin();
-	_total_weight = 0;
-
-	for (auto & position : *_position)
-	{
-		double theta = (2*M_PI*mode/plasma_length) * position;
-		*it_weights 	+= x1 * std::sin(theta + thetax);
-		_total_weight 	+= *it_weights++; 
-		*it_vel_x++ 	+= v1 * std::sin(theta + thetav);
-	}
-	_total_mass 	= _unit_mass * _total_weight;
-	_mean_density 	= _total_weight * _unit_charge/_plasma->get_length();
-}
-
 
 void PopulationOfParticles::Move()
 {
@@ -331,7 +312,7 @@ void PopulationOfParticles::SetupVelocityDiagnostics(int nbins, int velocity_acc
 
 }
 
-void PopulationOfParticles::SetupVelocityDiagnostics(const MacroParameterization parameterization, const int index)
+void PopulationOfParticles::SetupVelocityDiagnostics(const MacroParameterization & parameterization, const int index)
 {
 	if (!parameterization.HaveVelocityDiagnostics())
 	{
@@ -341,9 +322,9 @@ void PopulationOfParticles::SetupVelocityDiagnostics(const MacroParameterization
 
 	_profiling_active = true;
 	_number_of_bins = std::unique_ptr<int>(new int( parameterization.GetNumberOfBins(index)));
-	_velocity_accumulation_interval = _plasma->get_velocity_accumulation_interval(index);
+	_velocity_accumulation_interval = _plasma->get_velocity_accumulation_interval();
 	_count 							= 0;
-	_accumulation_weight			= 1./static_cast<double>(velocity_accumulation_interval);
+	_accumulation_weight			= 1./static_cast<double>(_velocity_accumulation_interval);
 	_mid_bin_array 					= std::unique_ptr<std::vector<double> > (new std::vector<double>(*_number_of_bins));
 	_partial_velocity_profile 		= std::unique_ptr<std::vector<double> > (new std::vector<double>(*_number_of_bins, 0.));
 	_accumulated_velocity_profile	= std::unique_ptr<std::vector<double> > (new std::vector<double>(*_number_of_bins, 0.));

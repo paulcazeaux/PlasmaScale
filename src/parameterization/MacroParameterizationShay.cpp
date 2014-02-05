@@ -1,11 +1,11 @@
-#include "particles/MacroParameterizationShay.h"
+#include "parameterization/MacroParameterizationShay.h"
 
 
 MacroParameterizationShay::MacroParameterizationShay(MacroParameterizationShay &&parameterization) :
-			MacroParameterization(parameterization),
+			MacroParameterization(std::move(parameterization)),
 			_grid_size(parameterization._grid_size),
 			_macro_grid_size(parameterization._macro_grid_size),
-			_densities(std::move(parameterization._plasma)),
+			_densities(std::move(parameterization._densities)),
 			_temperatures(std::move(parameterization._temperatures)),
 			_velocities(std::move(parameterization._velocities)),
 			_ion_density(std::move(parameterization._ion_density)),
@@ -22,7 +22,7 @@ MacroParameterizationShay& MacroParameterizationShay::operator=(MacroParameteriz
 	if (this == &parameterization)
 		return *this;
 	
-	MacroParameterization::operator= (parameterization);
+	MacroParameterization::operator=(std::move(parameterization));
 	_grid_size = parameterization._plasma->get_grid_size();
 
 	_densities = std::move(parameterization._densities);
@@ -32,7 +32,7 @@ MacroParameterizationShay& MacroParameterizationShay::operator=(MacroParameteriz
 
 	_ion_density = std::move(parameterization._ion_density);
 	_ion_velocity = std::move(parameterization._ion_velocity);
-	_ion_pressure = std::move(parameterization._ion_pressure;
+	_ion_pressure = std::move(parameterization._ion_pressure);
 
 	_quiet_start_vel = parameterization._quiet_start_vel;
 	_quiet_start_icdf = parameterization._quiet_start_icdf;
@@ -44,10 +44,10 @@ MacroParameterizationShay& MacroParameterizationShay::operator=(MacroParameteriz
 }
 
 MacroParameterizationShay::MacroParameterizationShay(MacroParameterization & parameterization, double electron_temperature, int number_of_microsteps) :
-	MacroParameterization(parameterization), _electron_temperature(electron_temperature)
+	MacroParameterization(std::move(parameterization)), _electron_temperature(electron_temperature)
 {
 	if (_number_of_populations != 2)
-		throw std::runtime_error("There are " + std::to_string(_number_of_populations) + " and not 2 populations as required.\n")
+		throw std::runtime_error("There are " + std::to_string(_number_of_populations) + " and not 2 populations as required.\n");
 
 	_grid_size = _plasma->get_grid_size();
 	_macro_grid_size = _plasma->get_macro_grid_size();
@@ -68,9 +68,9 @@ MacroParameterizationShay::MacroParameterizationShay(MacroParameterization & par
 	}
 	for (int i = 0; i < _macro_grid_size; i++)
 	{
-		_ion_density->at(i).reserve(_number_of_microsteps);
-		_ion_velocity->at(i).reserve(_number_of_microsteps);
-		_ion_pressure->at(i).reserve(_number_of_microsteps);
+		_ion_density->at(i).reserve(number_of_microsteps);
+		_ion_velocity->at(i).reserve(number_of_microsteps);
+		_ion_pressure->at(i).reserve(number_of_microsteps);
 	}
 
 	int helper_size = _macro_grid_size;		 						// To be changed
@@ -95,10 +95,10 @@ MacroParameterizationShay::MacroParameterizationShay(MacroParameterization & par
 	}
 
 	_debye_scaling = _electron_temperature *  _unit_masses->front() * _plasma->get_length()
-			/ (_plasma->get_epsilon() * static_cast<double>(_population_sizes.front()) * std::pow(_unit_charges->front(), 2.));
+			/ (_plasma->get_epsilon() * static_cast<double>(_population_sizes->front()) * std::pow(_unit_charges->front(), 2.));
 }
 
-void MacroParameterizationShay::Load(State * state)
+void MacroParameterizationShay::Load(State * state) const
 /* Fill the particle arrays to initialize the microscopic state */
 {	
 
@@ -134,7 +134,7 @@ void MacroParameterizationShay::Load(State * state)
 			int bin_size = bin_end_index - bin_start_index;
 			assert(bin_size > 1);
 
-			int it_vel = = _quiet_start_vel.begin();
+			auto it_vel = _quiet_start_vel.begin();
 			auto it_icdf = _quiet_start_icdf.begin();
 			double dn = 1./static_cast<double>(bin_size);
 
@@ -150,7 +150,7 @@ void MacroParameterizationShay::Load(State * state)
 				}
 				double cellpos = RandomTools::Generate_randomly_uniform(0.,1.);
 				position->at(i+bin_start_index) = (static_cast<double>(bin)+cellpos) * dx;
-				velocity_x->at(i+bin_start_index) = vt * (*it_vel + (fv - *it_icdf)/(*(it_icdf+1) - *it_icdf)));
+				velocity_x->at(i+bin_start_index) = vt * (*it_vel + (fv - *it_icdf)/(*(it_icdf+1) - *it_icdf));
 			}
 			bin_start_index = bin_end_index;
 		}
@@ -168,7 +168,6 @@ void MacroParameterizationShay::Load(State * state)
 
 		/* Add the perturbation */
 
-		particle_index = 0;
 		bin_start_index = 0;
 		for (int bin = 0; bin < _grid_size; bin++)
 		{
@@ -178,15 +177,15 @@ void MacroParameterizationShay::Load(State * state)
 			double v = _velocities->at(population_index).at(bin);		// P1 interpolation ? TODO
 			for (int i=0; i<bin_end_index-bin_start_index; i++)
 			{
-				weight.at(i+bin_start_index) 		 = d;
-				velocity_x.at(i+bin_start_index) 	+= v;
+				weight->at(i+bin_start_index) 		 = d;
+				velocity_x->at(i+bin_start_index) 	+= v;
 			}
 			bin_start_index = bin_end_index;
 		}
 	}
 }
 
-void MacroParameterizationShay::RestrictAndPushback(State & state)
+void MacroParameterizationShay::RestrictAndPushback(State * state)
 {
 	std::vector<double> * ion_position 		= state->get_vector_of_position_arrays().front();
 	std::vector<double> * ion_velocity 		= state->get_vector_of_x_velocity_arrays().front();
@@ -346,9 +345,11 @@ void MacroParameterizationShay::ExtrapolateAndLift(int macro_to_micro_dt_ratio)
 	for (int i=0; i<_grid_size; i++)
 	{
 		_densities->at(1).at(i)  = _densities->front().at(i) 
-						+ scaling * (0.5 * log_ion_density->front().at(i)
-								- 0.25*log_ion_density->front().at((i>0 ? i-1: _grid_size-1)) 
-								- 0.25*log_ion_density->front().at((i+1<_grid_size? i+1: 0));
+						+ scaling * (
+								  0.5 *log_ion_density.at(i)
+								- 0.25*log_ion_density.at((i>0 ? i-1: _grid_size-1)) 
+								- 0.25*log_ion_density.at((i+1<_grid_size? i+1: 0)) 
+									);
 		_velocities->at(1).at(i) = _velocities->front().at(i);
 	}
 	std::fill(_temperatures->at(1).begin(), _temperatures->at(1).end(), _electron_temperature);

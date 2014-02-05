@@ -20,16 +20,16 @@ State::State(	const MacroParameterization & parameterization) :
 	_fields				= std::unique_ptr<PlasmaFields> (new PlasmaFields(_plasma, _simulation_time, _iteration));
 	_populations 		= std::vector<std::unique_ptr<PopulationOfParticles> > ();
 
-	for (int index = 0; i<_number_of_populations; i++)
+	for (int index = 0; index<_number_of_populations; index++)
 	{
 		_populations.push_back(std::unique_ptr<PopulationOfParticles> 
-				(new PopulationOfParticles(parameterization, index, _iteration);		
+				(new PopulationOfParticles(parameterization, index, _iteration)));		
 	}
 	/* Then we let the parameterization fill the particle arrays */
 	parameterization.Load(this);
 
-	this->Prepare(*_fields);
-	this->Weigh(*_fields);
+	this->Prepare();
+	this->Weigh();
 	_fields->ComputeAndFilter();
 }
 
@@ -57,14 +57,14 @@ void State::Load(const MacroParameterization & parameterization)
 	/* First we check that the size and parameters are right */
 	for (int index=0; index<_number_of_populations; index++)
 	{
-		int size = parameterization.get_size(index);
+		int size = parameterization.get_population_size(index);
 		double unit_charge = parameterization.get_unit_charge(index);
 		double unit_mass = parameterization.get_unit_mass(index);
-		double cyclotronic_rotation_parameter = parameterization.get_cyclotronic_rotation_paramter(index)));
+		double cyclotronic_rotation_parameter = parameterization.get_cyclotronic_rotation_parameter(index);
 
-		if (!populations.at(i)->CheckParameters(size, unit_mass, unit_charge, cyclotronic_rotation_parameter))
+		if (!_populations.at(index)->CheckParameters(size, unit_mass, unit_charge, cyclotronic_rotation_parameter))
 		{
-			populations.at(i).reset(new PopulationOfParticles(parameterization, index, _iteration));
+			_populations.at(index).reset(new PopulationOfParticles(parameterization, index, _iteration));
 		}
 	}
 	/* Then we let the parameterization fill the particle arrays */
@@ -272,8 +272,13 @@ void 	State::ComputeVelocityProfile()
 	}
 }
 
+void	State::PushBackElectrostaticEnergy(std::vector<double>& electrostatic_energy, std::vector<std::vector<double>	>& electrostatic_energy_by_mode) const
+{
+	_fields->PushBackElectrostaticEnergy(electrostatic_energy, electrostatic_energy_by_mode);
+}
 
-void	State::PushBackKineticEnergy(std::vector<double> &kinetic_energy, std::vector<std::vector<double> >	&kinetic_energy_by_population)
+
+void	State::PushBackKineticEnergy(std::vector<double> &kinetic_energy, std::vector<std::vector<double> >	&kinetic_energy_by_population) const
 {
 	double ke_total = 0.0;
 	for (int i=0; i<_number_of_populations; i++)
@@ -285,7 +290,7 @@ void	State::PushBackKineticEnergy(std::vector<double> &kinetic_energy, std::vect
 	kinetic_energy.push_back(ke_total);
 }
 
-void	State::PushBackMoment(std::vector<double> &moment, std::vector<std::vector<double> >	&moment_by_population)
+void	State::PushBackMoment(std::vector<double> &moment, std::vector<std::vector<double> >	&moment_by_population) const
 {
 	double p_total = 0.0;
 	for (int i=0; i<_number_of_populations; i++)

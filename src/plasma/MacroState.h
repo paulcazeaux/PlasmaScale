@@ -21,8 +21,9 @@
 
 #include "plasma/Plasma.h"
 #include "plasma/State.h"
-#include "plasma/History.h"
-#include "particles/MacroParameterization.h"
+#include "parameterization/MacroParameterization.h"
+#include "parameterization/MacroParameterizationFromFile.h"
+#include "parameterization/MacroParameterizationShay.h"
 
 class MacroState
 {
@@ -50,7 +51,7 @@ class MacroState
 
 	public:
 		/* constuctor and destructor ============================================================ */
-		MacroState(	FILE *& InputDeck, int number_of_microsteps, int macro_to_micro_dt_ratio);
+		MacroState(	FILE *& InputDeck );
 		~MacroState() {}
 
 		/* getter */

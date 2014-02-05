@@ -1,33 +1,10 @@
-#include "particles/MacroParameterizationFromFile.h"
+#include "parameterization/MacroParameterizationFromFile.h"
 
 /* constuctor and destructor ============================================================ */
 
-MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck, int macro_grid_size)
+MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 {
-	_from_file = true;
-
-	_densities = std::unique_ptr<std::vector<std::vector<double> > >(new std::vector<std::vector<double> >(_number_of_populations));
-	for (auto & density : *_densities)
-	{
-		density.resize(_grid_size);
-		std::fill(density.begin(), density.end(), 1.);
-	}
-
-	_temperatures = std::unique_ptr<std::vector<std::vector<double> > >(new std::vector<std::vector<double> >(_number_of_populations));
-	for (auto & density : *_densities)
-	{
-		density.resize(_grid_size);
-		std::fill(density.begin(), density.end(), 0.);
-	}
-
-	_velocities = std::unique_ptr<std::vector<std::vector<double> > >(new std::vector<std::vector<double> >(_number_of_populations));
-	for (auto & velocity : *_velocities)
-	{
-		velocity.resize(_grid_size);
-		std::fill(velocity.begin(), velocity.end(), 0.);
-	}
-
-/* Parameters for the plasma */
+	/* Parameters for the plasma */
 	double length, dt, epsilon, la, e0, w0;
 	int number_of_populations, grid_size, nt, iw, ec, velocity_accumulation_interval, max_mode;	// nt, iw, ec are unused
 	double filter_parameter_1, filter_parameter_2;
@@ -58,7 +35,11 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck, 
 	printf(" ng = %5d   iw = %2d   ec = %2d  accum = %4d\n", grid_size, iw, ec, velocity_accumulation_interval);
 	printf(" epsi = %4.2f  a1 = %4.2f  a2 = %4.2f \n",epsilon, filter_parameter_1, filter_parameter_2);
 
-	_plasma = std::make_shared<const Plasma>(length, dt, 
+	int macro_grid_size = grid_size / 16; 		// TODO : change the input file format
+	int number_of_microsteps = 50;
+	int macro_to_micro_dt_ratio = 200;
+
+	_plasma = std::make_shared<const Plasma>(length, dt, number_of_microsteps, macro_to_micro_dt_ratio,
 				epsilon, la, 0.0, e0, w0,
 				number_of_populations, grid_size, macro_grid_size, velocity_accumulation_interval, max_mode,
 				filter_parameter_1, filter_parameter_2);
@@ -99,9 +80,9 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck, 
 		printf(" nbins = %4d   vlower = %6.3f  vupper = %6.3f ", nbins, vlower, vupper);
 		printf("\n");
 
-		_cyclotronic_rotation_parameters->at(population_index) = tan(-0.5*wc*plasma->get_dt());
-		_unit_charges->at(population_index) = plasma->get_length()*wp*wp/(plasma->get_epsilon()*n*qm);
-		_unit_mass->at(population_index) 	= unit_charge/qm;
+		_cyclotronic_rotation_parameters->at(population_index) = tan(-0.5*wc*_plasma->get_dt());
+		_unit_charges->at(population_index) = _plasma->get_length()*wp*wp/(_plasma->get_epsilon()*n*qm);
+		_unit_masses->at(population_index) 	= _unit_charges->at(population_index)/qm;
 		_population_sizes->at(population_index) = n;
 
 		_group_sizes->at(population_index) = n / nlg;
@@ -112,7 +93,7 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck, 
 
 		_modes->at(population_index) = mode;
 		_density_amplitudes->at(population_index) = x1;
-		_density_phases->at(population_index) = thetax
+		_density_phases->at(population_index) = thetax;
 		_velocity_amplitudes->at(population_index) = v1;
 		_velocity_phases->at(population_index) = thetav;
 
@@ -122,7 +103,7 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck, 
 	}
 }
 
-void MacroParameterizationFromFile::Load(State * state)
+void MacroParameterizationFromFile::Load(State * state) const
 /* Fill the particle arrays to initialize the microscopic state */
 {
 	std::vector<std::vector<double> * > positions 		= state->get_vector_of_position_arrays();
@@ -165,7 +146,7 @@ void MacroParameterizationFromFile::Load(State * state)
 		if (vt2 != 0.0) 
 		{
 			double vmax = 5.0*vt2;
-			double dv = 2.0*vmax/(static_cast<double>(*_population_size - 1));
+			double dv = 2.0*vmax/(static_cast<double>(population_size - 1));
 			double vvnv2 = 1.0;
 			helper.front() = 0.0;
 
@@ -191,14 +172,14 @@ void MacroParameterizationFromFile::Load(State * state)
 					if (it_helper == helper.end()) 
 						perror("distribution function error");
 				}
-				_velocity_x->at(i) += dv* (std::distance(helper.begin(), it_helper)
+				velocity_x->at(i) += dv* (std::distance(helper.begin(), it_helper)
 										 + (fv - *it_helper)/(*(it_helper+1) - *it_helper)) - vmax;
 			}
 
 			double xs = 0.0;
 			for (int i=0; i<group_size; i++)
 			{
-				_position->at(i) = xs*group_density + 0.5*population_density;
+				position->at(i) = xs*group_density + 0.5*population_density;
 				/* bit-reversed scrambling to reduce the correlation with the positions */
 				double xsi = 0.5;
 				xs -= 0.5;
@@ -210,30 +191,30 @@ void MacroParameterizationFromFile::Load(State * state)
 				xs += 2.0*xsi;
 			}
 		}
-
-		if (_cyclotronic_rotation_parameters->at(population_index) != 0.) 
+		bool magnetized = (_cyclotronic_rotation_parameters->at(population_index) != 0.) ;
+		if (magnetized) 
 		{
 			for (int i=0; i < group_size; i++) 
 			{
-				double v = _velocity_x->at(i);
+				double v = velocity_x->at(i);
 				double theta = RandomTools::Generate_randomly_uniform(0., 2.*M_PI);
-				_velocity_x->at(i) = v*std::cos(theta);
-				_velocity_y->at(i) = v*std::sin(theta);
+				velocity_x->at(i) = v*std::cos(theta);
+				velocity_y->at(i) = v*std::sin(theta);
 			}
 		}
-		if (group_size < *_population_size)
+		if (group_size < population_size)
 		{
 			double xs = 0.0;
-			for (int k=group_size; k< *_population_size; k+=group_size)
+			for (int k=group_size; k< population_size; k+=group_size)
 			{
 				xs += group_density;
 				for (int j=0; j < group_size; j++) 
 				{
-					 _position->at(j+k) = _position->at(j) + xs;
-					 _velocity_x->at(j+k) = _velocity_x->at(j);
-					 if (_magnetized)
+					 position->at(j+k) = position->at(j) + xs;
+					 velocity_x->at(j+k) = velocity_x->at(j);
+					 if (magnetized) 
 					 {
-						_velocity_x->at(j+k) = _velocity_y->at(j);
+						velocity_x->at(j+k) = velocity_y->at(j);
 					 }
 				}
 			}
@@ -241,11 +222,11 @@ void MacroParameterizationFromFile::Load(State * state)
 
 		if (vt1 != 0.0)
 		{
-			auto it_vel_y = _velocity_y->begin();
-			for (auto & vel_x : *_velocity_x)
+			auto it_vel_y = velocity_y->begin();
+			for (auto & vel_x : *velocity_x)
 			{
 				vel_x 	+= vt1*RandomTools::Generate_randomly_normal(0.0, 1.0);
-				if (_magnetized)
+				if (magnetized)
 				{
 					*it_vel_y++ 	+= vt1*RandomTools::Generate_randomly_normal(0.0, 1.0);
 				}
@@ -253,23 +234,37 @@ void MacroParameterizationFromFile::Load(State * state)
 		}
 
 		/* Add the perturbation */
-		int mode = _modes->at(population_index);
+
+		double w = 2*M_PI*_modes->at(population_index)/_plasma->get_length();
 		double x1 = _density_amplitudes->at(population_index);
 		double v1 = _velocity_amplitudes->at(population_index);
 		double thetax = _density_phases->at(population_index);
 		double thetav = _velocity_phases->at(population_index);
 
-		state->Perturbate(mode, x1, v1, thetax, thetav);
+		auto it_vel_x 	= velocity_x->begin();
+		auto it_weights = weight->begin();
+
+		for (auto & x : *position)
+		{
+			double theta = w * x;
+			*it_weights++ 	+= x1 * std::sin(theta + thetax);
+			*it_vel_x++ 	+= v1 * std::sin(theta + thetav);
+		}
 	}
 }
 
-double MacroParameterizationFromFile::GetBinStart(int population_index)
+double MacroParameterizationFromFile::get_initial_temperature(int population_index) const
 {
-	vupper = _upper_velocities->at(population_index);
-	vlower = _lower_velocities->at(population_index);
-	vt1 = _random_mean_temperatures->at(population_index);
-	vt2 = _quiet_mean_temperatures->at(population_index);
-	v0 = _mean_velocities->at(population_index);
+	return _quiet_mean_temperatures->at(population_index) + _random_mean_temperatures->at(population_index);
+}
+
+double MacroParameterizationFromFile::GetBinStart(int population_index) const
+{
+	double vupper = _upper_velocities->at(population_index);
+	double vlower = _lower_velocities->at(population_index);
+	double vt1 = _random_mean_temperatures->at(population_index);
+	double vt2 = _quiet_mean_temperatures->at(population_index);
+	double v0 = _mean_velocities->at(population_index);
 
 	if(vupper-vlower < 0.0)
 	{
@@ -300,20 +295,14 @@ double MacroParameterizationFromFile::GetBinStart(int population_index)
 
 }
 
-
-double MacroParameterizationFromFile::get_initial_temperature(int population_index)
+double MacroParameterizationFromFile::GetBinWidth(int population_index)	const
 {
-	return _quiet_mean_temperatures->at(population_index) + _random_mean_temperatures->at(population_index);
-}
-
-double MacroParameterizationFromFile::GetBinWidth(int population_index)
-{
-	vupper = _upper_velocities->at(population_index);
-	vlower = _lower_velocities->at(population_index);
-	vt1 = _random_mean_temperatures->at(population_index);
-	vt2 = _quiet_mean_temperatures->at(population_index);
-	v0 = _mean_velocities->at(population_index);
-	nbins = _bin_numbers->at(population_index);
+	double vupper = _upper_velocities->at(population_index);
+	double vlower = _lower_velocities->at(population_index);
+	double vt1 = _random_mean_temperatures->at(population_index);
+	double vt2 = _quiet_mean_temperatures->at(population_index);
+	double v0 = _mean_velocities->at(population_index);
+	int nbins = _bin_numbers->at(population_index);
 
 	if(vupper-vlower < 0.0)
 	{
@@ -346,7 +335,7 @@ double MacroParameterizationFromFile::GetBinWidth(int population_index)
 }
 
 
-int MacroParameterizationFromFile::GetNumberOfBins(int population_index)
+int MacroParameterizationFromFile::GetNumberOfBins(int population_index) const
 {
 	return _bin_numbers->at(population_index);
 }

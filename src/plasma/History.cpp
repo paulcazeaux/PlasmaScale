@@ -55,9 +55,9 @@ void History::Compute(const State& state)
 
 	_time_array.push_back(*(state._simulation_time));
 
-	(state._fields)->PushBackElectrostaticEnergy(_electrostatic_energy, _electrostatic_energy_by_mode);
-	(state._populations)->PushBackKineticEnergy(_kinetic_energy, _kinetic_energy_by_population);
-	(state._populations)->PushBackMoment(_moment, _moment_by_population);
+	state.PushBackElectrostaticEnergy(_electrostatic_energy, _electrostatic_energy_by_mode);
+	state.PushBackKineticEnergy(_kinetic_energy, _kinetic_energy_by_population);
+	state.PushBackMoment(_moment, _moment_by_population);
 
 	_total_energy.push_back(_electrostatic_energy.back() + _kinetic_energy.back());
 	_size++;
@@ -65,7 +65,7 @@ void History::Compute(const State& state)
 
 void History::Compute(const MacroState& state)
 {
-	this->Compute(state._micro_state);
+	this->Compute(*state._micro_state);
 }
 
 void History::Comb()

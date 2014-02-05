@@ -31,6 +31,10 @@ class Plasma
 		double		 								_dt;
 		double 										_dx;
 
+		/* Parameters for extrapolation by EPFI */
+		int 										_number_of_microsteps;
+		int 										_macro_to_micro_dt_ratio;
+
 		/* size */
 		const double 								_length;
 		double										_inverse_of_particle_radius;
@@ -69,6 +73,8 @@ class Plasma
 		/* constuctor and destructor ============================================================ */
 		Plasma(double 	length 						= 6.283185307,
 				double	dt 							= 0.2,
+				int number_of_microsteps 			= 50,
+				int macro_to_micro_dt_ratio 		= 200,
 				double epsilon 						= 1.0,
 				double la							= 0.,
 				double rho0							= 1.,
@@ -93,6 +99,10 @@ class Plasma
 		/* Timestep and spatial grid step */
 		double			get_dt()				const {	return _dt;			}
 		double 			get_dx()				const {	return _dx;			}
+
+		/* Parameters for extrapolation by EPFI */
+		int 	get_number_of_microsteps()		const { return _number_of_microsteps;		}
+		int 	get_macro_to_micro_dt_ratio()	const { return _macro_to_micro_dt_ratio;	}								
 
 		/* Length */
 		const double 	get_length()			const {	return _length;		}
@@ -133,7 +143,8 @@ class Plasma
 		void			set_w0( double w0 )		{	_w0 = w0;	}	
 
 		/* Multiscale parameters */
-		void 	set_macro_grid_size( int macro_grid_size)	{ _macro_grid_size = macro_grid_size;	}
+		void 	set_macro_grid_size( int macro_grid_size)	{ *_macro_grid_size = macro_grid_size;	}
+		
 		/* methods ============================================================================== */
 		int 			find_index_on_grid( double x)		const {return static_cast<int>(std::floor(x/_dx)) %  *_grid_size;	}
 		double 			find_position_in_cell(double x) 	const {double xg = x/_dx; return xg - std::floor(xg);	}

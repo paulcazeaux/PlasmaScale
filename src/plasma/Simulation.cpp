@@ -6,11 +6,7 @@ void Simulation::Setup(int argc, char ** argv)
 {
 	FILE * InputDeck;
 
-	if (!argc>1) 
-	{
-		InputDeck = std::fopen("es1data","r");
-	}
-	else 
+	if (argc>1)
 	{
 		InputDeck = std::fopen(argv[2],"r");
 	}
@@ -18,7 +14,7 @@ void Simulation::Setup(int argc, char ** argv)
 	if (!InputDeck)
 	{
 		std::printf("\nCan't find input file %s\n",argv[1]);
-		std::printf("\nCorrect syntax is: ES1 -i file.inp\n");
+		std::printf("\nCorrect syntax is: PlasmaScale -i file.inp\n");
 		std::exit(-1);
 	}
 

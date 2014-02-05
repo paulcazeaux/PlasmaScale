@@ -73,7 +73,7 @@ class PlasmaFields
 		double * get_potential_ptr()					const 	{return _potential.get_ptr();		}
 
 		/* methods ======================================================================= */
-		void PushBackElectrostaticEnergy(std::vector<double>& electrostatic_energy, std::vector<std::vector<double>	>& electrostatic_energy_by_mode);
+		void PushBackElectrostaticEnergy(std::vector<double>& electrostatic_energy, std::vector<std::vector<double>	>& electrostatic_energy_by_mode) const;
 		void ComputeAndFilter();
 		void ResetCharge()
 		{

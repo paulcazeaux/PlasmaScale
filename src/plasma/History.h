@@ -16,6 +16,7 @@
 #include <cassert>
 
 #include "plasma/State.h"
+#include "plasma/MacroState.h"
 #include "plasma/Plasma.h"
 #include "fields/PlasmaFields.h"
 #include "tools/CurveDiagnostic.h"

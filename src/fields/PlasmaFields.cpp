@@ -140,7 +140,7 @@ void PlasmaFields::WeighParticle(double position, double charge)
 	_charge.WeighParticle(position, charge);
 }
 
-void PlasmaFields::PushBackElectrostaticEnergy(std::vector<double>& electrostatic_energy, std::vector<std::vector<double>	>& electrostatic_energy_by_mode)
+void PlasmaFields::PushBackElectrostaticEnergy(std::vector<double>& electrostatic_energy, std::vector<std::vector<double>	>& electrostatic_energy_by_mode) const
 {
 	electrostatic_energy.push_back(_electrostatic_energy_total  + 1e-30);
 	for (int m = 0; m<_max_mode; m++)

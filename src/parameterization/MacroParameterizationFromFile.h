@@ -12,7 +12,11 @@
 #ifndef DEF_PLASMASCALE_MACROPARAMETERIZATIONFROMFILE
 #define DEF_PLASMASCALE_MACROPARAMETERIZATIONFROMFILE
 
-#include "particles/MacroParameterization.h"
+#include "parameterization/MacroParameterization.h"
+#include "tools/RandomTools.h"
+#include "plasma/State.h"
+#include <cmath>
+#include <cassert>
 
 /* Declarations */
 
@@ -43,16 +47,16 @@ class MacroParameterizationFromFile : public MacroParameterization
 
 	public:
 
-		MacroParameterizationFromFile(FILE *& InputDeck, int macro_grid_size);
+		MacroParameterizationFromFile(FILE *& InputDeck);
 		
-		virtual void 	Load(State * state);
+		virtual void 	Load(State * state) const;
 
-		double 			get_initial_temperature(int population_index);
+		double 			get_initial_temperature(int population_index)	const;
 
-		virtual bool 	HaveVelocityDiagnostics()	{return true;	}
-		virtual double 	GetBinStart(int index);
-		virtual	double	GetBinWidth(int index);
-		virtual int		GetNumberOfBins(int index);
+		virtual bool 	HaveVelocityDiagnostics()		const	{return true;	}
+		virtual double 	GetBinStart(int index)			const;
+		virtual	double	GetBinWidth(int index)			const;
+		virtual int		GetNumberOfBins(int index)		const;
 };
 
 #endif
