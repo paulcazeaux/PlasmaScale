@@ -29,16 +29,23 @@ Plasma::Plasma( double length, double dt, int number_of_microsteps, int macro_to
 	_profiling_active = (_velocity_accumulation_interval>0);
 
 	std::vector<double> x_grid = std::vector<double>(*_grid_size+1);
+	std::vector<double> macro_x_grid = std::vector<double>(*_macro_grid_size+1);
 	std::vector<double> k_grid = std::vector<double>(_highest_mode);
 	for (int i=1; i < *_grid_size+1; i++)
 	{
 		x_grid[i] = _dx * i;
+	}
+	double macro_dx = _length / static_cast<double>(*_macro_grid_size);
+	for (int i=1; i < *_macro_grid_size+1; i++)
+	{
+		macro_x_grid[i] = macro_dx * i;
 	}
 	for (int k = 1; k < _highest_mode; k++)
 	{
 		k_grid[k] = 2 * M_PI /_length * k;
 	}
 	_x_grid = std::unique_ptr<std::vector<double> > (new std::vector<double>(x_grid));
+	_macro_x_grid = std::unique_ptr<std::vector<double> > (new std::vector<double>(macro_x_grid));
 	_k_grid = std::unique_ptr<std::vector<double> > (new std::vector<double>(k_grid));
 }
 
@@ -46,19 +53,24 @@ Plasma::Plasma( double length, double dt, int number_of_microsteps, int macro_to
 std::ostream& operator<<( std::ostream& os, const Plasma& plasma)
 {
 	os << "PLASMA:" << std::endl;
-	os << "=======" << std::endl << std::endl;
+	os << "=======" << std::endl;
 
-	os << std::endl;
 	os << "Steps : " << std::endl;
 	os << "-----   " << std::endl;
 	os << "\t Timestep: \t" 	<< plasma._dt 						<< std::endl;
 	os << "\t Grid step: \t"	<< plasma._dx 						<< std::endl;
 
 	os << std::endl;
+	os << "EPFI parameters : " << std::endl;
+	os << "-----   " << std::endl;
+	os << "\t Microscopic steps computed for each projection: \t" 	<< plasma._number_of_microsteps 			<< std::endl;
+	os << "\t Ratio of microscopic to macroscopic timesteps: \t"	<< plasma._macro_to_micro_dt_ratio	<< std::endl;
+
+	os << std::endl;
 	os << "Spatial dimensions: " 	<< std::endl;
 	os << "------------------	" 	<< std::endl;
 	os << "\t System length: \t" 	<< plasma._length 						<< std::endl;
-	os << "\t Particle radius: \t"	<< 1/plasma._inverse_of_particle_radius	<< std::endl;
+	os << "\t Particle radius: \t"	<< 1./plasma._inverse_of_particle_radius	<< std::endl;
 
 	os << std::endl;
 	os << "Grid parameters: "	<< std::endl;
@@ -66,7 +78,6 @@ std::ostream& operator<<( std::ostream& os, const Plasma& plasma)
 	os << "\t Grid size: \t"	<< *(plasma._grid_size)				<< std::endl;
 	os << "\t Grid length: \t"	<< plasma._x_grid->back()			<< std::endl;
 	os << "\t Highest mode: \t"	<< plasma._highest_mode 			<< std::endl;
-	os << "\t Highest frequency: \t"	<< plasma._k_grid->back()			<< std::endl;
 
 	os << std::endl;
 	os << "Plasma parameters:	"	<< std::endl;

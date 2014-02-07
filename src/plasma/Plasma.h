@@ -43,6 +43,7 @@ class Plasma
 		std::unique_ptr<int> 						_grid_size;
 		std::unique_ptr<int> 						_macro_grid_size;
 		std::unique_ptr<std::vector<double> >		_x_grid;
+		std::unique_ptr<std::vector<double> >		_macro_x_grid;
 		std::unique_ptr<std::vector<double> >		_k_grid;
 		int 										_highest_mode;
 
@@ -111,7 +112,9 @@ class Plasma
 		const int 		get_grid_size()			const { return *_grid_size;	}
 		const int 		get_macro_grid_size()	const { return *_macro_grid_size;	}
 		int *			get_grid_size_ptr()		const { return _grid_size.get(); }
+		int *		get_macro_grid_size_ptr()	const { return _macro_grid_size.get(); }
 		double *		get_x_grid_ptr()		const {	return _x_grid->data();	}
+		double *		get_macro_x_grid_ptr()	const {	return _macro_x_grid->data();	}
 		double *		get_k_grid_ptr()		const {	return _k_grid->data();	}
 
 		/* Plasma parameters */

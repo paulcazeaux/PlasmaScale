@@ -17,6 +17,7 @@
 #include "plasma/State.h"
 #include <cmath>
 #include <cassert>
+#include <iostream>
 
 /* Declarations */
 
@@ -24,26 +25,25 @@ class MacroParameterizationFromFile : public MacroParameterization
 {
 	private:
 		/* class members ======================================================================== */
-		/* pointer to objects */
 
 			// Initialization
-		std::unique_ptr<std::vector<int> >		_group_sizes;
-		std::unique_ptr<std::vector<double> >	_mean_velocities;
-		std::unique_ptr<std::vector<double> >	_quiet_start_exponents;
-		std::unique_ptr<std::vector<double> >	_quiet_mean_temperatures;
-		std::unique_ptr<std::vector<double> >	_random_mean_temperatures;
+		std::vector<int>			_group_sizes;
+		std::vector<double>			_mean_velocities;
+		std::vector<double>			_quiet_start_exponents;
+		std::vector<double>			_quiet_mean_temperatures;
+		std::vector<double>			_random_mean_temperatures;
 
 			// Perturbation
-		std::unique_ptr<std::vector<int> >		_modes;
-		std::unique_ptr<std::vector<double> >	_density_amplitudes;
-		std::unique_ptr<std::vector<double> >	_density_phases;
-		std::unique_ptr<std::vector<double> >	_velocity_amplitudes;
-		std::unique_ptr<std::vector<double> >	_velocity_phases;
+		std::vector<int>			_modes;
+		std::vector<double>			_density_amplitudes;
+		std::vector<double>			_density_phases;
+		std::vector<double>			_velocity_amplitudes;
+		std::vector<double>			_velocity_phases;
 
 			// Diagnostics
-		std::unique_ptr<std::vector<int> >		_bin_numbers;
-		std::unique_ptr<std::vector<double> >	_upper_velocities;
-		std::unique_ptr<std::vector<double> >	_lower_velocities;
+		std::vector<int>			_bin_numbers;
+		std::vector<double>			_upper_velocities;
+		std::vector<double>			_lower_velocities;
 
 	public:
 

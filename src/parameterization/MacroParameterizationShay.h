@@ -15,8 +15,10 @@
 #include "parameterization/MacroParameterization.h"
 #include "plasma/State.h"
 #include "tools/Tools.h"
-#include <exception>
+#include "tools/CurveDiagnostic.h"
+ 
 #include <iostream>
+#include <exception>
 #include <stdexcept>
 #include <cassert>
 #include <string>
@@ -36,14 +38,14 @@ class MacroParameterizationShay : public MacroParameterization
 
 		/* Spatial quantities */
 
-		typedef std::unique_ptr<std::vector<std::vector<double> > > 	spatial_quantity;
+		typedef std::vector<std::vector<double> > 	spatial_quantity;
 		spatial_quantity						_densities;
 		spatial_quantity 						_temperatures;
 		spatial_quantity 						_velocities;
 
 		/* Active variables : assuming that the ion population is the first population */
 
-		typedef std::unique_ptr<std::vector<std::vector<double> > >		active_variable;
+		typedef std::vector<std::vector<double> >		active_variable;
 		active_variable 						_ion_density;
 		active_variable							_ion_velocity;
 		active_variable 						_ion_pressure;
@@ -74,6 +76,8 @@ class MacroParameterizationShay : public MacroParameterization
 
 		virtual void RestrictAndPushback(State * state);
 		virtual void ExtrapolateAndLift(int macro_to_micro_dt_ratio);
+
+		virtual void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics);
 		
 };
 

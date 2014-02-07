@@ -67,6 +67,7 @@ class MacroState
 		void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic>	> &diagnostics)
 		{
 			_micro_state->SetupDiagnostics(diagnostics);
+			_parameterization->SetupDiagnostics(diagnostics);
 		}
 };
 

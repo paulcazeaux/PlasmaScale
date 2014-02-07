@@ -44,12 +44,12 @@ class PopulationOfParticles
 		const double							_cyclotronic_rotation_parameter;
 		const bool 								_magnetized;
 
-		std::unique_ptr<std::vector<double> >	_weights;
 
 		/* Variables */
-		std::unique_ptr<std::vector<double> >	_position;
-		std::unique_ptr<std::vector<double> >	_velocity_x;
-		std::unique_ptr<std::vector<double> >	_velocity_y;
+		std::vector<double>						_position;
+		std::vector<double>						_velocity_x;
+		std::vector<double>						_velocity_y;
+		std::vector<double>						_weights;
 
 		/* Energy */
 		double 									_moment;

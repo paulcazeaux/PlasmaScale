@@ -5,7 +5,6 @@ MacroState::MacroState(FILE *& InputDeck)
 	MacroParameterizationFromFile initialization = MacroParameterizationFromFile(InputDeck);
 	_plasma = initialization.get_plasma();
 	_micro_state = std::unique_ptr<State>(new State(initialization));
-
 	_simulation_time = _micro_state->get_simulation_time();
 	_macro_iteration = std::make_shared<int>(0);
 
@@ -41,8 +40,10 @@ void MacroState::Step()
 		_parameterization->RestrictAndPushback(_micro_state.get());
 	}
 	// Step 2: Extrapolate using EPFI
-	_parameterization->ExtrapolateAndLift();
-	_parameterization->Load(_micro_state.get());
+	_parameterization->ExtrapolateAndLift(_macro_to_micro_dt_ratio);
+	_micro_state->Load(*_parameterization);
+	_micro_state->ComputeVelocityProfile();
+
 	(*_macro_iteration)++;
 	*_simulation_time = *_macro_iteration * _macro_to_micro_dt_ratio * _plasma->get_dt();
 

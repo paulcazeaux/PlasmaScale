@@ -18,6 +18,7 @@
 #include <iostream>
 
 #include "plasma/Plasma.h"
+#include "tools/Diagnostic.h"
 
 /* Forward declarations */
 class State;
@@ -29,17 +30,17 @@ class MacroParameterization
 	protected:
 		/* class members ======================================================================== */
 		/* pointer to objects */
-		std::shared_ptr<const Plasma>			_plasma;
+		std::shared_ptr<const Plasma>	_plasma;
 
-		int										_number_of_populations;
+		int								_number_of_populations;
 
 		/* Properties */
 
-		std::unique_ptr<std::vector<int> >		_population_sizes;
+		std::vector<int>				_population_sizes;
 
-		std::unique_ptr<std::vector<double> >	_unit_charges;
-		std::unique_ptr<std::vector<double> >	_unit_masses;
-		std::unique_ptr<std::vector<double> >	_cyclotronic_rotation_parameters;
+		std::vector<double>				_unit_charges;
+		std::vector<double>				_unit_masses;
+		std::vector<double>				_cyclotronic_rotation_parameters;
 
 	public:
 		/* constuctor and destructor ============================================================ */
@@ -57,10 +58,10 @@ class MacroParameterization
 		std::shared_ptr<const Plasma> get_plasma() 				const	{ return _plasma;	}
 		int		get_number_of_populations() 					const	{ return _number_of_populations;	}
 
-		int		get_population_size(int index)					const 	{ return _population_sizes->at(index);	}
-		double 	get_unit_charge(int index)						const 	{ return _unit_charges->at(index);		}
-		double 	get_unit_mass(int index)						const 	{ return _unit_masses->at(index);		}
-		double 	get_cyclotronic_rotation_parameter(int index)	const 	{ return _cyclotronic_rotation_parameters->at(index);	}
+		int		get_population_size(int index)					const 	{ return _population_sizes.at(index);	}
+		double 	get_unit_charge(int index)						const 	{ return _unit_charges.at(index);		}
+		double 	get_unit_mass(int index)						const 	{ return _unit_masses.at(index);		}
+		double 	get_cyclotronic_rotation_parameter(int index)	const 	{ return _cyclotronic_rotation_parameters.at(index);	}
 
 		/* virtual methods ====================================================================== */
 
@@ -70,12 +71,14 @@ class MacroParameterization
 		}
 
 		virtual void RestrictAndPushback(State * state_) {}
-		virtual void ExtrapolateAndLift() {}
+		virtual void ExtrapolateAndLift(int) {}
 
 		virtual bool HaveVelocityDiagnostics()					const 	{return false;	}
 		virtual double 	GetBinStart(int)						const 	{return 0.;		}
 		virtual	double	GetBinWidth(int)						const 	{return 0.;		}
 		virtual	int		GetNumberOfBins(int)					const 	{return 0;		}
+
+		virtual void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics) {}
 };
 
 #endif

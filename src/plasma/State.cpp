@@ -176,7 +176,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_position_arrays()
 	std::vector<std::vector<double> * > positions = std::vector<std::vector<double> * > (_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		positions[i] = (_populations.at(i)->_position).get();
+		positions[i] = & (_populations.at(i)->_position);
 	}
 	return positions;
 }
@@ -186,7 +186,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_x_velocity_arrays()
 	std::vector<std::vector<double> * > velocities = std::vector<std::vector<double> * > (_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		velocities[i] = (_populations.at(i)->_velocity_x).get();
+		velocities[i] = & (_populations.at(i)->_velocity_x);
 	}
 	return velocities;
 }
@@ -196,7 +196,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_y_velocity_arrays()
 	std::vector<std::vector<double> * > velocities = std::vector<std::vector<double> * > (_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		velocities[i] = (_populations.at(i)->_velocity_y).get();
+		velocities[i] = & (_populations.at(i)->_velocity_y);
 	}
 	return velocities;
 }
@@ -206,7 +206,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_weight_arrays()
 	std::vector<std::vector<double> * > weights = std::vector<std::vector<double> * > (_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		weights[i] = (_populations.at(i)->_weights).get();
+		weights[i] = & (_populations.at(i)->_weights);
 	}
 	return weights;
 }
