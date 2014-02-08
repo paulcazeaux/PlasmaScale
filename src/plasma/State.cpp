@@ -26,7 +26,7 @@ State::State(	const MacroParameterization & parameterization) :
 				(new PopulationOfParticles(parameterization, index, _iteration)));		
 	}
 	/* Then we let the parameterization fill the particle arrays */
-	parameterization.Load(this);
+	parameterization.Load(*this);
 
 	this->Prepare();
 	this->Weigh();
@@ -68,7 +68,7 @@ void State::Load(const MacroParameterization & parameterization)
 		}
 	}
 	/* Then we let the parameterization fill the particle arrays */
-	parameterization.Load(this);
+	parameterization.Load(*this);
 	for (auto & population : _populations)
 	{
 		population->ComputeAggregateParameters();
@@ -171,7 +171,7 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 
 
 /* getters for the diagnostics ========================================================== */
-std::vector<std::vector<double> * >	State::get_vector_of_position_arrays()
+std::vector<std::vector<double> * >	State::get_vector_of_position_arrays() const
 {
 	std::vector<std::vector<double> * > positions = std::vector<std::vector<double> * > (_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
@@ -181,7 +181,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_position_arrays()
 	return positions;
 }
 
-std::vector<std::vector<double> * >	State::get_vector_of_x_velocity_arrays()
+std::vector<std::vector<double> * >	State::get_vector_of_x_velocity_arrays() const
 {
 	std::vector<std::vector<double> * > velocities = std::vector<std::vector<double> * > (_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
@@ -191,7 +191,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_x_velocity_arrays()
 	return velocities;
 }
 
-std::vector<std::vector<double> * >	State::get_vector_of_y_velocity_arrays()
+std::vector<std::vector<double> * >	State::get_vector_of_y_velocity_arrays() const
 {
 	std::vector<std::vector<double> * > velocities = std::vector<std::vector<double> * > (_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
@@ -201,7 +201,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_y_velocity_arrays()
 	return velocities;
 }
 
-std::vector<std::vector<double> * >	State::get_vector_of_weight_arrays()
+std::vector<std::vector<double> * >	State::get_vector_of_weight_arrays() const
 {
 	std::vector<std::vector<double> * > weights = std::vector<std::vector<double> * > (_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
@@ -211,7 +211,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_weight_arrays()
 	return weights;
 }
 
-std::vector<bool> State::get_vector_of_magnetizations()
+std::vector<bool> State::get_vector_of_magnetizations() const
 {
 	std::vector<bool> magnetizations = std::vector<bool>(_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
@@ -221,7 +221,7 @@ std::vector<bool> State::get_vector_of_magnetizations()
 	return magnetizations;
 }
 
-std::vector<int *>	State::get_vector_of_sizes()
+std::vector<int *>	State::get_vector_of_sizes() const
 {
 	std::vector<int *> sizes = std::vector<int*>(_number_of_populations);
 	for (int i = 0; i < _number_of_populations; i++)
@@ -231,7 +231,7 @@ std::vector<int *>	State::get_vector_of_sizes()
 	return sizes;
 }
 
-std::vector<std::vector<double> * >	State::get_vector_of_bin_arrays()
+std::vector<std::vector<double> * >	State::get_vector_of_bin_arrays() const
 {
 	std::vector<std::vector<double> * > bin_arrays = std::vector<std::vector<double> * > (_number_of_populations);
 	for (int i = 0; i < _number_of_populations; i++)
@@ -241,7 +241,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_bin_arrays()
 	return bin_arrays;
 }
 
-std::vector<std::vector<double> * >	State::get_vector_of_velocity_profiles()
+std::vector<std::vector<double> * >	State::get_vector_of_velocity_profiles() const 
 {
 	std::vector<std::vector<double> * > velocity_profiles = std::vector<std::vector<double> * > (_number_of_populations);
 	for (int i = 0; i < _number_of_populations; i++)
@@ -251,7 +251,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_velocity_profiles()
 	return velocity_profiles;
 }
 
-std::vector<int *>	State::get_vector_of_number_of_bins()
+std::vector<int *>	State::get_vector_of_number_of_bins() const
 {
 	std::vector<int *> number_of_bins = std::vector<int *>(_number_of_populations);
 	for (int i = 0; i < _number_of_populations; i++)

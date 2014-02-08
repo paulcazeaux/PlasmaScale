@@ -6,14 +6,20 @@ MacroParameterizationShay::MacroParameterizationShay(MacroParameterizationShay &
 			_grid_size(parameterization._grid_size),
 			_macro_grid_size(parameterization._macro_grid_size),
 			_densities(std::move(parameterization._densities)),
-			_temperatures(std::move(parameterization._temperatures)),
+			_thermal_vel(std::move(parameterization._thermal_vel)),
 			_velocities(std::move(parameterization._velocities)),
-			_ion_density(std::move(parameterization._ion_density)),
-			_ion_velocity(std::move(parameterization._ion_velocity)),
-			_ion_pressure(std::move(parameterization._ion_pressure)),
+			_stack_ion_density(std::move(parameterization._stack_ion_density)),
+			_stack_ion_velocity(std::move(parameterization._stack_ion_velocity)),
+			_stack_ion_pressure(std::move(parameterization._stack_ion_pressure)),
+			_prev_step_ion_density(std::move(parameterization._prev_step_ion_density)),
+			_prev_step_ion_velocity(std::move(parameterization._prev_step_ion_velocity)),
+			_prev_step_ion_pressure(std::move(parameterization._prev_step_ion_pressure)),
+			_current_step_ion_density(std::move(parameterization._current_step_ion_density)),
+			_current_step_ion_velocity(std::move(parameterization._current_step_ion_velocity)),
+			_current_step_ion_pressure(std::move(parameterization._current_step_ion_pressure)),
 			_quiet_start_vel(parameterization._quiet_start_vel),
 			_quiet_start_icdf(parameterization._quiet_start_icdf),
-			_electron_temperature(parameterization._electron_temperature),
+			_electron_thermal_vel(parameterization._electron_thermal_vel),
 			_debye_scaling(parameterization._debye_scaling)
 		{}
 
@@ -26,25 +32,33 @@ MacroParameterizationShay& MacroParameterizationShay::operator=(MacroParameteriz
 	_grid_size = parameterization._plasma->get_grid_size();
 
 	_densities = std::move(parameterization._densities);
-	_temperatures = std::move(parameterization._temperatures);
+	_thermal_vel = std::move(parameterization._thermal_vel);
 	_velocities = std::move(parameterization._velocities);
 
 
-	_ion_density = std::move(parameterization._ion_density);
-	_ion_velocity = std::move(parameterization._ion_velocity);
-	_ion_pressure = std::move(parameterization._ion_pressure);
+	_stack_ion_density = std::move(parameterization._stack_ion_density);
+	_stack_ion_velocity = std::move(parameterization._stack_ion_velocity);
+	_stack_ion_pressure = std::move(parameterization._stack_ion_pressure);
+
+	_prev_step_ion_density = std::move(parameterization._prev_step_ion_density);
+	_prev_step_ion_velocity = std::move(parameterization._prev_step_ion_velocity);
+	_prev_step_ion_pressure = std::move(parameterization._prev_step_ion_pressure);
+
+	_current_step_ion_density = std::move(parameterization._current_step_ion_density);
+	_current_step_ion_velocity = std::move(parameterization._current_step_ion_velocity);
+	_current_step_ion_pressure = std::move(parameterization._current_step_ion_pressure);
 
 	_quiet_start_vel = parameterization._quiet_start_vel;
 	_quiet_start_icdf = parameterization._quiet_start_icdf;
 
 
-	_electron_temperature = parameterization._electron_temperature;
+	_electron_thermal_vel = parameterization._electron_thermal_vel;
 	_debye_scaling = parameterization._debye_scaling;
 	return *this;
 }
 
-MacroParameterizationShay::MacroParameterizationShay(MacroParameterization & parameterization, double electron_temperature, int number_of_microsteps) :
-	MacroParameterization(std::move(parameterization)), _electron_temperature(electron_temperature)
+MacroParameterizationShay::MacroParameterizationShay(MacroParameterization & parameterization, double electron_thermal_vel) :
+	MacroParameterization(std::move(parameterization)), _electron_thermal_vel(electron_thermal_vel)
 {
 	if (_number_of_populations != 2)
 		throw std::runtime_error("There are " + std::to_string(_number_of_populations) + " and not 2 populations as required.\n");
@@ -53,27 +67,37 @@ MacroParameterizationShay::MacroParameterizationShay(MacroParameterization & par
 	_macro_grid_size = _plasma->get_macro_grid_size();
 
 	_densities	 	= std::vector<std::vector<double> >(_number_of_populations);
-	_temperatures	= std::vector<std::vector<double> >(_number_of_populations);
+	_thermal_vel	= std::vector<std::vector<double> >(_number_of_populations);
 	_velocities 	= std::vector<std::vector<double> >(_number_of_populations);
 
-	_ion_density 	= std::vector<std::vector<double> >(_macro_grid_size);
-	_ion_velocity 	= std::vector<std::vector<double> >(_macro_grid_size);
-	_ion_pressure 	= std::vector<std::vector<double> >(_macro_grid_size);
+	_stack_ion_density 	= std::vector<std::vector<double> >(_macro_grid_size);
+	_stack_ion_velocity = std::vector<std::vector<double> >(_macro_grid_size);
+	_stack_ion_pressure = std::vector<std::vector<double> >(_macro_grid_size);
+
+	_prev_step_ion_density 	= std::vector<double>(_macro_grid_size);
+	_prev_step_ion_velocity = std::vector<double>(_macro_grid_size);
+	_prev_step_ion_pressure = std::vector<double>(_macro_grid_size);
+
+	_current_step_ion_density 	= std::vector<double>(_macro_grid_size);
+	_current_step_ion_velocity 	= std::vector<double>(_macro_grid_size);
+	_current_step_ion_pressure 	= std::vector<double>(_macro_grid_size);
 
 	for (int i = 0; i < _number_of_populations; i++)
 	{
 		_densities.at(i).resize(_grid_size);
-		_temperatures.at(i).resize(_grid_size);
+		_thermal_vel.at(i).resize(_grid_size);
 		_velocities.at(i).resize(_grid_size);
 	}
+
+	int number_of_microsteps = _plasma->get_number_of_microsteps();
 	for (int i = 0; i < _macro_grid_size; i++)
 	{
-		_ion_density.at(i).reserve(number_of_microsteps);
-		_ion_velocity.at(i).reserve(number_of_microsteps);
-		_ion_pressure.at(i).reserve(number_of_microsteps);
+		_stack_ion_density.at(i).reserve(number_of_microsteps);
+		_stack_ion_velocity.at(i).reserve(number_of_microsteps);
+		_stack_ion_pressure.at(i).reserve(number_of_microsteps);
 	}
 
-	int helper_size = _grid_size;		 						// To be changed
+	int helper_size = _grid_size;		 						// TODO : change this
 	_quiet_start_vel = std::vector<double>(helper_size);
 	_quiet_start_icdf = std::vector<double>(helper_size);
 
@@ -93,23 +117,23 @@ MacroParameterizationShay::MacroParameterizationShay(MacroParameterization & par
 		_quiet_start_icdf.at(i) *= norm;
 	}
 
-	_debye_scaling = _electron_temperature *  _unit_masses.front() * _plasma->get_length()
+	_debye_scaling = _electron_thermal_vel *  _unit_masses.front() * _plasma->get_length()
 			/ (_plasma->get_epsilon() * static_cast<double>(_population_sizes.front()) * std::pow(_unit_charges.front(), 2.));
 }
 
-void MacroParameterizationShay::Load(State * state) const
+void MacroParameterizationShay::Load(State & state) const
 /* Fill the particle arrays to initialize the microscopic state */
 {	
 
-	state->Reset();
+	state.Reset();
 	double dx = _plasma->get_dx();
 
 	/* Initialize the particle arrays */
 
-	std::vector<std::vector<double> * > positions 		= state->get_vector_of_position_arrays();
-	std::vector<std::vector<double> * > x_velocities 	= state->get_vector_of_x_velocity_arrays();
-	std::vector<std::vector<double> * > y_velocities 	= state->get_vector_of_y_velocity_arrays();
-	std::vector<std::vector<double> * > weights 		= state->get_vector_of_y_velocity_arrays();
+	std::vector<std::vector<double> * > positions 		= state.get_vector_of_position_arrays();
+	std::vector<std::vector<double> * > x_velocities 	= state.get_vector_of_x_velocity_arrays();
+	std::vector<std::vector<double> * > y_velocities 	= state.get_vector_of_y_velocity_arrays();
+	std::vector<std::vector<double> * > weights 		= state.get_vector_of_y_velocity_arrays();
 
 	assert(positions.size() == 2);
 	assert(x_velocities.size() == 2);
@@ -138,7 +162,7 @@ void MacroParameterizationShay::Load(State * state) const
 			double dn = 1./static_cast<double>(bin_size);
 			double dv = *(it_vel+1) - *it_vel;
 
-			double vt = _temperatures.at(population_index).at(bin);	// P1 interpolation ? TODO
+			double vt = _thermal_vel.at(population_index).at(bin);	// P1 interpolation ? TODO
 
 			for (int i=0; i<bin_size; i++)
 			{
@@ -186,11 +210,11 @@ void MacroParameterizationShay::Load(State * state) const
 	}
 }
 
-void MacroParameterizationShay::RestrictAndPushback(State * state)
+void MacroParameterizationShay::RestrictAndPushback(const State & state)
 {
-	std::vector<double> * ion_position 		= state->get_vector_of_position_arrays().front();
-	std::vector<double> * ion_velocity 		= state->get_vector_of_x_velocity_arrays().front();
-	std::vector<double> * ion_weight 		= state->get_vector_of_y_velocity_arrays().front();
+	std::vector<double> * ion_position 		= state.get_vector_of_position_arrays().front();
+	std::vector<double> * ion_velocity 		= state.get_vector_of_x_velocity_arrays().front();
+	std::vector<double> * ion_weight 		= state.get_vector_of_y_velocity_arrays().front();
 	int ion_population_size = ion_position->size();
 	double ion_population_density = static_cast<double>(_grid_size)/static_cast<double>(ion_population_size);
 
@@ -298,36 +322,95 @@ void MacroParameterizationShay::RestrictAndPushback(State * state)
 	assert(size == _macro_grid_size);
 	for (int i=0; i<size; i++)
 	{
-		_ion_density.at(i).push_back(working_ion_density.at(i));
-		_ion_velocity.at(i).push_back(working_ion_velocity.at(i));
-		_ion_pressure.at(i).push_back(working_ion_pressure.at(i));
+		_stack_ion_density.at(i).push_back(working_ion_density.at(i));
+		_stack_ion_velocity.at(i).push_back(working_ion_velocity.at(i));
+		_stack_ion_pressure.at(i).push_back(working_ion_pressure.at(i));
 	}
 
 }
 
-void MacroParameterizationShay::ExtrapolateAndLift(int macro_to_micro_dt_ratio)
+void MacroParameterizationShay::Initialize(const State & state)
+{
+	int macro_to_micro_dt_ratio = _plasma->get_macro_to_micro_dt_ratio();
+
+	this->RestrictAndPushback(state);
+	for (int bin=0; bin<_macro_grid_size; bin++)
+	{	
+		_current_step_ion_density.at(bin) = _stack_ion_density.at(bin).front();
+		_current_step_ion_velocity.at(bin) = _stack_ion_velocity.at(bin).front();
+		_current_step_ion_pressure.at(bin) = _stack_ion_pressure.at(bin).front();
+	}
+
+	_prev_step_ion_density 	= _current_step_ion_density;
+	_prev_step_ion_velocity = _current_step_ion_velocity;
+	_prev_step_ion_pressure = _current_step_ion_pressure;
+}
+
+void MacroParameterizationShay::ExtrapolateFirstHalfStep()
+{
+	/* First, compute the derivative by least-squares and step forward */
+	int macro_to_micro_dt_ratio = _plasma->get_macro_to_micro_dt_ratio();
+	for (int bin=0; bin<_macro_grid_size; bin++)
+	{
+		_stack_ion_density.at(bin).front()  = macro_to_micro_dt_ratio * Tools::EvaluateSlope(_stack_ion_density.at(bin));
+		_stack_ion_velocity.at(bin).front() = macro_to_micro_dt_ratio * Tools::EvaluateSlope(_stack_ion_velocity.at(bin));
+		_stack_ion_pressure.at(bin).front() = macro_to_micro_dt_ratio * Tools::EvaluateSlope(_stack_ion_pressure.at(bin));
+
+		_stack_ion_density.at(bin).resize(1);
+		_stack_ion_velocity.at(bin).resize(1);
+		_stack_ion_pressure.at(bin).resize(1);
+
+		_stack_ion_density.at(bin).front()  += 0.5*(_prev_step_ion_density.at(bin) + _current_step_ion_density.at(bin));
+		_stack_ion_velocity.at(bin).front() += 0.5*(_prev_step_ion_velocity.at(bin) + _current_step_ion_velocity.at(bin));
+		_stack_ion_pressure.at(bin).front() += 0.5*(_prev_step_ion_pressure.at(bin) + _current_step_ion_pressure.at(bin));
+	}
+}
+
+void MacroParameterizationShay::ExtrapolateSecondHalfStep()
 {
 	/* First, compute the derivative by least-squares */
+	int macro_to_micro_dt_ratio = _plasma->get_macro_to_micro_dt_ratio();
+	for (int bin=0; bin<_macro_grid_size; bin++)
+	{
+		_stack_ion_density.at(bin).front()  = macro_to_micro_dt_ratio * Tools::EvaluateSlope(_stack_ion_density.at(bin));
+		_stack_ion_velocity.at(bin).front() = macro_to_micro_dt_ratio * Tools::EvaluateSlope(_stack_ion_velocity.at(bin));
+		_stack_ion_pressure.at(bin).front() = macro_to_micro_dt_ratio * Tools::EvaluateSlope(_stack_ion_pressure.at(bin));
+
+		_stack_ion_density.at(bin).resize(1);
+		_stack_ion_velocity.at(bin).resize(1);
+		_stack_ion_pressure.at(bin).resize(1);
+
+		_stack_ion_density.at(bin).front()  += _current_step_ion_density.at(bin);
+		_stack_ion_velocity.at(bin).front() += _current_step_ion_velocity.at(bin);
+		_stack_ion_pressure.at(bin).front() += _current_step_ion_pressure.at(bin);
+	}
+
+	/* Initialize the next step */
+
+	std::swap(_prev_step_ion_density, _current_step_ion_density);
+	std::swap(_prev_step_ion_velocity, _current_step_ion_velocity);
+	std::swap(_prev_step_ion_pressure, _current_step_ion_pressure);
 
 	for (int bin=0; bin<_macro_grid_size; bin++)
 	{
-		_ion_density.at(bin).front()  += macro_to_micro_dt_ratio * Tools::EvaluateSlope(_ion_density.at(bin));
-		_ion_velocity.at(bin).front() += macro_to_micro_dt_ratio * Tools::EvaluateSlope(_ion_velocity.at(bin));
-		_ion_pressure.at(bin).front() += macro_to_micro_dt_ratio * Tools::EvaluateSlope(_ion_pressure.at(bin));
+		_current_step_ion_density.at(bin) = _stack_ion_density.at(bin).front();
+		_current_step_ion_velocity.at(bin) = _stack_ion_velocity.at(bin).front();
+		_current_step_ion_pressure.at(bin) = _stack_ion_pressure.at(bin).front();
 
-		_ion_density.at(bin).resize(1);
-		_ion_velocity.at(bin).resize(1);
-		_ion_pressure.at(bin).resize(1);
 	}
+}
 
-	/* Next, lift the ion density, velocity and temperature to the fine grid */
+void MacroParameterizationShay::Lift()
+{
+	/* First, lift the ion density, velocity and thermal velocity to the fine grid */
 	int size = _macro_grid_size;
 	for (int i=0; i<size; i++)
 	{
-		_densities.front().at(i) = _ion_density.at(i).front();
-		_velocities.front().at(i) = _ion_velocity.at(i).front();
-		_temperatures.front().at(i) = _ion_pressure.at(i).front() / _ion_density.at(i).front();
+		_densities.front().at(i) = _stack_ion_density.at(i).front();
+		_velocities.front().at(i) = _stack_ion_velocity.at(i).front();
+		_thermal_vel.front().at(i) = std::sqrt(_stack_ion_pressure.at(i).front() / _stack_ion_density.at(i).front());
 	}
+	// Another possibility : lift the pressure to the fine grid and then compute the thermal velocity
 
 	while (size < _grid_size)
 	{
@@ -335,22 +418,22 @@ void MacroParameterizationShay::ExtrapolateAndLift(int macro_to_micro_dt_ratio)
 		{
 			_densities.front().at(2*i+1) = _densities.front().at(i);
 			_velocities.front().at(2*i+1) = _velocities.front().at(i);
-			_temperatures.front().at(2*i+1) = _temperatures.front().at(i);
+			_thermal_vel.front().at(2*i+1) = _thermal_vel.front().at(i);
 		}
 		_densities.front().front() = 0.5*(_densities.front().at(1) + _densities.front().at(2*size-1));
 		_velocities.front().front() = 0.5*(_velocities.front().at(1) + _velocities.front().at(2*size-1));
-		_temperatures.front().front() = 0.5*(_temperatures.front().at(1) + _temperatures.front().at(2*size-1));
+		_thermal_vel.front().front() = 0.5*(_thermal_vel.front().at(1) + _thermal_vel.front().at(2*size-1));
 		for (int i=1; i<size; i++)
 		{
 			_densities.front().at(2*i) = 0.5*(_densities.front().at(2*i-1) + _densities.front().at(2*i+1));
 			_velocities.front().at(2*i) = 0.5*(_velocities.front().at(2*i-1) + _velocities.front().at(2*i+1));
-			_temperatures.front().at(2*i) = 0.5*(_temperatures.front().at(2*i-1) + _temperatures.front().at(2*i+1));
+			_thermal_vel.front().at(2*i) = 0.5*(_thermal_vel.front().at(2*i-1) + _thermal_vel.front().at(2*i+1));
 		}
 		size *= 2;
 	}
 	assert(size == _grid_size);
 
-	/* Finally, compute the electron density, velocity and temperature on the fine grid */
+	/* Finally, compute the electron density, velocity and thermal velocity on the fine grid */
 	static std::vector<double> log_ion_density = std::vector<double>(_grid_size);
 
 	for (int i=0; i<_grid_size; i++)
@@ -367,9 +450,36 @@ void MacroParameterizationShay::ExtrapolateAndLift(int macro_to_micro_dt_ratio)
 									);
 		_velocities.at(1).at(i) = _velocities.front().at(i);
 	}
-	std::fill(_temperatures.at(1).begin(), _temperatures.at(1).end(), _electron_temperature);
+	std::fill(_thermal_vel.at(1).begin(), _thermal_vel.at(1).end(), _electron_thermal_vel);
+
 }
 
+void MacroParameterizationShay::Step(State & state)
+{	
+	int number_of_microsteps = _plasma->get_number_of_microsteps();
+	/* Leapfrog integration : using two-stage integration */
+		/* Stage 1 */
+			// Step 1: Run the fine solver
+	for (int i=0; i<number_of_microsteps; i++)
+	{
+		state.Step();
+		this->RestrictAndPushback(state);
+	}
+			// Step 2: Extrapolate using EPFI
+	this->ExtrapolateFirstHalfStep();
+	this->Lift();
+	this->Load(state);
+
+		/* And reapeat for the stage 2 */
+	for (int i=0; i<number_of_microsteps; i++)
+	{
+		state.Step();
+		this->RestrictAndPushback(state);
+	}
+	this->ExtrapolateSecondHalfStep();
+	this->Lift();
+	this->Load(state);
+}
 
 void MacroParameterizationShay::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
 {
@@ -380,16 +490,16 @@ void MacroParameterizationShay::SetupDiagnostics(std::vector<std::unique_ptr<Dia
 	double length = _plasma->get_length();
 
 	diagnostics.emplace_back(new CurveDiagnostic(
-				"linlin", "X", "Lifted ion density", 350, 700));
+				"linlin", "X", "Ion density", 350, 700));
 	diagnostics.back()->AddData(x_array, _densities.front().data(), grid_size, 2);
 
 	diagnostics.emplace_back(new CurveDiagnostic(
-				"linlin", "X", "Lifted ion velocity", 350, 700));
+				"linlin", "X", "Ion velocity", 350, 700));
 	diagnostics.back()->AddData(x_array, _velocities.front().data(), grid_size, 2);
 
 	diagnostics.emplace_back(new CurveDiagnostic(
-				"linlin", "X", "Lifted ion temperature", 350, 700));
-	diagnostics.back()->AddData(x_array, _temperatures.front().data(), grid_size, 4);
+				"linlin", "X", "Ion thermal velocity", 350, 700));
+	diagnostics.back()->AddData(x_array, _thermal_vel.front().data(), grid_size, 4);
 }
 
 

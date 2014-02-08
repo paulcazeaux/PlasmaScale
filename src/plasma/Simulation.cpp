@@ -20,7 +20,6 @@ void Simulation::Setup(int argc, char ** argv)
 
 	_state  = std::unique_ptr<MacroState> (new MacroState(InputDeck));
 	std::fclose(InputDeck);
-
 	_history = std::unique_ptr<History> (new History(_state->get_plasma()));
 
 	_state->SetupDiagnostics(_diagnostics);

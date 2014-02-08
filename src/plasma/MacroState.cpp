@@ -14,12 +14,11 @@ MacroState::MacroState(FILE *& InputDeck)
 		throw std::runtime_error("There are " + std::to_string(_plasma->get_number_of_populations()) + " and not 2 populations as required to use the Shay parameterization.\n");
 	}
 
-	double Te = initialization.get_initial_temperature(1); // Recover the electron temperature
-	_number_of_microsteps = _plasma->get_number_of_microsteps();
-	_macro_to_micro_dt_ratio = _plasma->get_macro_to_micro_dt_ratio();
+	double vte = initialization.get_initial_thermal_vel(1); // Recover the electron thermal velocity
+	_macro_dt = _plasma->get_dt() * _plasma->get_macro_to_micro_dt_ratio();
 
-	_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationShay(initialization, Te, _number_of_microsteps));
-	_parameterization->RestrictAndPushback(_micro_state.get());
+	_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationShay(initialization, vte));
+	_parameterization->Initialize(*_micro_state);
 }
 
 std::ostream& operator<<( std::ostream& os, const MacroState& state)
@@ -31,20 +30,13 @@ std::ostream& operator<<( std::ostream& os, const MacroState& state)
 
 void MacroState::Step()
 {
-	// We suppose initially that the microstate has already been loaded at the end of the previous step.
+	// We suppose initially that the microstate has already been correctly loaded at the end of the previous step.
+	_parameterization->Step(*_micro_state);
+	/* By construction the Step() function should leave the PIC code correctly initialized for the next step */
 
-	// Step 1: Run the fine solver
-	for (int i=0; i<_number_of_microsteps; i++)
-	{
-		_micro_state->Step();
-		_parameterization->RestrictAndPushback(_micro_state.get());
-	}
-	// Step 2: Extrapolate using EPFI
-	_parameterization->ExtrapolateAndLift(_macro_to_micro_dt_ratio);
-	_micro_state->Load(*_parameterization);
 	_micro_state->ComputeVelocityProfile();
 
 	(*_macro_iteration)++;
-	*_simulation_time = *_macro_iteration * _macro_to_micro_dt_ratio * _plasma->get_dt();
+	*_simulation_time = *_macro_iteration * _macro_dt;
 
 }

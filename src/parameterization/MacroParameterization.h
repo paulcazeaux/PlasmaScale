@@ -65,13 +65,15 @@ class MacroParameterization
 
 		/* virtual methods ====================================================================== */
 
-		virtual void Load(State * state) const 
+		virtual void Load(State & state) const 
 		{
 			std::cout << "A Load function should be implemented for your choice of parameterization !" << std::endl;
 		}
 
-		virtual void RestrictAndPushback(State * state_) {}
-		virtual void ExtrapolateAndLift(int) {}
+		virtual void Initialize(const State &) {}
+
+		/* If implemented, the Step() function should leave the PIC micro state in a correctly initialized state */
+		virtual void Step(State &) {}
 
 		virtual bool HaveVelocityDiagnostics()					const 	{return false;	}
 		virtual double 	GetBinStart(int)						const 	{return 0.;		}

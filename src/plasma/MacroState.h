@@ -41,8 +41,7 @@ class MacroState
 		std::shared_ptr<double>						_simulation_time;
 		std::shared_ptr<int>						_macro_iteration;
 
-		int 										_number_of_microsteps;
-		int 										_macro_to_micro_dt_ratio;
+		int 										_macro_dt;
 
 		/* singleton ============================================================================ */
 		MacroState(const MacroState&);

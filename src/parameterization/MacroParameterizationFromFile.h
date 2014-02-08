@@ -30,8 +30,8 @@ class MacroParameterizationFromFile : public MacroParameterization
 		std::vector<int>			_group_sizes;
 		std::vector<double>			_mean_velocities;
 		std::vector<double>			_quiet_start_exponents;
-		std::vector<double>			_quiet_mean_temperatures;
-		std::vector<double>			_random_mean_temperatures;
+		std::vector<double>			_quiet_mean_thermal_vel;
+		std::vector<double>			_random_mean_thermal_vel;
 
 			// Perturbation
 		std::vector<int>			_modes;
@@ -49,9 +49,9 @@ class MacroParameterizationFromFile : public MacroParameterization
 
 		MacroParameterizationFromFile(FILE *& InputDeck);
 		
-		virtual void 	Load(State * state) const;
+		virtual void 	Load(State & state) const;
 
-		double 			get_initial_temperature(int population_index)	const;
+		double 			get_initial_thermal_vel(int population_index)	const;
 
 		virtual bool 	HaveVelocityDiagnostics()		const	{return true;	}
 		virtual double 	GetBinStart(int index)			const;

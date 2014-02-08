@@ -203,6 +203,7 @@ void PopulationOfParticles::Prepare(const PlasmaFields &fields)
 {
 	static double dt = _plasma->get_dt();
  
+ 	/* Rescaling */
 	if (!_magnetized)
 	{
 		for (auto & it : _velocity_x) 
@@ -222,6 +223,8 @@ void PopulationOfParticles::Prepare(const PlasmaFields &fields)
 			*it_vel_y =  dt * ( cos_cyclotron * vy - sin_cyclotron * vx);
 		}
 	}
+
+	/* Prepare the particles velocities by taking one-half step back with the acceleration induced by the fields */
 	this->Accelerate(fields, -0.5);
 	this->ComputeVelocityProfile();
 }
@@ -229,11 +232,6 @@ void PopulationOfParticles::Prepare(const PlasmaFields &fields)
 
 void PopulationOfParticles::SetupVelocityDiagnostics(int nbins, int velocity_accumulation_interval, double vupper, double vlower, double v0, double vt1, double vt2)
 {
-
-	// if(nbins>NVBINMAX)
-	// {
-	// 	nbins=NVBINMAX;
-	// }
 	if (nbins==0 || velocity_accumulation_interval==0)
 	{
 		_profiling_active = false;
@@ -353,6 +351,7 @@ void PopulationOfParticles::ComputeVelocityProfile()
 		}
 
 			/* Reset the partial accumulated distribution to the current velocity distribution */
+		std::fill(_partial_velocity_profile->begin(), _partial_velocity_profile->end(), 0.);
 		auto it_weights = _weights.begin();
 		for (auto & v : _velocity_x)
 		{

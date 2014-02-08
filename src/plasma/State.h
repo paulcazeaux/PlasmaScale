@@ -58,16 +58,16 @@ class State
 		std::shared_ptr<double> get_simulation_time()	const { return _simulation_time;	}
 
 		/* getters for the diagnostics ========================================================== */
-		std::vector<std::vector<double> * >	get_vector_of_position_arrays();
-		std::vector<std::vector<double> * >	get_vector_of_x_velocity_arrays();
-		std::vector<std::vector<double> * >	get_vector_of_y_velocity_arrays();
-		std::vector<std::vector<double> * > get_vector_of_weight_arrays();
-		std::vector<bool> 					get_vector_of_magnetizations();
-		std::vector<int *>					get_vector_of_sizes();
+		std::vector<std::vector<double> * >	get_vector_of_position_arrays() const;
+		std::vector<std::vector<double> * >	get_vector_of_x_velocity_arrays() const;
+		std::vector<std::vector<double> * >	get_vector_of_y_velocity_arrays() const;
+		std::vector<std::vector<double> * > get_vector_of_weight_arrays() const;
+		std::vector<bool> 					get_vector_of_magnetizations() const;
+		std::vector<int *>					get_vector_of_sizes() const;
 
-		std::vector<std::vector<double> * > get_vector_of_bin_arrays();
-		std::vector<std::vector<double> * > get_vector_of_velocity_profiles();
-		std::vector<int *>					get_vector_of_number_of_bins();
+		std::vector<std::vector<double> * > get_vector_of_bin_arrays() const;
+		std::vector<std::vector<double> * > get_vector_of_velocity_profiles() const;
+		std::vector<int *>					get_vector_of_number_of_bins() const;
 
 		/* operator ============================================================================= */
 		friend std::ostream& operator<<( std::ostream& os, const State& state);
