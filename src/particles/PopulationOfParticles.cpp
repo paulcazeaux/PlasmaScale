@@ -192,7 +192,7 @@ void PopulationOfParticles::Accelerate(const PlasmaFields& fields, double factor
 void PopulationOfParticles::Weigh(PlasmaFields& fields)
 {
 	auto it_weights = _weights.begin();
-	for (auto & position : _position) 
+	for (auto & position : _position)
 	{
 		fields.WeighParticle( position, _unit_charge * (*it_weights++));
 	}

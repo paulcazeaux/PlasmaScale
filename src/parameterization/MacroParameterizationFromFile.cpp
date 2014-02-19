@@ -102,7 +102,7 @@ void MacroParameterizationFromFile::Load(State & state) const
 	std::vector<std::vector<double> * > positions 		= state.get_vector_of_position_arrays();
 	std::vector<std::vector<double> * > x_velocities 	= state.get_vector_of_x_velocity_arrays();
 	std::vector<std::vector<double> * > y_velocities 	= state.get_vector_of_y_velocity_arrays();
-	std::vector<std::vector<double> * > weights 		= state.get_vector_of_y_velocity_arrays();
+	std::vector<std::vector<double> * > weights 		= state.get_vector_of_weight_arrays();
 
 	assert(positions.size() ==_number_of_populations);
 	assert(x_velocities.size() ==_number_of_populations);

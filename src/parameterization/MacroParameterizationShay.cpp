@@ -148,7 +148,7 @@ void MacroParameterizationShay::Load(State & state) const
 	std::vector<std::vector<double> * > positions 		= state.get_vector_of_position_arrays();
 	std::vector<std::vector<double> * > x_velocities 	= state.get_vector_of_x_velocity_arrays();
 	std::vector<std::vector<double> * > y_velocities 	= state.get_vector_of_y_velocity_arrays();
-	std::vector<std::vector<double> * > weights 		= state.get_vector_of_y_velocity_arrays();
+	std::vector<std::vector<double> * > weights 		= state.get_vector_of_weight_arrays();
 
 	assert(positions.size() == 2);
 	assert(x_velocities.size() == 2);
@@ -229,7 +229,7 @@ void MacroParameterizationShay::RestrictAndPushback(const State & state)
 {
 	std::vector<double> * ion_position 		= state.get_vector_of_position_arrays().front();
 	std::vector<double> * ion_velocity 		= state.get_vector_of_x_velocity_arrays().front();
-	std::vector<double> * ion_weight 		= state.get_vector_of_y_velocity_arrays().front();
+	std::vector<double> * ion_weight 		= state.get_vector_of_weight_arrays().front();
 	int ion_population_size = ion_position->size();
 	double ion_population_density = static_cast<double>(_grid_size)/static_cast<double>(ion_population_size);
 

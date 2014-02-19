@@ -43,7 +43,7 @@ void MacroParameterizationFullPIC::ComputeVariables(const State & state)
 {
 	std::vector<double> * ion_position 		= state.get_vector_of_position_arrays().front();
 	std::vector<double> * ion_velocity 		= state.get_vector_of_x_velocity_arrays().front();
-	std::vector<double> * ion_weight 		= state.get_vector_of_y_velocity_arrays().front();
+	std::vector<double> * ion_weight 		= state.get_vector_of_weight_arrays().front();
 	int ion_population_size = ion_position->size();
 	double ion_population_density = static_cast<double>(_grid_size)/static_cast<double>(ion_population_size);
 
