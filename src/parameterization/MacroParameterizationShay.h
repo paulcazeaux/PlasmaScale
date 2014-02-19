@@ -26,6 +26,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include <ctime>
+
 /* Declarations */
 
 class MacroParameterizationShay : public MacroParameterization

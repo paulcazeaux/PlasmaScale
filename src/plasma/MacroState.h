@@ -24,6 +24,7 @@
 #include "parameterization/MacroParameterization.h"
 #include "parameterization/MacroParameterizationFromFile.h"
 #include "parameterization/MacroParameterizationShay.h"
+ #include "parameterization/MacroParameterizationFullPIC.h"
 
 class MacroState
 {
@@ -41,7 +42,7 @@ class MacroState
 		std::shared_ptr<double>						_simulation_time;
 		std::shared_ptr<int>						_macro_iteration;
 
-		int 										_macro_dt;
+		double 										_macro_dt;
 
 		/* singleton ============================================================================ */
 		MacroState(const MacroState&);

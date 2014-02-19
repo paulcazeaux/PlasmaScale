@@ -90,23 +90,23 @@ void History::Comb()
 
 void 	History::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
 {
-	diagnostics.emplace_back(new CurveDiagnostic("linlin", "Time", "Kinetic Energy(t)", 800, 200));
+	diagnostics.emplace_back(new CurveDiagnostic("linlin", "Time", "Kinetic Energy(t)", 0, 670));
 	for (int i=0; i < _number_of_populations; i++)
 		diagnostics.back()->AddData(_time_array.data(), _kinetic_energy_by_population.at(i).data(), &_size, i);
 	diagnostics.back()->AddData(_time_array.data(), _kinetic_energy.data(), &_size, 4);
 
-	diagnostics.emplace_back(new CurveDiagnostic("linlog", "Time", "Field Energy(t)", 700, 400));
+	diagnostics.emplace_back(new CurveDiagnostic("linlog", "Time", "Field Energy(t)", 410, 670));
 	diagnostics.back()->AddData(_time_array.data(), _electrostatic_energy.data(), &_size, 4);
 
 	char buffer[25];
 	for (int m=0; m<_max_mode; m++)
 	{
 		sprintf(buffer, "Mode %d ESE", m+1);
-		diagnostics.emplace_back(new CurveDiagnostic("linlog", "Time", buffer, 700, 400));
+		diagnostics.emplace_back(new CurveDiagnostic("linlog", "Time", buffer, 410, 670));
 		diagnostics.back()->AddData(_time_array.data(), _electrostatic_energy_by_mode.at(m).data(), &_size, 4);
 	}
 
-	diagnostics.emplace_back(new CurveDiagnostic("linlin", "Time", "Total Energy(t)", 700, 600));
+	diagnostics.emplace_back(new CurveDiagnostic("linlin", "Time", "Total Energy(t)", 820, 670));
 	diagnostics.back()->AddData(_time_array.data(), _total_energy.data(), &_size, 4);
 }
 

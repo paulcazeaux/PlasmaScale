@@ -3,7 +3,7 @@
 ##
 FILE_EXT = 
 ##
-EXEC= plasmascale
+EXEC = plasmascale
 ##
 CC = g++
 ##

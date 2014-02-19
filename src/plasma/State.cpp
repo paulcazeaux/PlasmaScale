@@ -25,12 +25,7 @@ State::State(	const MacroParameterization & parameterization) :
 		_populations.push_back(std::unique_ptr<PopulationOfParticles> 
 				(new PopulationOfParticles(parameterization, index, _iteration)));		
 	}
-	/* Then we let the parameterization fill the particle arrays */
-	parameterization.Load(*this);
-
-	this->Prepare();
-	this->Weigh();
-	_fields->ComputeAndFilter();
+	this->Load(parameterization);
 }
 
 /* operator << */
@@ -105,7 +100,7 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 	/*  set up  windows for velocity distributions.  */
 	diagnostics.emplace_back(new ScatterDiagnostic(
 				"linlin", "X", "Vx-X Phase Space",
-				 300, 10, 
+				 410, 0, 
 				 1.0, 1.0/dt,
 				 false, false, 0.0, length, -3.0, 3.0));
 	for (int i = 0; i < _number_of_populations; i++)
@@ -121,7 +116,7 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 		if (magnetizations[i])
 		{
 			std::sprintf(buffer, "Vy vs Vx species %d", i+1);
-			diagnostics.emplace_back(new ScatterDiagnostic("linlin", "Velocity", buffer, 700, 400));
+			diagnostics.emplace_back(new ScatterDiagnostic("linlin", "Velocity", buffer, 410, 335));
 			diagnostics.back()->AddData(x_velocities[i], y_velocities[i], sizes[i], i);
 		}
 	}
@@ -136,13 +131,13 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 		for (int i = 0; i<_number_of_populations; i++)
 		{
 			std::sprintf(buffer, "Species %d f(Vx)", i+1);
-			diagnostics.emplace_back(new CurveDiagnostic("linlin", "Velocity", buffer, 700, 400));
+			diagnostics.emplace_back(new CurveDiagnostic("linlin", "Velocity", buffer, 820, 0));
 			diagnostics.back()->AddData(mid_bin_arrays[i], velocity_profiles[i], number_of_bins[i], i);
 		}
 
 		/********************************************/
 		/*  this graph puts up a curve of ALL the velocity distributions. */
-		diagnostics.emplace_back(new CurveDiagnostic("linlin","Velocity","f(v) ALL species", 700, 400));		
+		diagnostics.emplace_back(new CurveDiagnostic("linlin","Velocity","f(v) ALL species", 820, 0));		
 		for (int i = 0; i<_number_of_populations; i++)
 		{
 			diagnostics.back()->AddData(mid_bin_arrays[i], velocity_profiles[i], number_of_bins[i], i);
@@ -157,13 +152,13 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 	double * e 			= _fields->get_electrical_field_ptr();
 	double * phi 		= _fields->get_potential_ptr();
 
-	diagnostics.emplace_back(new CurveDiagnostic("linlin", "X", "rho(x)", 400, 100, 1.0, 1.0, false, true, 0.0, length, 0.0, 0.0));
+	diagnostics.emplace_back(new CurveDiagnostic("linlin", "X", "rho(x)", 0, 670, 1.0, 1.0, false, true, 0.0, length, 0.0, 0.0));
 	diagnostics.back()->AddData(x_array, rho, grid_size, 2);
 
-	diagnostics.emplace_back(new CurveDiagnostic("linlin", "X", "E field(x)", 10, 500, 1.0, 1.0, false, true, 0.0, length, 0.0, 0.0));
+	diagnostics.emplace_back(new CurveDiagnostic("linlin", "X", "E field(x)", 410, 670, 1.0, 1.0, false, true, 0.0, length, 0.0, 0.0));
 	diagnostics.back()->AddData(x_array, e, grid_size, 3);
 
-	diagnostics.emplace_back(new CurveDiagnostic("linlin", "X", "Potential(x)", 400, 300, 1.0, 1.0, false, true, 0.0, length, 0.0, 0.0));
+	diagnostics.emplace_back(new CurveDiagnostic("linlin", "X", "Potential(x)", 820, 670, 1.0, 1.0, false, true, 0.0, length, 0.0, 0.0));
 	diagnostics.back()->AddData(x_array, phi, grid_size, 4);
 
 	/* SKIP THE GRAPH OF Potential phi(k) : IT IS FALSE IN THE ORIGINAL XES1 */

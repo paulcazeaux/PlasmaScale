@@ -30,6 +30,7 @@ MacroParameterizationShay& MacroParameterizationShay::operator=(MacroParameteriz
 	
 	MacroParameterization::operator=(std::move(parameterization));
 	_grid_size = parameterization._plasma->get_grid_size();
+   	_macro_grid_size = parameterization._plasma->get_macro_grid_size();
 
 	_densities = std::move(parameterization._densities);
 	_thermal_vel = std::move(parameterization._thermal_vel);
@@ -121,10 +122,24 @@ MacroParameterizationShay::MacroParameterizationShay(MacroParameterization & par
 			/ (_plasma->get_epsilon() * static_cast<double>(_population_sizes.front()) * std::pow(_unit_charges.front(), 2.));
 }
 
+void MacroParameterizationShay::Initialize(const State & state)
+{
+	this->RestrictAndPushback(state);
+	this->Lift();
+	for (int bin=0; bin<_macro_grid_size; bin++)
+	{	
+		_current_step_ion_density.at(bin) = _stack_ion_density.at(bin).front();
+		_current_step_ion_velocity.at(bin) = _stack_ion_velocity.at(bin).front();
+		_current_step_ion_pressure.at(bin) = _stack_ion_pressure.at(bin).front();
+	}
+
+	_prev_step_ion_density 	= _current_step_ion_density;
+	_prev_step_ion_velocity = _current_step_ion_velocity;
+	_prev_step_ion_pressure = _current_step_ion_pressure;
+}
 void MacroParameterizationShay::Load(State & state) const
 /* Fill the particle arrays to initialize the microscopic state */
 {	
-
 	state.Reset();
 	double dx = _plasma->get_dx();
 
@@ -329,23 +344,6 @@ void MacroParameterizationShay::RestrictAndPushback(const State & state)
 
 }
 
-void MacroParameterizationShay::Initialize(const State & state)
-{
-	int macro_to_micro_dt_ratio = _plasma->get_macro_to_micro_dt_ratio();
-
-	this->RestrictAndPushback(state);
-	for (int bin=0; bin<_macro_grid_size; bin++)
-	{	
-		_current_step_ion_density.at(bin) = _stack_ion_density.at(bin).front();
-		_current_step_ion_velocity.at(bin) = _stack_ion_velocity.at(bin).front();
-		_current_step_ion_pressure.at(bin) = _stack_ion_pressure.at(bin).front();
-	}
-
-	_prev_step_ion_density 	= _current_step_ion_density;
-	_prev_step_ion_velocity = _current_step_ion_velocity;
-	_prev_step_ion_pressure = _current_step_ion_pressure;
-}
-
 void MacroParameterizationShay::ExtrapolateFirstHalfStep()
 {
 	/* First, compute the derivative by least-squares and step forward */
@@ -420,9 +418,11 @@ void MacroParameterizationShay::Lift()
 			_velocities.front().at(2*i+1) = _velocities.front().at(i);
 			_thermal_vel.front().at(2*i+1) = _thermal_vel.front().at(i);
 		}
-		_densities.front().front() = 0.5*(_densities.front().at(1) + _densities.front().at(2*size-1));
-		_velocities.front().front() = 0.5*(_velocities.front().at(1) + _velocities.front().at(2*size-1));
-		_thermal_vel.front().front() = 0.5*(_thermal_vel.front().at(1) + _thermal_vel.front().at(2*size-1));
+		{
+			_densities.front().front() = 0.5*(_densities.front().at(1) + _densities.front().at(2*size-1));
+			_velocities.front().front() = 0.5*(_velocities.front().at(1) + _velocities.front().at(2*size-1));
+			_thermal_vel.front().front() = 0.5*(_thermal_vel.front().at(1) + _thermal_vel.front().at(2*size-1));
+		}
 		for (int i=1; i<size; i++)
 		{
 			_densities.front().at(2*i) = 0.5*(_densities.front().at(2*i-1) + _densities.front().at(2*i+1));
@@ -468,7 +468,7 @@ void MacroParameterizationShay::Step(State & state)
 			// Step 2: Extrapolate using EPFI
 	this->ExtrapolateFirstHalfStep();
 	this->Lift();
-	this->Load(state);
+	state.Load(*this);
 
 		/* And reapeat for the stage 2 */
 	for (int i=0; i<number_of_microsteps; i++)
@@ -478,7 +478,7 @@ void MacroParameterizationShay::Step(State & state)
 	}
 	this->ExtrapolateSecondHalfStep();
 	this->Lift();
-	this->Load(state);
+	state.Load(*this);
 }
 
 void MacroParameterizationShay::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
@@ -490,15 +490,15 @@ void MacroParameterizationShay::SetupDiagnostics(std::vector<std::unique_ptr<Dia
 	double length = _plasma->get_length();
 
 	diagnostics.emplace_back(new CurveDiagnostic(
-				"linlin", "X", "Ion density", 350, 700));
+				"linlin", "X", "Ion density", 0, 340));
 	diagnostics.back()->AddData(x_array, _densities.front().data(), grid_size, 2);
 
 	diagnostics.emplace_back(new CurveDiagnostic(
-				"linlin", "X", "Ion velocity", 350, 700));
+				"linlin", "X", "Ion velocity", 410, 340));
 	diagnostics.back()->AddData(x_array, _velocities.front().data(), grid_size, 2);
 
 	diagnostics.emplace_back(new CurveDiagnostic(
-				"linlin", "X", "Ion thermal velocity", 350, 700));
+				"linlin", "X", "Ion thermal velocity", 820, 340));
 	diagnostics.back()->AddData(x_array, _thermal_vel.front().data(), grid_size, 4);
 }
 
