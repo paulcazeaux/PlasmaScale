@@ -54,8 +54,7 @@ class State
 		~State() {}
 
 		/* getter */
-
-		std::shared_ptr<double> get_simulation_time()	const { return _simulation_time;	}
+		std::shared_ptr<double> get_simulation_time()	const 	{ return _simulation_time;	}
 
 		/* getters for the diagnostics ========================================================== */
 		std::vector<std::vector<double> * >	get_vector_of_position_arrays() const;
@@ -86,11 +85,12 @@ class State
 		void Prepare()
 		{
 			_fields->ComputeAndFilter();
+			*_iteration = -1;	// Forcing the recomputation of the acceleration field
 			for (auto & population : _populations)
 			{
 				population->Prepare(*_fields);
 			}
-
+			*_iteration = 0;
 		}
 
 		void Weigh()

@@ -13,6 +13,7 @@
 /* includes ===================================================================================== */
 #include <iostream>
 #include <vector>
+#include <cassert>
 
 class Tools
 {
@@ -21,6 +22,7 @@ class Tools
 		/* constructor and destructor =========================================================== */
 		static void DisplayTitle();
 
+		static double EvaluateP1Function(const std::vector<double> & values, const int number, const double cellpos);
 		static double EvaluateSlope(const std::vector<double> & values );
 };
 

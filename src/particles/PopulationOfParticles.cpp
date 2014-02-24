@@ -96,7 +96,8 @@ void PopulationOfParticles::Accelerate(const PlasmaFields& fields, double factor
 	static double dt = _plasma->get_dt();
  	static int 	grid_size = _plasma->get_grid_size();
 	static std::vector<double> acceleration(grid_size);
-	static double previous_e_to_acc_factor = 1., previous_iteration = -1.;
+	static double previous_e_to_acc_factor = 1.;
+	static int previous_iteration = 0;
 	std::vector<double>::iterator it_acc, it_vel_x, it_vel_y, it_weights;
 
 	double e_to_acc_factor = _unit_charge/_unit_mass *dt*dt* factor;
@@ -115,6 +116,7 @@ void PopulationOfParticles::Accelerate(const PlasmaFields& fields, double factor
 		 		acc = e_to_acc_factor * e_field_array[i++];  // do full steps
 		 	}
 		 	previous_e_to_acc_factor = e_to_acc_factor;
+ 			previous_iteration = *_iteration;
 		}
 
  		it_vel_x 	= _velocity_x.begin();
@@ -155,6 +157,7 @@ void PopulationOfParticles::Accelerate(const PlasmaFields& fields, double factor
 		 		acc = 0.5 * e_to_acc_factor * e_field_array[i++];  // do half steps
 		 	}
 		 	previous_e_to_acc_factor = e_to_acc_factor;
+ 			previous_iteration = *_iteration;
 		}
  		double s = 2.0*_cyclotronic_rotation_parameter/(1.0 + std::pow(_cyclotronic_rotation_parameter, 2.0));
 

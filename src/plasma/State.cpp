@@ -68,7 +68,6 @@ void State::Load(const MacroParameterization & parameterization)
 	{
 		population->ComputeAggregateParameters();
 	}
-
 	this->Prepare();
 	this->Weigh();
 	_fields->ComputeAndFilter();

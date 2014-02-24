@@ -111,7 +111,6 @@ class PopulationOfParticles
 		void 	SetupVelocityDiagnostics(int nbins, int velocity_accumulation_interval, double vupper, double vlower, double v0, double vt1, double vt2);
 		void 	SetupVelocityDiagnostics(const MacroParameterization & parameterization, const int index);
 		void	ComputeVelocityProfile();
-		
 };
 
 #endif

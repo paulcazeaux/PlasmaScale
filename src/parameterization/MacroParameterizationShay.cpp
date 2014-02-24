@@ -124,8 +124,15 @@ MacroParameterizationShay::MacroParameterizationShay(MacroParameterization & par
 
 void MacroParameterizationShay::Initialize(const State & state)
 {
+	for (int bin=0; bin<_macro_grid_size; bin++)
+	{	
+		_stack_ion_density.at(bin).resize(0);
+		_stack_ion_velocity.at(bin).resize(0);
+		_stack_ion_pressure.at(bin).resize(0);
+	}
 	this->RestrictAndPushback(state);
 	this->Lift();
+
 	for (int bin=0; bin<_macro_grid_size; bin++)
 	{	
 		_current_step_ion_density.at(bin) = _stack_ion_density.at(bin).front();
@@ -176,9 +183,8 @@ void MacroParameterizationShay::Load(State & state) const
 			auto it_icdf = _quiet_start_icdf.begin();
 			double dn = 1./static_cast<double>(bin_size);
 			double dv = *(it_vel+1) - *it_vel;
-
-			double vt = _thermal_vel.at(population_index).at(bin);	// P1 interpolation ? TODO
-
+			
+			double xs = 0.;
 			for (int i=0; i<bin_size; i++)
 			{
 				double fv = (static_cast<double>(i) + 0.5)*dn;
@@ -187,9 +193,24 @@ void MacroParameterizationShay::Load(State & state) const
 					it_vel++;
 					it_icdf++;
 				}
-				double cellpos = RandomTools::Generate_randomly_uniform(0.,1.);
+								/* bit-reversed scrambling to reduce the correlation with the positions */
+				double xsi = 0.5;
+				xs -= 0.5;
+				while (xs >= 0.0)
+				{
+					xsi *= 0.5;
+					xs -= xsi;
+				} 
+				xs += 2.0*xsi;
+				double cellpos = xs + 0.5/static_cast<double>(bin_size);
+
 				position->at(i+bin_start_index) = (static_cast<double>(bin)+cellpos) * dx;
-				velocity_x->at(i+bin_start_index) = vt * (*it_vel + dv*(fv - *it_icdf)/(*(it_icdf+1) - *it_icdf));
+				velocity_x->at(i+bin_start_index) = Tools::EvaluateP1Function(_thermal_vel.at(population_index), bin, cellpos) * (*it_vel + dv*(fv - *it_icdf)/(*(it_icdf+1) - *it_icdf));
+
+						/* Add the perturbation */
+				weight->at(i+bin_start_index) 		 = Tools::EvaluateP1Function(_densities.at(population_index), bin, cellpos);
+				velocity_x->at(i+bin_start_index) 	+= Tools::EvaluateP1Function(_velocities.at(population_index), bin, cellpos);
+
 			}
 			bin_start_index = bin_end_index;
 		}
@@ -203,24 +224,6 @@ void MacroParameterizationShay::Load(State & state) const
 				velocity_x->at(i) = v*std::cos(theta);
 				velocity_y->at(i) = v*std::sin(theta);
 			}
-		}
-
-		/* Add the perturbation */
-
-		bin_start_index = 0;
-		for (int bin = 0; bin < _grid_size; bin++)
-		{
-			int bin_end_index = std::ceil(static_cast<double>(bin+1)*mean_bin_size-0.5);
-			
-			double d = _densities.at(population_index).at(bin);
-			double v = _velocities.at(population_index).at(bin);		// P1 interpolation ? TODO
-
-			for (int i=0; i<bin_end_index-bin_start_index; i++)
-			{
-				weight->at(i+bin_start_index) 		 = d;
-				velocity_x->at(i+bin_start_index) 	+= v;
-			}
-			bin_start_index = bin_end_index;
 		}
 	}
 }
@@ -294,15 +297,13 @@ void MacroParameterizationShay::RestrictAndPushback(const State & state)
 
 		if (bin < _grid_size-1)
 		{
-			double velsquare = std::pow( velocity - (1.-cellpos.at(i)) * working_ion_velocity.at(bin) 
-											  			-cellpos.at(i) * working_ion_velocity.at(bin+1), 2.0);
+			double velsquare = std::pow( velocity - Tools::EvaluateP1Function(working_ion_velocity, bin, cellpos.at(i)), 2.0);
 			working_ion_pressure.at(bin) += left_weight.at(i) * velsquare;
 			working_ion_pressure.at(bin+1) += right_weight.at(i) * velsquare;
 		}
 		else
 		{
-			double velsquare = std::pow( velocity - (1.-cellpos.at(i)) * working_ion_velocity.at(bin) 
-											  		   -cellpos.at(i)  * working_ion_velocity.at(0), 2.0);
+			double velsquare = std::pow( velocity - Tools::EvaluateP1Function(working_ion_velocity, bin, cellpos.at(i)), 2.0);
 			working_ion_pressure.at(bin) += left_weight.at(i) * velsquare;
 			working_ion_pressure.at(0) += right_weight.at(i) * velsquare;
 		}			
@@ -347,7 +348,8 @@ void MacroParameterizationShay::RestrictAndPushback(const State & state)
 void MacroParameterizationShay::ExtrapolateFirstHalfStep()
 {
 	/* First, compute the derivative by least-squares and step forward */
-	int macro_to_micro_dt_ratio = _plasma->get_macro_to_micro_dt_ratio();
+	double macro_to_micro_dt_ratio = static_cast<double>(_plasma->get_macro_to_micro_dt_ratio());
+
 	for (int bin=0; bin<_macro_grid_size; bin++)
 	{
 		_stack_ion_density.at(bin).front()  = macro_to_micro_dt_ratio * Tools::EvaluateSlope(_stack_ion_density.at(bin));
@@ -367,7 +369,7 @@ void MacroParameterizationShay::ExtrapolateFirstHalfStep()
 void MacroParameterizationShay::ExtrapolateSecondHalfStep()
 {
 	/* First, compute the derivative by least-squares */
-	int macro_to_micro_dt_ratio = _plasma->get_macro_to_micro_dt_ratio();
+	double macro_to_micro_dt_ratio = static_cast<double>(_plasma->get_macro_to_micro_dt_ratio());
 	for (int bin=0; bin<_macro_grid_size; bin++)
 	{
 		_stack_ion_density.at(bin).front()  = macro_to_micro_dt_ratio * Tools::EvaluateSlope(_stack_ion_density.at(bin));
