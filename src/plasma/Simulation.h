@@ -16,6 +16,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
+#include <iostream>
+#include <fstream>
 
 #include "plasma/Plasma.h"
 #include "plasma/State.h"
@@ -48,6 +50,10 @@ class Simulation
 		void Setup(int argc, char ** argv);
 		void Step();
 		void InitWindows();
+		void Dump(std::fstream & fout)
+		{
+			_state->WriteData(fout);
+		}
 		double * get_simulation_time_ptr()		const { return _state->get_simulation_time().get();	}
 };
 

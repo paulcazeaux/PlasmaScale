@@ -12,10 +12,10 @@
 #ifndef DEF_PLASMASCALE_MACROPARAMETERIZATION
 #define DEF_PLASMASCALE_MACROPARAMETERIZATION
 
-#include <iostream>
 #include <string>
 #include <vector>
 #include <iostream>
+#include <fstream>
 
 #include "plasma/Plasma.h"
 #include "tools/Diagnostic.h"
@@ -81,6 +81,7 @@ class MacroParameterization
 		virtual	int		GetNumberOfBins(int)					const 	{return 0;		}
 
 		virtual void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics) {}
+		virtual void WriteData(std::fstream & fout) {}
 };
 
 #endif

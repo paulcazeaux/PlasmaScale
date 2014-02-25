@@ -40,6 +40,7 @@ class MacroParameterizationFullPIC : public MacroParameterization
 		/* Spatial quantities */
 
 		std::vector<double>			_ion_density;
+		std::vector<double> 		_ion_pressure;
 		std::vector<double> 		_ion_thermal_velocity;
 		std::vector<double> 		_ion_velocity;
 
@@ -63,7 +64,7 @@ class MacroParameterizationFullPIC : public MacroParameterization
 		virtual void Step(State & state);
 
 		virtual void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics);
-		
+		virtual void WriteData(std::fstream & fout);
 };
 
 #endif

@@ -40,3 +40,9 @@ void MacroState::Step()
 	*_simulation_time = *_macro_iteration * _macro_dt;
 
 }
+
+void MacroState::WriteData(std::fstream & fout)
+{
+	fout << std::endl << "t = " << *_simulation_time << std::endl;
+	_parameterization->WriteData(fout);
+}

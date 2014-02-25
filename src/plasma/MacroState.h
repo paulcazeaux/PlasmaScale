@@ -69,6 +69,7 @@ class MacroState
 			_micro_state->SetupDiagnostics(diagnostics);
 			_parameterization->SetupDiagnostics(diagnostics);
 		}
+		void WriteData(std::fstream & fout);
 };
 
 

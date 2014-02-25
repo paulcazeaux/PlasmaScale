@@ -504,6 +504,20 @@ void MacroParameterizationShay::SetupDiagnostics(std::vector<std::unique_ptr<Dia
 	diagnostics.back()->AddData(x_array, _thermal_vel.front().data(), grid_size, 4);
 }
 
+void MacroParameterizationShay::WriteData(std::fstream & fout)
+{
+	fout << "Density:" << std::endl;
+	for (double & density : _current_step_ion_density)
+		fout << density << "\t";
+	fout << std::endl << "Velocity:" << std::endl;
+	for (double & velocity : _current_step_ion_velocity)
+		fout << velocity << "\t";
+	fout << std::endl << "Pressure:" << std::endl;
+	for (double & pressure : _current_step_ion_pressure)
+		fout << pressure << "\t";
+	fout << std::endl;
+}
+
 
 
 

@@ -18,6 +18,7 @@ MacroParameterizationFullPIC& MacroParameterizationFullPIC::operator=(MacroParam
 	_grid_size = parameterization._plasma->get_grid_size();
 
 	_ion_density = std::move(parameterization._ion_density);
+	_ion_pressure = std::move(parameterization._ion_pressure);
 	_ion_thermal_velocity = std::move(parameterization._ion_thermal_velocity);
 	_ion_velocity = std::move(parameterization._ion_velocity);
 
@@ -30,6 +31,7 @@ MacroParameterizationFullPIC::MacroParameterizationFullPIC(MacroParameterization
 	_grid_size = _plasma->get_grid_size();
 
 	_ion_density	 		= std::vector<double>(_grid_size);
+	_ion_pressure	 		= std::vector<double>(_grid_size);
 	_ion_thermal_velocity	= std::vector<double>(_grid_size);
 	_ion_velocity 			= std::vector<double>(_grid_size);
 }
@@ -95,6 +97,7 @@ void MacroParameterizationFullPIC::ComputeVariables(const State & state)
 		_ion_velocity.at(bin) /= _ion_density.at(bin);
 	}
 
+	std::fill(_ion_pressure.begin(), _ion_pressure.end(), 0.);
 	std::fill(_ion_thermal_velocity.begin(), _ion_thermal_velocity.end(), 0.);
 	for (int i=0; i<ion_population_size; i++)
 	{
@@ -105,21 +108,22 @@ void MacroParameterizationFullPIC::ComputeVariables(const State & state)
 		{
 			double velsquare 				= std::pow( velocity - (1.-cellpos.at(i)) * _ion_velocity.at(bin) 
 											  			-cellpos.at(i) * _ion_velocity.at(bin+1), 2.0);
-			_ion_thermal_velocity.at(bin  ) += left_weight.at(i) * velsquare;
-			_ion_thermal_velocity.at(bin+1) += right_weight.at(i) * velsquare;
+			_ion_pressure.at(bin  ) += left_weight.at(i) * velsquare;
+			_ion_pressure.at(bin+1) += right_weight.at(i) * velsquare;
 		}
 		else
 		{
 			double velsquare 				= std::pow( velocity - (1.-cellpos.at(i)) * _ion_velocity.at(bin) 
 											  		   -cellpos.at(i)  * _ion_velocity.at(0), 2.0);
-			_ion_thermal_velocity.at(bin) 	+= left_weight.at(i) * velsquare;
-			_ion_thermal_velocity.at(0  ) 	+= right_weight.at(i) * velsquare;
+			_ion_pressure.at(bin) 	+= left_weight.at(i) * velsquare;
+			_ion_pressure.at(0  ) 	+= right_weight.at(i) * velsquare;
 		}			
 	}
 
 	for (int bin=0; bin<_grid_size; bin++)
 	{
-		_ion_thermal_velocity.at(bin) = std::sqrt(_ion_thermal_velocity.at(bin) / _ion_density.at(bin));
+		_ion_thermal_velocity.at(bin) = std::sqrt(_ion_pressure.at(bin) / _ion_density.at(bin));
+		_ion_pressure.at(bin) *= ion_population_density;
 		_ion_density.at(bin) *= ion_population_density;
 	}
 }
@@ -153,6 +157,21 @@ void MacroParameterizationFullPIC::SetupDiagnostics(std::vector<std::unique_ptr<
 	diagnostics.emplace_back(new CurveDiagnostic(
 				"linlin", "X", "Ion thermal velocity", 820, 340));
 	diagnostics.back()->AddData(x_array, _ion_thermal_velocity.data(), grid_size, 4);
+}
+
+
+void MacroParameterizationFullPIC::WriteData(std::fstream & fout)
+{
+	fout << "Density:" << std::endl;
+	for (double & density : _ion_density)
+		fout << density << "\t";
+	fout << std::endl << "Velocity:" << std::endl;
+	for (double & velocity : _ion_velocity)
+		fout << velocity << "\t";
+	fout << std::endl << "Pressure:" << std::endl;
+	for (double & pressure : _ion_pressure)
+		fout << pressure << "\t";
+	fout << std::endl;
 }
 
 
