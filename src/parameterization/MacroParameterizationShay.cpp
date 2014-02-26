@@ -263,7 +263,7 @@ void MacroParameterizationShay::RestrictAndPushback(const State & state)
 	std::fill(working_ion_velocity.begin(), working_ion_velocity.end(), 0.);
 
 	double dt = _plasma->get_dt();
-	for (int i=0; i<ion_population_size-1; i++)
+	for (int i=0; i<ion_population_size; i++)
 	{
 		int bin = bins.at(i);
 		double velocity = ion_velocity->at(i) / dt;
@@ -320,6 +320,7 @@ void MacroParameterizationShay::RestrictAndPushback(const State & state)
 	while (size > _macro_grid_size)
 	{
 		size /= 2;
+		double dens0 = working_ion_density.at(0), vel0 = working_ion_velocity.at(0), pres0 = working_ion_pressure.at(0);
 		for (int i=0; i<size-1; i++)
 		{
 			working_ion_density.at(i) = 0.25 * working_ion_density.at(2*i) + 0.5 * working_ion_density.at(2*i+1) + 0.25 * working_ion_density.at(2*i+2);
@@ -328,9 +329,9 @@ void MacroParameterizationShay::RestrictAndPushback(const State & state)
 		}
 		{
 			int i=size-1;
-			working_ion_density.at(i) = 0.25 * working_ion_density.at(2*i) + 0.5 * working_ion_density.at(2*i+1) + 0.25 * working_ion_density.at(0);
-			working_ion_velocity.at(i) = 0.25 * working_ion_velocity.at(2*i) + 0.5 * working_ion_velocity.at(2*i+1) + 0.25 * working_ion_velocity.at(0);
-			working_ion_pressure.at(i) = 0.25 * working_ion_pressure.at(2*i) + 0.5 * working_ion_pressure.at(2*i+1) + 0.25 * working_ion_pressure.at(0);
+			working_ion_density.at(i) = 0.25 * working_ion_density.at(2*i) + 0.5 * working_ion_density.at(2*i+1) + 0.25 * dens0;
+			working_ion_velocity.at(i) = 0.25 * working_ion_velocity.at(2*i) + 0.5 * working_ion_velocity.at(2*i+1) + 0.25 * vel0;
+			working_ion_pressure.at(i) = 0.25 * working_ion_pressure.at(2*i) + 0.5 * working_ion_pressure.at(2*i+1) + 0.25 * pres0;
 		}
 	}
 
@@ -402,7 +403,7 @@ void MacroParameterizationShay::ExtrapolateSecondHalfStep()
 
 void MacroParameterizationShay::Lift()
 {
-	/* First, lift the ion density, velocity and thermal velocity to the fine grid */
+	/* First, lift the ion density, velocity and thermal velocity and the electron density to the fine grid */
 	int size = _macro_grid_size;
 	for (int i=0; i<size; i++)
 	{
@@ -410,46 +411,54 @@ void MacroParameterizationShay::Lift()
 		_velocities.front().at(i) = _stack_ion_velocity.at(i).front();
 		_thermal_vel.front().at(i) = std::sqrt(_stack_ion_pressure.at(i).front() / _stack_ion_density.at(i).front());
 	}
+
+	static std::vector<double> log_ion_density = std::vector<double>(size);
+
+	for (int i=0; i<size; i++)
+		log_ion_density.at(i) = std::log(_densities.front().at(i));
+
+	double scaling = _debye_scaling/_plasma->get_macro_dx();
+	for (int i=0; i<size; i++)
+	{
+		_densities.at(1).at(i)  = _densities.front().at(i) 
+						+ scaling * (
+								  0.5 *log_ion_density.at(i)
+								- 0.25*log_ion_density.at((i>0 ? i-1: size-1)) 
+								- 0.25*log_ion_density.at((i+1<size ? i+1: 0)) 
+									);
+	}
+
 	// Another possibility : lift the pressure to the fine grid and then compute the thermal velocity
 
 	while (size < _grid_size)
 	{
 		for (int i=size-1; i>=0; i--)
 		{
-			_densities.front().at(2*i+1) = _densities.front().at(i);
-			_velocities.front().at(2*i+1) = _velocities.front().at(i);
-			_thermal_vel.front().at(2*i+1) = _thermal_vel.front().at(i);
+			_densities.front().at(2*i+1) 	= _densities.front().at(i);
+			_velocities.front().at(2*i+1) 	= _velocities.front().at(i);
+			_thermal_vel.front().at(2*i+1) 	= _thermal_vel.front().at(i);
+			_densities.at(1).at(2*i+1) 		= _densities.at(1).at(i);
 		}
 		{
-			_densities.front().front() = 0.5*(_densities.front().at(1) + _densities.front().at(2*size-1));
-			_velocities.front().front() = 0.5*(_velocities.front().at(1) + _velocities.front().at(2*size-1));
-			_thermal_vel.front().front() = 0.5*(_thermal_vel.front().at(1) + _thermal_vel.front().at(2*size-1));
+			_densities.front().front() 		= 0.5*(_densities.front().at(1) + _densities.front().at(2*size-1));
+			_velocities.front().front() 	= 0.5*(_velocities.front().at(1) + _velocities.front().at(2*size-1));
+			_thermal_vel.front().front() 	= 0.5*(_thermal_vel.front().at(1) + _thermal_vel.front().at(2*size-1));
+			_densities.at(1).front()		= 0.5*(_densities.at(1).at(1) + _densities.at(1).at(2*size-1));
 		}
 		for (int i=1; i<size; i++)
 		{
-			_densities.front().at(2*i) = 0.5*(_densities.front().at(2*i-1) + _densities.front().at(2*i+1));
-			_velocities.front().at(2*i) = 0.5*(_velocities.front().at(2*i-1) + _velocities.front().at(2*i+1));
-			_thermal_vel.front().at(2*i) = 0.5*(_thermal_vel.front().at(2*i-1) + _thermal_vel.front().at(2*i+1));
+			_densities.front().at(2*i) 		= 0.5*(_densities.front().at(2*i-1) + _densities.front().at(2*i+1));
+			_velocities.front().at(2*i) 	= 0.5*(_velocities.front().at(2*i-1) + _velocities.front().at(2*i+1));
+			_thermal_vel.front().at(2*i) 	= 0.5*(_thermal_vel.front().at(2*i-1) + _thermal_vel.front().at(2*i+1));
+			_densities.at(1).at(2*i)		= 0.5*(_densities.at(1).at(2*i-1) + _densities.at(1).at(2*i+1));
 		}
 		size *= 2;
 	}
 	assert(size == _grid_size);
 
-	/* Finally, compute the electron density, velocity and thermal velocity on the fine grid */
-	static std::vector<double> log_ion_density = std::vector<double>(_grid_size);
-
-	for (int i=0; i<_grid_size; i++)
-		log_ion_density.at(i) = std::log(_densities.front().at(i));
-
-	double scaling = _debye_scaling/_plasma->get_dx();
-	for (int i=0; i<_grid_size; i++)
+	/* Finally, fill the electron velocity and thermal velocity on the fine grid */
+	for (int i=0; i<size; i++)
 	{
-		_densities.at(1).at(i)  = _densities.front().at(i) 
-						+ scaling * (
-								  0.5 *log_ion_density.at(i)
-								- 0.25*log_ion_density.at((i>0 ? i-1: _grid_size-1)) 
-								- 0.25*log_ion_density.at((i+1<_grid_size? i+1: 0)) 
-									);
 		_velocities.at(1).at(i) = _velocities.front().at(i);
 	}
 	std::fill(_thermal_vel.at(1).begin(), _thermal_vel.at(1).end(), _electron_thermal_vel);

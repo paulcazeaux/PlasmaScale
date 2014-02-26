@@ -30,6 +30,7 @@ class Plasma
 		/* Timestep and spatial grid step */
 		double		 								_dt;
 		double 										_dx;
+		double										_macro_dx;
 
 		/* Parameters for extrapolation by EPFI */
 		int 										_number_of_microsteps;
@@ -100,6 +101,7 @@ class Plasma
 		/* Timestep and spatial grid step */
 		double			get_dt()				const {	return _dt;			}
 		double 			get_dx()				const {	return _dx;			}
+		double			get_macro_dx()			const { return _macro_dx;	}
 
 		/* Parameters for extrapolation by EPFI */
 		int 	get_number_of_microsteps()		const { return _number_of_microsteps;		}

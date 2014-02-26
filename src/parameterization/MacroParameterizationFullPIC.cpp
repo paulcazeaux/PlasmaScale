@@ -72,7 +72,7 @@ void MacroParameterizationFullPIC::ComputeVariables(const State & state)
 	std::fill(_ion_velocity.begin(), _ion_velocity.end(), 0.);
 
 	double dt = _plasma->get_dt();
-	for (int i=0; i<ion_population_size-1; i++)
+	for (int i=0; i<ion_population_size; i++)
 	{
 		int bin = bins.at(i);
 		double velocity = ion_velocity->at(i) / dt;
