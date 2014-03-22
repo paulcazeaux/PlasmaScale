@@ -11,4 +11,4 @@ doc/*.eps
 doc/*.gz
 *.swp
 build/
-ionwave.dmp
+*.dmp

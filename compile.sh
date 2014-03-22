@@ -25,5 +25,6 @@ make ${TARGET}
 
 # additional run
 echo "====================================================================================="
-./app/${TARGET} -i /Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/ionwave.inp
+rm /Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/ionwave_FullPIC.dmp
+./app/${TARGET} -i /Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/ionwave.inp -d /Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/ionwave_FullPIC.dmp -dp 1
 echo "====================================================================================="

@@ -50,7 +50,7 @@ class Simulation
 		void Setup(int argc, char ** argv);
 		void Step();
 		void InitWindows();
-		void Dump(std::fstream & fout)
+		void WriteData(std::fstream & fout)
 		{
 			_state->WriteData(fout);
 		}

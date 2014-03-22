@@ -118,7 +118,7 @@ MacroParameterizationShay::MacroParameterizationShay(MacroParameterization & par
 		_quiet_start_icdf.at(i) *= norm;
 	}
 
-	_debye_scaling = _electron_thermal_vel *  _unit_masses.front() * _plasma->get_length()
+	_debye_scaling = -std::pow(_electron_thermal_vel, 2.) *  _unit_masses.front() * _plasma->get_length()
 			/ (_plasma->get_epsilon() * static_cast<double>(_population_sizes.front()) * std::pow(_unit_charges.front(), 2.));
 }
 
