@@ -37,6 +37,7 @@ class MacroParameterizationShay : public MacroParameterization
 
 		int 									_grid_size;
 		int 									_macro_grid_size;
+		bool									_record_microsteps;
 
 		/* Spatial quantities */
 
@@ -66,6 +67,12 @@ class MacroParameterizationShay : public MacroParameterization
 			// TODO = what size ?
 		std::vector<double> 					_quiet_start_vel;
 		std::vector<double> 					_quiet_start_icdf;
+
+		/* Record arrays for the datapoints from the microsolver */
+		std::vector<double>						_record_times;
+		active_variable 						_record_ion_density;
+		active_variable							_record_ion_velocity;
+		active_variable 						_record_ion_pressure;
 
 		/* Parameters for the determination of the passive variables */
 		double									_electron_thermal_vel;

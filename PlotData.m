@@ -34,12 +34,12 @@ while(true)
         n3 = size(ds3.data, 2);
         n4 = size(ds4.data, 2);
 
-        plot(1./n1*(1:n1), ds1.data(i,:), 'b');
+        plot(1./n1*(0:n1-1), ds1.data(i,:), 'b');
         ylim([m, M]);
         hold all;
-        plot(1./n2*(1:n2), ds2.data(i,:), 'g');
-        plot(1./n3*(1:n3), ds3.data(i,:), 'r');
-        plot(1./n4*(1:n4), ds4.data(i,:), 'k');
+        plot(1./n2*(0:n2-1), ds2.data(i,:), 'g');
+        plot(1./n3*(0:n3-1), ds3.data(i,:), 'r');
+        plot(1./n4*(0:n4-1), ds4.data(i,:), 'k');
         title(['Time: ',num2str(ds1.time(i))]);
         pause;
     end
@@ -57,7 +57,7 @@ while(true)
         clf;
         n = size(ds1.data, 2);
 
-        plot(1./n*(1:n), abs(ds2.data(i,:) - ds1.data(i,:)), 'r');
+        plot(1./n*(0:n-1), abs(ds2.data(i,:) - ds1.data(i,:)), 'r');
         title(['Time: ',num2str(ds1.time(i))]);
         pause;
     end
@@ -76,10 +76,10 @@ while(true)
         n1 = size(vs1.data, 2);
         n2 = size(vs2.data, 2);
 
-        plot(1./n1*(1:n1), vs1.data(i,:));
+        plot(1./n1*(0:n1-1), vs1.data(i,:));
         ylim([m, M]);
         hold all;
-        plot(1./n2*(1:n2), vs2.data(i,:));
+        plot(1./n2*(0:n2-1), vs2.data(i,:));
         title(['Time: ',num2str(ds1.time(i))]);
         pause;
     end
@@ -98,10 +98,10 @@ while(true)
         n1 = size(ps1.data, 2);
         n2 = size(ps2.data, 2);
 
-        plot(1./n1*(1:n1), ps1.data(i,:));
+        plot(1./n1*(0:n1-1), ps1.data(i,:));
         ylim([m, M]);
         hold all;
-        plot(1./n2*(1:n2), ps2.data(i,:));
+        plot(1./n2*(0:n2-1), ps2.data(i,:));
         title(['Time: ',num2str(ps1.time(i))]);
         pause;
     end

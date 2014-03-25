@@ -12,3 +12,4 @@ doc/*.gz
 *.swp
 build/
 *.dmp
+PlotGrad.m

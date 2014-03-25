@@ -17,7 +17,7 @@ MacroState::MacroState(FILE *& InputDeck)
 	double vte = initialization.get_initial_thermal_vel(1); // Recover the electron thermal velocity
 	_macro_dt = _plasma->get_dt() * _plasma->get_macro_to_micro_dt_ratio();
 
-	_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationFullPIC(initialization));  // Shay(initialization, vte));
+	_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationShay(initialization, vte));  // FullPIC(initialization));
 	_parameterization->Initialize(*_micro_state);
 }
 
@@ -43,6 +43,7 @@ void MacroState::Step()
 
 void MacroState::WriteData(std::fstream & fout)
 {
-	fout << std::endl << "t = " << *_simulation_time << std::endl;
+	if (!_plasma->get_record_microsteps())
+		fout << std::endl << "t = " << *_simulation_time << std::endl;
 	_parameterization->WriteData(fout);
 }
