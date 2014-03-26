@@ -9,6 +9,8 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 	int number_of_populations, grid_size, macro_grid_size, number_of_microsteps, macro_to_micro_dt_ratio, velocity_accumulation_interval, max_mode;
 	double filter_parameter_1, filter_parameter_2;
 
+	int max_size_history, use_full_PIC, record_microsteps;
+
 	char a_char[80];
 
 	/* read lines until we get to numbers */
@@ -16,7 +18,7 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 	{
 		std::fscanf(InputDeck, "%s", a_char);
 	}
-	while (std::fscanf(InputDeck,"%lg %d %d %d %lg %lg", &length, &grid_size, &macro_grid_size, &max_mode, &filter_parameter_1, &filter_parameter_2) <6)
+	while (std::fscanf(InputDeck,"%lg %d %d %d %lg %lg %d %d %d", &length, &grid_size, &macro_grid_size, &max_mode, &filter_parameter_1, &filter_parameter_2, &max_size_history, &use_full_PIC, &record_microsteps) <9)
 	{
 		std::fscanf(InputDeck, "%s", a_char);
 	}
@@ -34,7 +36,7 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 	_plasma = std::make_shared<const Plasma>(length, dt, number_of_microsteps, macro_to_micro_dt_ratio,
 				epsilon, la, 0.0, e0, w0,
 				number_of_populations, grid_size, macro_grid_size, velocity_accumulation_interval, max_mode,
-				filter_parameter_1, filter_parameter_2);
+				filter_parameter_1, filter_parameter_2, max_size_history, static_cast<bool>(use_full_PIC), static_cast<bool>(record_microsteps));
 	std::cout << *_plasma << std::endl;
 
 	_number_of_populations = number_of_populations;

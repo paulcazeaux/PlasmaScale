@@ -8,16 +8,23 @@ MacroState::MacroState(FILE *& InputDeck)
 	_simulation_time = _micro_state->get_simulation_time();
 	_macro_iteration = std::make_shared<int>(0);
 
-	// Using the Shay parameterization
+	// Using the EPFI parameterization
 	if (_plasma->get_number_of_populations() != 2)
 	{
-		throw std::runtime_error("There are " + std::to_string(_plasma->get_number_of_populations()) + " and not 2 populations as required to use the Shay parameterization.\n");
+		throw std::runtime_error("There are " + std::to_string(_plasma->get_number_of_populations()) + " and not 2 populations as required to use the EPFI parameterization.\n");
 	}
 
-	double vte = initialization.get_initial_thermal_vel(1); // Recover the electron thermal velocity
 	_macro_dt = _plasma->get_dt() * _plasma->get_macro_to_micro_dt_ratio();
 
-	_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationShay(initialization, vte));  // FullPIC(initialization));
+	if (_plasma->uses_full_PIC())
+	{
+		_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationFullPIC(initialization));
+	}
+	else	
+	{
+		double vte = initialization.get_initial_thermal_vel(1); // Recover the electron thermal velocity
+		_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationEPFI(initialization, vte));
+	}
 	_parameterization->Initialize(*_micro_state);
 }
 

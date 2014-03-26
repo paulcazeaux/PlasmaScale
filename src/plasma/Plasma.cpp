@@ -5,7 +5,7 @@
 Plasma::Plasma( double length, double dt, int number_of_microsteps, int macro_to_micro_dt_ratio,
 				double epsilon, double la, double rho0, double E0, double w0, 
 				int number_of_populations, int grid_size, int macro_grid_size, int velocity_accumulation_interval, int max_mode,
-				double filter_parameter_1, double filter_parameter_2, int max_size_history, bool record_microsteps)
+				double filter_parameter_1, double filter_parameter_2, int max_size_history, bool use_full_PIC, bool record_microsteps)
 				: _length(length), 
 					_dt(dt),
 					_number_of_microsteps(number_of_microsteps),
@@ -20,6 +20,7 @@ Plasma::Plasma( double length, double dt, int number_of_microsteps, int macro_to
 					_filter_parameter_1(filter_parameter_1),
 					_filter_parameter_2(filter_parameter_2),
 					_max_size_history(max_size_history),
+					_use_full_PIC(use_full_PIC),
 					_record_microsteps(record_microsteps)
 {
 	_grid_size = std::unique_ptr<int>(new int(grid_size));
@@ -67,6 +68,7 @@ std::ostream& operator<<( std::ostream& os, const Plasma& plasma)
 	os << "-----   " << std::endl;
 	os << "\t Microscopic steps computed for each projection: \t" 	<< plasma._number_of_microsteps 	<< std::endl;
 	os << "\t Ratio of microscopic to macroscopic timesteps: \t"	<< plasma._macro_to_micro_dt_ratio	<< std::endl;
+	os << "\t Using full PIC timestepping without extrapolation: \t"<< plasma._use_full_PIC 			<< std::endl;
 	os << "\t Recording microstepping: \t"							<< plasma._record_microsteps 		<< std::endl;
 
 	os << std::endl;

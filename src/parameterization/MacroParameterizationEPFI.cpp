@@ -1,7 +1,7 @@
-#include "parameterization/MacroParameterizationShay.h"
+#include "parameterization/MacroParameterizationEPFI.h"
 
 
-MacroParameterizationShay::MacroParameterizationShay(MacroParameterizationShay &&parameterization) :
+MacroParameterizationEPFI::MacroParameterizationEPFI(MacroParameterizationEPFI &&parameterization) :
 			MacroParameterization(std::move(parameterization)),
 			_grid_size(parameterization._grid_size),
 			_macro_grid_size(parameterization._macro_grid_size),
@@ -28,7 +28,7 @@ MacroParameterizationShay::MacroParameterizationShay(MacroParameterizationShay &
 			_debye_scaling(parameterization._debye_scaling)
 		{}
 
-MacroParameterizationShay& MacroParameterizationShay::operator=(MacroParameterizationShay &&parameterization)
+MacroParameterizationEPFI& MacroParameterizationEPFI::operator=(MacroParameterizationEPFI &&parameterization)
 {
 	if (this == &parameterization)
 		return *this;
@@ -69,7 +69,7 @@ MacroParameterizationShay& MacroParameterizationShay::operator=(MacroParameteriz
 	return *this;
 }
 
-MacroParameterizationShay::MacroParameterizationShay(MacroParameterization & parameterization, double electron_thermal_vel) :
+MacroParameterizationEPFI::MacroParameterizationEPFI(MacroParameterization & parameterization, double electron_thermal_vel) :
 	MacroParameterization(std::move(parameterization)), _electron_thermal_vel(electron_thermal_vel)
 {
 	if (_number_of_populations != 2)
@@ -148,7 +148,7 @@ MacroParameterizationShay::MacroParameterizationShay(MacroParameterization & par
 			/ (_plasma->get_epsilon() * static_cast<double>(_population_sizes.front()) * std::pow(_unit_charges.front(), 2.));
 }
 
-void MacroParameterizationShay::Initialize(const State & state)
+void MacroParameterizationEPFI::Initialize(const State & state)
 {
 	for (int bin=0; bin<_macro_grid_size; bin++)
 	{	
@@ -178,7 +178,7 @@ void MacroParameterizationShay::Initialize(const State & state)
 	_prev_step_ion_pressure = _current_step_ion_pressure;
 
 }
-void MacroParameterizationShay::Load(State & state) const
+void MacroParameterizationEPFI::Load(State & state) const
 /* Fill the particle arrays to initialize the microscopic state */
 {	
 	state.Reset();
@@ -262,7 +262,7 @@ void MacroParameterizationShay::Load(State & state) const
 	}
 }
 
-void MacroParameterizationShay::RestrictAndPushback(const State & state)
+void MacroParameterizationEPFI::RestrictAndPushback(const State & state)
 {
 	std::vector<double> * ion_position 		= state.get_vector_of_position_arrays().front();
 	std::vector<double> * ion_velocity 		= state.get_vector_of_x_velocity_arrays().front();
@@ -390,7 +390,7 @@ void MacroParameterizationShay::RestrictAndPushback(const State & state)
 	}
 }
 
-void MacroParameterizationShay::ExtrapolateFirstHalfStep()
+void MacroParameterizationEPFI::ExtrapolateFirstHalfStep()
 {
 	/* First, compute the derivative by least-squares and step forward */
 	double macro_to_micro_dt_ratio = static_cast<double>(_plasma->get_macro_to_micro_dt_ratio());
@@ -411,7 +411,7 @@ void MacroParameterizationShay::ExtrapolateFirstHalfStep()
 	}
 }
 
-void MacroParameterizationShay::ExtrapolateSecondHalfStep()
+void MacroParameterizationEPFI::ExtrapolateSecondHalfStep()
 {
 	/* First, compute the derivative by least-squares */
 	double macro_to_micro_dt_ratio = static_cast<double>(_plasma->get_macro_to_micro_dt_ratio());
@@ -446,7 +446,7 @@ void MacroParameterizationShay::ExtrapolateSecondHalfStep()
 	}
 }
 
-void MacroParameterizationShay::Lift()
+void MacroParameterizationEPFI::Lift()
 {
 	/* First, lift the ion density, velocity and thermal velocity and the electron density to the fine grid */
 	int size = _macro_grid_size;
@@ -512,7 +512,7 @@ void MacroParameterizationShay::Lift()
 
 }
 
-void MacroParameterizationShay::Step(State & state)
+void MacroParameterizationEPFI::Step(State & state)
 {	
 	int number_of_microsteps = _plasma->get_number_of_microsteps();
 	std::shared_ptr<double> simulation_time = state.get_simulation_time();
@@ -548,7 +548,7 @@ void MacroParameterizationShay::Step(State & state)
 	state.Load(*this);
 }
 
-void MacroParameterizationShay::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
+void MacroParameterizationEPFI::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
 {
 	double * x_array 	= _plasma->get_x_grid_ptr();
 	int * grid_size 	= _plasma->get_grid_size_ptr(); 
@@ -569,7 +569,7 @@ void MacroParameterizationShay::SetupDiagnostics(std::vector<std::unique_ptr<Dia
 	diagnostics.back()->AddData(x_array, _thermal_vel.front().data(), grid_size, 4);
 }
 
-void MacroParameterizationShay::WriteData(std::fstream & fout)
+void MacroParameterizationEPFI::WriteData(std::fstream & fout)
 {
 	if (!_record_microsteps)
 	{

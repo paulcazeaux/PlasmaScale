@@ -30,7 +30,7 @@
 
 /* Declarations */
 
-class MacroParameterizationShay : public MacroParameterization
+class MacroParameterizationEPFI : public MacroParameterization
 {
 	private:
 		/* class members ======================================================================== */
@@ -80,14 +80,14 @@ class MacroParameterizationShay : public MacroParameterization
 
 	public:
 		/* constructor  ========================================================================= */
-		MacroParameterizationShay() {}
-		MacroParameterizationShay(MacroParameterization & parameterization, double electron_thermal_vel);
-		virtual ~MacroParameterizationShay() {}
+		MacroParameterizationEPFI() {}
+		MacroParameterizationEPFI(MacroParameterization & parameterization, double electron_thermal_vel);
+		virtual ~MacroParameterizationEPFI() {}
 
 		/* move constuctor and assignment ======================================================= */
 
-		MacroParameterizationShay(MacroParameterizationShay &&parameterization);
-		MacroParameterizationShay& operator=(MacroParameterizationShay &&parameterization);
+		MacroParameterizationEPFI(MacroParameterizationEPFI &&parameterization);
+		MacroParameterizationEPFI& operator=(MacroParameterizationEPFI &&parameterization);
 
 		/* methods ============================================================================== */
 

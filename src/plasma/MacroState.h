@@ -23,7 +23,7 @@
 #include "plasma/State.h"
 #include "parameterization/MacroParameterization.h"
 #include "parameterization/MacroParameterizationFromFile.h"
-#include "parameterization/MacroParameterizationShay.h"
+#include "parameterization/MacroParameterizationEPFI.h"
  #include "parameterization/MacroParameterizationFullPIC.h"
 
 class MacroState

@@ -37,6 +37,7 @@ class Plasma
 		int 										_macro_to_micro_dt_ratio;
 
 		bool 										_record_microsteps;
+		bool 										_use_full_PIC;
 
 		/* size */
 		const double 								_length;
@@ -92,6 +93,7 @@ class Plasma
 				double filter_parameter_1			= 0.,
 				double filter_parameter_2 			= 0.,
 				int max_size_history 				= 4096,
+				bool use_full_PIC					= true,
 				bool record_microsteps 				= false);
 		Plasma(FILE * Inputdeck);
 		~Plasma() {}
@@ -109,7 +111,8 @@ class Plasma
 		/* Parameters for extrapolation by EPFI */
 		int 	get_number_of_microsteps()		const { return _number_of_microsteps;		}
 		int 	get_macro_to_micro_dt_ratio()	const { return _macro_to_micro_dt_ratio;	}
-		bool	get_record_microsteps()			const { return _record_microsteps;			}						
+		bool	get_record_microsteps()			const { return _record_microsteps;			}
+		bool 	uses_full_PIC()					const {return _use_full_PIC;				}					
 
 		/* Length */
 		const double 	get_length()			const {	return _length;		}
