@@ -55,8 +55,8 @@ Plasma::Plasma( double length, double dt, int number_of_microsteps, int macro_to
 /* operator << */
 std::ostream& operator<<( std::ostream& os, const Plasma& plasma)
 {
-	os << "PLASMA:" << std::endl;
-	os << "=======" << std::endl;
+	os << "PLASMA PARAMETERS:" << std::endl;
+	os << "==================" << std::endl;
 
 	os << "Steps : " << std::endl;
 	os << "-----   " << std::endl;
@@ -64,12 +64,12 @@ std::ostream& operator<<( std::ostream& os, const Plasma& plasma)
 	os << "\t Grid step: \t"	<< plasma._dx 						<< std::endl;
 
 	os << std::endl;
-	os << "EPFI parameters : " << std::endl;
+	os << "EFPI parameters : " << std::endl;
 	os << "-----   " << std::endl;
 	os << "\t Microscopic steps computed for each projection: \t" 	<< plasma._number_of_microsteps 	<< std::endl;
 	os << "\t Ratio of microscopic to macroscopic timesteps: \t"	<< plasma._macro_to_micro_dt_ratio	<< std::endl;
 	os << "\t Using full PIC timestepping without extrapolation: \t"<< plasma._use_full_PIC 			<< std::endl;
-	os << "\t Recording microstepping: \t\t\t\t"							<< plasma._record_microsteps 		<< std::endl;
+	os << "\t Recording microstepping: \t\t\t\t"					<< plasma._record_microsteps 		<< std::endl;
 
 	os << std::endl;
 	os << "Spatial dimensions: " 	<< std::endl;

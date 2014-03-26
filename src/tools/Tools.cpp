@@ -3,12 +3,12 @@
 
 void Tools::DisplayTitle()
 {
-	printf("\n\nES1 - Electrostatic 1 Dimensional Code\n");
-	printf("version 4.1\n");
-	printf("(c) Copyright 1987-92 Regents of the University of California\n");
-	printf("Plasma Theory and Simulation Group\n");
-	printf("University of California - Berkeley\n");
-}
+	std::cout << std::endl << std::endl << "PlasmaScale - Based on ES1 - Electrostatic 1 Dimensional Code" << std::endl << std::endl;
+	//printf("version 4.1\n");
+	//printf("(c) Copyright 1987-92 Regents of the University of California\n");
+	//printf("Plasma Theory and Simulation Group\n");
+	//printf("University of California - Berkeley\n");
+}//
 
 double Tools::EvaluateP1Function(const std::vector<double> & values, const int bin, const double cellpos)
 {

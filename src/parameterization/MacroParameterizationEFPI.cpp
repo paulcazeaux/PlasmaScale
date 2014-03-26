@@ -1,7 +1,7 @@
-#include "parameterization/MacroParameterizationEPFI.h"
+#include "parameterization/MacroParameterizationEFPI.h"
 
 
-MacroParameterizationEPFI::MacroParameterizationEPFI(MacroParameterizationEPFI &&parameterization) :
+MacroParameterizationEFPI::MacroParameterizationEFPI(MacroParameterizationEFPI &&parameterization) :
 			MacroParameterization(std::move(parameterization)),
 			_grid_size(parameterization._grid_size),
 			_macro_grid_size(parameterization._macro_grid_size),
@@ -28,7 +28,7 @@ MacroParameterizationEPFI::MacroParameterizationEPFI(MacroParameterizationEPFI &
 			_debye_scaling(parameterization._debye_scaling)
 		{}
 
-MacroParameterizationEPFI& MacroParameterizationEPFI::operator=(MacroParameterizationEPFI &&parameterization)
+MacroParameterizationEFPI& MacroParameterizationEFPI::operator=(MacroParameterizationEFPI &&parameterization)
 {
 	if (this == &parameterization)
 		return *this;
@@ -69,7 +69,7 @@ MacroParameterizationEPFI& MacroParameterizationEPFI::operator=(MacroParameteriz
 	return *this;
 }
 
-MacroParameterizationEPFI::MacroParameterizationEPFI(MacroParameterization & parameterization, double electron_thermal_vel) :
+MacroParameterizationEFPI::MacroParameterizationEFPI(MacroParameterization & parameterization, double electron_thermal_vel) :
 	MacroParameterization(std::move(parameterization)), _electron_thermal_vel(electron_thermal_vel)
 {
 	if (_number_of_populations != 2)
@@ -148,7 +148,7 @@ MacroParameterizationEPFI::MacroParameterizationEPFI(MacroParameterization & par
 			/ (_plasma->get_epsilon() * static_cast<double>(_population_sizes.front()) * std::pow(_unit_charges.front(), 2.));
 }
 
-void MacroParameterizationEPFI::Initialize(const State & state)
+void MacroParameterizationEFPI::Initialize(const State & state)
 {
 	for (int bin=0; bin<_macro_grid_size; bin++)
 	{	
@@ -178,7 +178,7 @@ void MacroParameterizationEPFI::Initialize(const State & state)
 	_prev_step_ion_pressure = _current_step_ion_pressure;
 
 }
-void MacroParameterizationEPFI::Load(State & state) const
+void MacroParameterizationEFPI::Load(State & state) const
 /* Fill the particle arrays to initialize the microscopic state */
 {	
 	state.Reset();
@@ -262,7 +262,7 @@ void MacroParameterizationEPFI::Load(State & state) const
 	}
 }
 
-void MacroParameterizationEPFI::RestrictAndPushback(const State & state)
+void MacroParameterizationEFPI::RestrictAndPushback(const State & state)
 {
 	std::vector<double> * ion_position 		= state.get_vector_of_position_arrays().front();
 	std::vector<double> * ion_velocity 		= state.get_vector_of_x_velocity_arrays().front();
@@ -390,7 +390,7 @@ void MacroParameterizationEPFI::RestrictAndPushback(const State & state)
 	}
 }
 
-void MacroParameterizationEPFI::ExtrapolateFirstHalfStep()
+void MacroParameterizationEFPI::ExtrapolateFirstHalfStep()
 {
 	/* First, compute the derivative by least-squares and step forward */
 	double macro_to_micro_dt_ratio = static_cast<double>(_plasma->get_macro_to_micro_dt_ratio());
@@ -411,7 +411,7 @@ void MacroParameterizationEPFI::ExtrapolateFirstHalfStep()
 	}
 }
 
-void MacroParameterizationEPFI::ExtrapolateSecondHalfStep()
+void MacroParameterizationEFPI::ExtrapolateSecondHalfStep()
 {
 	/* First, compute the derivative by least-squares */
 	double macro_to_micro_dt_ratio = static_cast<double>(_plasma->get_macro_to_micro_dt_ratio());
@@ -446,7 +446,7 @@ void MacroParameterizationEPFI::ExtrapolateSecondHalfStep()
 	}
 }
 
-void MacroParameterizationEPFI::Lift()
+void MacroParameterizationEFPI::Lift()
 {
 	/* First, lift the ion density, velocity and thermal velocity and the electron density to the fine grid */
 	int size = _macro_grid_size;
@@ -512,7 +512,7 @@ void MacroParameterizationEPFI::Lift()
 
 }
 
-void MacroParameterizationEPFI::Step(State & state)
+void MacroParameterizationEFPI::Step(State & state)
 {	
 	int number_of_microsteps = _plasma->get_number_of_microsteps();
 	std::shared_ptr<double> simulation_time = state.get_simulation_time();
@@ -530,7 +530,7 @@ void MacroParameterizationEPFI::Step(State & state)
 		state.Step();
 		this->RestrictAndPushback(state);
 	}
-			// Step 2: Extrapolate using EPFI
+			// Step 2: Extrapolate using EFPI
 	this->ExtrapolateFirstHalfStep();
 	this->Lift();
 	state.Load(*this);
@@ -548,7 +548,7 @@ void MacroParameterizationEPFI::Step(State & state)
 	state.Load(*this);
 }
 
-void MacroParameterizationEPFI::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
+void MacroParameterizationEFPI::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
 {
 	double * x_array 	= _plasma->get_x_grid_ptr();
 	int * grid_size 	= _plasma->get_grid_size_ptr(); 
@@ -569,7 +569,7 @@ void MacroParameterizationEPFI::SetupDiagnostics(std::vector<std::unique_ptr<Dia
 	diagnostics.back()->AddData(x_array, _thermal_vel.front().data(), grid_size, 4);
 }
 
-void MacroParameterizationEPFI::WriteData(std::fstream & fout)
+void MacroParameterizationEFPI::WriteData(std::fstream & fout)
 {
 	if (!_record_microsteps)
 	{

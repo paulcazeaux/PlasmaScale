@@ -32,7 +32,7 @@ class Plasma
 		double 										_dx;
 		double										_macro_dx;
 
-		/* Parameters for extrapolation by EPFI */
+		/* Parameters for extrapolation by EFPI */
 		int 										_number_of_microsteps;
 		int 										_macro_to_micro_dt_ratio;
 
@@ -108,7 +108,7 @@ class Plasma
 		double 			get_dx()				const {	return _dx;			}
 		double			get_macro_dx()			const { return _macro_dx;	}
 
-		/* Parameters for extrapolation by EPFI */
+		/* Parameters for extrapolation by EFPI */
 		int 	get_number_of_microsteps()		const { return _number_of_microsteps;		}
 		int 	get_macro_to_micro_dt_ratio()	const { return _macro_to_micro_dt_ratio;	}
 		bool	get_record_microsteps()			const { return _record_microsteps;			}

@@ -30,7 +30,7 @@
 
 /* Declarations */
 
-class MacroParameterizationEPFI : public MacroParameterization
+class MacroParameterizationEFPI : public MacroParameterization
 {
 	private:
 		/* class members ======================================================================== */
@@ -80,14 +80,14 @@ class MacroParameterizationEPFI : public MacroParameterization
 
 	public:
 		/* constructor  ========================================================================= */
-		MacroParameterizationEPFI() {}
-		MacroParameterizationEPFI(MacroParameterization & parameterization, double electron_thermal_vel);
-		virtual ~MacroParameterizationEPFI() {}
+		MacroParameterizationEFPI() {}
+		MacroParameterizationEFPI(MacroParameterization & parameterization, double electron_thermal_vel);
+		virtual ~MacroParameterizationEFPI() {}
 
 		/* move constuctor and assignment ======================================================= */
 
-		MacroParameterizationEPFI(MacroParameterizationEPFI &&parameterization);
-		MacroParameterizationEPFI& operator=(MacroParameterizationEPFI &&parameterization);
+		MacroParameterizationEFPI(MacroParameterizationEFPI &&parameterization);
+		MacroParameterizationEFPI& operator=(MacroParameterizationEFPI &&parameterization);
 
 		/* methods ============================================================================== */
 
