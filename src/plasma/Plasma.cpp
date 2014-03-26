@@ -60,7 +60,7 @@ std::ostream& operator<<( std::ostream& os, const Plasma& plasma)
 
 	os << "Steps : " << std::endl;
 	os << "-----   " << std::endl;
-	os << "\t Timestep: \t" 	<< plasma._dt 						<< std::endl;
+	os << "\t Timestep: \t" 	<< plasma._dt 						<< "\t\t\t";
 	os << "\t Grid step: \t"	<< plasma._dx 						<< std::endl;
 
 	os << std::endl;
@@ -69,42 +69,41 @@ std::ostream& operator<<( std::ostream& os, const Plasma& plasma)
 	os << "\t Microscopic steps computed for each projection: \t" 	<< plasma._number_of_microsteps 	<< std::endl;
 	os << "\t Ratio of microscopic to macroscopic timesteps: \t"	<< plasma._macro_to_micro_dt_ratio	<< std::endl;
 	os << "\t Using full PIC timestepping without extrapolation: \t"<< plasma._use_full_PIC 			<< std::endl;
-	os << "\t Recording microstepping: \t"							<< plasma._record_microsteps 		<< std::endl;
+	os << "\t Recording microstepping: \t\t\t\t"							<< plasma._record_microsteps 		<< std::endl;
 
 	os << std::endl;
 	os << "Spatial dimensions: " 	<< std::endl;
 	os << "------------------	" 	<< std::endl;
-	os << "\t System length: \t" 	<< plasma._length 						<< std::endl;
-	os << "\t Particle radius: \t"	<< 1./plasma._inverse_of_particle_radius	<< std::endl;
+	os << "\t System length: \t" 	<< plasma._length;
+	os << "\t\t\t Particle radius: \t"	<< 1./plasma._inverse_of_particle_radius	<< std::endl;
 
 	os << std::endl;
 	os << "Grid parameters: "	<< std::endl;
 	os << "---------------	"	<< std::endl;
-	os << "\t Grid size: \t"	<< *(plasma._grid_size)				<< std::endl;
-	os << "\t Grid length: \t"	<< plasma._x_grid->back()			<< std::endl;
-	os << "\t Highest mode: \t"	<< plasma._highest_mode 			<< std::endl;
+	os << "\t Grid size: \t"	<< *(plasma._grid_size);
+	os << "\t\t Grid length: \t"	<< plasma._x_grid->back();
+	os << "\t\t Highest mode: \t"	<< plasma._highest_mode 			<< std::endl;
 
 	os << std::endl;
 	os << "Plasma parameters:	"	<< std::endl;
 	os << "-----------------	"	<< std::endl;
-	os << "\t Epsilon: \t"	<< plasma._epsilon	<< std::endl;
-	os << "\t Mean density: \t"	<< plasma._rho0 	<< std::endl;
-	os << "\t External E field intensity: \t" 		<< plasma._E0 		<< std::endl;
-	os << "\t External E field frequency: \t" 		<< plasma._w0 		<< std::endl;
-	os << std::endl;
-	os << "\t Number of particle populations: \t" << plasma._number_of_populations << std::endl;
+	os << "\t " << plasma._number_of_populations << " population of particles;" << std::endl;
+	os << "\t Epsilon: \t"	<< plasma._epsilon;
+	os << "\t\t\t\t Mean density: \t"	<< plasma._rho0 	<< std::endl;
+	os << "\t External E field intensity: \t" 		<< plasma._E0;
+	os << "\t\t External E field frequency: \t" 		<< plasma._w0 		<< std::endl;
 
 	os << std::endl;
 	os << "Filtering:	" 	<< std::endl;
 	os << "---------	"	<< std::endl;
-	os << "\t Parameter 1: \t"	<< plasma._filter_parameter_1 		<< std::endl;
-	os << "\t Parameter 2: \t"	<< plasma._filter_parameter_2 		<< std::endl;
+	os << "\t Parameter 1: \t"	<< plasma._filter_parameter_1;
+	os << "\t\t\t\t Parameter 2: \t"	<< plasma._filter_parameter_2 		<< std::endl;
 
 	os << std::endl;
 	os << "Diagnostics parameters:	"	<< std::endl;
 	os << "----------------------	"	<< std::endl;
-	os << "\t History stack size: \t"	<< plasma._max_size_history  				<< std::endl;
-	os << "\t Number of modes: \t"	<< plasma._max_mode							<< std::endl;
+	os << "\t History stack size: \t"	<< plasma._max_size_history ;
+	os << "\t\t\t Number of modes: \t"		<< plasma._max_mode							<< std::endl;
 	os << "\t Velocity accumulation interval: \t"	<< plasma._velocity_accumulation_interval 	<< std::endl;
 
 	return os;

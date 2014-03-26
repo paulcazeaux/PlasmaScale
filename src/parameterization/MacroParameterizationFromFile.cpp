@@ -66,13 +66,14 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 		{
 			fscanf(InputDeck,"%s",a_char);
 		}
-		printf("\n");
-		printf(" n = %4d  nv2 = %4d  nlg = %4d  mode = %4d \n", n, nv2, nlg, mode);
-		printf(" wp = %6.3f   wc = %6.3f   qm = %6.3f \n", wp, wc, qm);
-		printf(" vt1 = %6.3f  vt2 = %6.3f  v0 = %6.3f \n", vt1, vt2, v0);
-		printf(" x1 = %6.3f   v1 = %6.3f   thetax = %6.3f   thetav = %6.3f \n", x1, v1, thetax, thetav);
-		printf(" nbins = %4d   vlower = %6.3f  vupper = %6.3f ", nbins, vlower, vupper);
-		printf("\n");
+		std::cout << "Parameters for population " << (population_index+1) << std::endl << "---------------------------" << std::endl;
+		std::cout << "Number of particles:\t" << n << "\tNumber of init. groups:\t" << nlg <<  "\tQuiet start exponent:\t" << nv2 << std::endl;
+		std::cout << "Plasma pulsation:\t" << wp << "\tCycl. pulsation:\t" << wc << "\tq/m ratio:\t\t" << qm << std::endl;
+		std::cout << "Random therm. veloc.:\t" << vt1 << "\tQuiet therm. veloc.:\t" << vt2 << "\tMean velocity:\t\t" << v0 << std::endl;
+		std::cout << "Perturbation:\tMode:\t" << mode << "\tAmpl.:\tDensity:\t" << x1 << "\tVelocity:\t\t" << v1 << std::endl;
+		std::cout << "\t\t\t\tPhase:\tDensity:\t" << thetax << "\tVelocity:\t\t" << thetav << std::endl;
+		std::cout << "Velocity init.:\t# bins:\t" << nbins << "\tLower bound:\t\t" << vlower << "\tUpper bound:\t\t" << vupper << std::endl;
+		std::cout << "---------------------------" << std::endl;
 
 
 		_cyclotronic_rotation_parameters.push_back(std::tan(-0.5*wc*_plasma->get_dt()));
@@ -266,7 +267,7 @@ double MacroParameterizationFromFile::GetBinStart(int population_index) const
 	double vt2 = _quiet_mean_thermal_vel.at(population_index);
 	double v0 = _mean_velocities.at(population_index);
 
-	if(vupper-vlower < 0.0)
+	if(vupper - vlower < 0.0)
 	{
 		printf("\nInitialization error: vupper must be > vlower! \n");
 		exit(1);
