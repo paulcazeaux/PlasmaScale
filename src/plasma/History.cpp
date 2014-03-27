@@ -3,11 +3,11 @@
 /* constuctor and destructor ============================================================ */
 History::History(std::shared_ptr<const Plasma> plasma) :
 		_plasma(plasma),
-		_interval(1),
 		_max_size(plasma->get_max_size()),
+		_velocity_accumulation_interval(plasma->get_velocity_accumulation_interval()),
+		_interval(1),
 		_max_mode(plasma->get_max_mode()),
-		_number_of_populations(plasma->get_number_of_populations()),
-		_velocity_accumulation_interval(plasma->get_velocity_accumulation_interval())
+		_number_of_populations(plasma->get_number_of_populations())
 {
 	_size = 0;
 	_time_array.reserve(_max_size);

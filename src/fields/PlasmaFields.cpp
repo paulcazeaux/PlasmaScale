@@ -8,12 +8,6 @@ PlasmaFields::PlasmaFields(std::shared_ptr<const Plasma> plasma,
 					std::shared_ptr<double> simulation_time,
 					std::shared_ptr<int> iteration)
 					: 	_plasma(plasma),
-					  	_simulation_time(simulation_time),
-					  	_iteration(iteration),
-
-						_charge(Field(plasma)),
-						_electrical_field(Field(plasma)),
-						_potential(Field(plasma)),
 
 						_length		(plasma->get_length()),
 						_epsilon	(plasma->get_epsilon()),
@@ -23,6 +17,14 @@ PlasmaFields::PlasmaFields(std::shared_ptr<const Plasma> plasma,
 						_dx			(plasma->get_dx()),
 				_filter_parameter_1	(plasma->get_filter_parameter_1()),
 				_filter_parameter_2	(plasma->get_filter_parameter_2()),
+				
+					  	_simulation_time(simulation_time),
+					  	_iteration(iteration),
+
+						_charge(Field(plasma)),
+						_electrical_field(Field(plasma)),
+						_potential(Field(plasma)),
+
 						_max_mode	(plasma->get_max_mode())
 {
 

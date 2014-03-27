@@ -4,7 +4,7 @@
 /* Initialization ============================================= */
 void Simulation::Setup(int argc, char ** argv)
 {
-	FILE * InputDeck;
+	FILE * InputDeck = nullptr;
 
 	if (argc>1)
 	{

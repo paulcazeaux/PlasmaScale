@@ -553,9 +553,6 @@ void MacroParameterizationEFPI::SetupDiagnostics(std::vector<std::unique_ptr<Dia
 	double * x_array 	= _plasma->get_x_grid_ptr();
 	int * grid_size 	= _plasma->get_grid_size_ptr(); 
 
-	double dt = _plasma->get_dt();
-	double length = _plasma->get_length();
-
 	diagnostics.emplace_back(new CurveDiagnostic(
 				"linlin", "X", "Ion density", 0, 340));
 	diagnostics.back()->AddData(x_array, _densities.front().data(), grid_size, 2);
