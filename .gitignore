@@ -13,3 +13,4 @@ doc/*.gz
 build/
 *.dmp
 PlotGrad.m
+build2

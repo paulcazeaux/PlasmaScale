@@ -123,18 +123,19 @@ void PopulationOfParticles::Accelerate(const PlasmaFields& fields, double factor
  		it_weights	= _weights.begin();
  		for (auto & position : _position)
  		{
-			double	vold, vnew;
+			double	vold = *it_vel_x, vnew = *it_vel_x;
  			int 	bin = _plasma->find_index_on_grid(position);				// Guaranteed to belong to [[0 ... grid_size -1]]
  			double	position_in_cell = _plasma->find_position_in_cell(position);		// Belongs to [0, 1)
 		
-			vold = *it_vel_x;
 			if (bin < grid_size - 1)
 			{
-				vnew = vold + (1. - position_in_cell) * acceleration.at(bin) + position_in_cell * acceleration.at(bin+1);
+				vnew += (1. - position_in_cell) * acceleration.at(bin);
+				vnew += position_in_cell * acceleration.at(bin+1);
 			}
 			else
 			{
-				vnew = vold + (1. - position_in_cell) * acceleration.at(bin) + position_in_cell * acceleration.at(bin+1-grid_size);  
+				vnew += (1. - position_in_cell) * acceleration.at(bin);
+				vnew += position_in_cell * acceleration.at(bin+1-grid_size);  
 			}
 
 			sum_v 			+= (*it_weights) * vnew;

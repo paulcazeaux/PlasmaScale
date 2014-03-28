@@ -40,7 +40,7 @@ void Field::WeighParticle(const double position, const double charge)
 		double cellpos		= _plasma->find_position_in_cell(position);
 
 		_values[bin] += (1. - cellpos) * charge / dx;
-		if (bin < _size - 1)
+		if (bin+1< _size)
 			_values[bin+1] += cellpos * charge / dx;
 		else
 			_values[0] += cellpos * charge / dx;

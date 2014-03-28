@@ -4,11 +4,11 @@
 TARGET="PlasmaScale"
 
 # cmake parameters
-export CC=gcc
-export CXX=g++
+export CC=clang
+export CXX=clang++
 
 # build directory
-cd /Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/build
+cd /Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/build2
 
 # automatic makefile generation and compilation
 echo "====================================================================================="
