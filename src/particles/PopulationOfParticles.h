@@ -100,7 +100,7 @@ class PopulationOfParticles
 
 		/* methods ============================================================================== */
 		void 	Reset();
-		bool	CheckParameters(const int size, const double unit_mass, const double unit_charge, const double cyclotronic_rotation_parameter);
+		bool	CheckParameters(const MacroParameterization & parameterization,const int index);
 		void 	ComputeAggregateParameters();
 		void 	Accelerate(const PlasmaFields &fields, double factor = 1.0);
 		void	Move();

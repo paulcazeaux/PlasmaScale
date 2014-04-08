@@ -27,7 +27,7 @@ Plasma::Plasma( double length, double dt, int number_of_microsteps, int macro_to
 	_grid_size = std::unique_ptr<int>(new int(grid_size));
 	_macro_grid_size = std::unique_ptr<int>(new int(macro_grid_size));
 	_dx = _length / static_cast<double>(*_grid_size);
-	_macro_dx = _length / static_cast<double>(*_grid_size);
+	_macro_dx = _length / static_cast<double>(*_macro_grid_size);
 	_highest_mode = (*_grid_size) / 2; 
 	_inverse_of_particle_radius = la / _length;
 	_profiling_active = (_velocity_accumulation_interval>0);

@@ -14,3 +14,4 @@ build/
 *.dmp
 PlotGrad.m
 build2
+PlotGradTest.m

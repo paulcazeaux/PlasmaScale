@@ -25,6 +25,8 @@ make ${TARGET}
 
 # additional run
 echo "====================================================================================="
-#rm /Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/test_gradientinfo.dmp
-./app/${TARGET} -i /Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/ionwave.inp #-d /Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/test_gradientinfo.dmp -dp 1
+InputFile=/Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/ionwave.inp
+ExportFile=/Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/TestIonWave/EFPIt3.dmp
+rm ${ExportFile}
+./app/${TARGET} -i ${InputFile}  -d ${ExportFile} -dp 1
 echo "====================================================================================="

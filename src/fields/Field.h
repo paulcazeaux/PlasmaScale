@@ -42,6 +42,7 @@ class Field
 		/* getters */
 
 		double * get_ptr()			const   {return _values;	}
+		int 	 get_size()			const 	{return _size; 		}
 
 		/* methods ==============================================================*/
 

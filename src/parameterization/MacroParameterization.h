@@ -40,6 +40,7 @@ class MacroParameterization
 
 		std::vector<double>				_unit_charges;
 		std::vector<double>				_unit_masses;
+		std::vector<double>				_plasma_pulsations;
 		std::vector<double>				_cyclotronic_rotation_parameters;
 
 	public:

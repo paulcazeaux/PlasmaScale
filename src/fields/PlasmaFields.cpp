@@ -27,7 +27,6 @@ PlasmaFields::PlasmaFields(std::shared_ptr<const Plasma> plasma,
 
 						_max_mode	(plasma->get_max_mode())
 {
-
 	_electrostatic_energy_by_mode = std::vector<double>(_max_mode);
 	_electrostatic_energy_total  = 0.;
 	/* Initialize the filter and the filtered Poisson kernel */

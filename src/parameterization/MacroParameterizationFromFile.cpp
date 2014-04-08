@@ -79,6 +79,7 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 		_cyclotronic_rotation_parameters.push_back(std::tan(-0.5*wc*_plasma->get_dt()));
 		_unit_charges.push_back(_plasma->get_length()*wp*wp/(_plasma->get_epsilon()*n*qm));
 		_unit_masses.push_back(_unit_charges.at(population_index)/qm);
+		_plasma_pulsations.push_back(wp);
 		_population_sizes.push_back(n);
 
 		_group_sizes.push_back(n / nlg);

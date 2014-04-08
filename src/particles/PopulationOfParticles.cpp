@@ -54,9 +54,12 @@ void PopulationOfParticles::Reset()
 	std::fill(_velocity_y.begin(), _velocity_y.end(), 	0.);
 }
 
-bool PopulationOfParticles::CheckParameters(const int size, const double unit_mass, const double unit_charge, const double cyclotronic_rotation_parameter)
+bool PopulationOfParticles::CheckParameters(const MacroParameterization & parameterization, const int index)
 {
-	return ((size==*_population_size) && (unit_charge==_unit_charge) && (unit_mass==_unit_mass) && (cyclotronic_rotation_parameter==_cyclotronic_rotation_parameter));
+	return ((parameterization.get_population_size(index)==*_population_size) 
+			&& (parameterization.get_unit_mass(index)==_unit_charge) 
+			&& (parameterization.get_unit_mass(index)==_unit_mass) 
+			&& (parameterization.get_cyclotronic_rotation_parameter(index)==_cyclotronic_rotation_parameter));
 }
 
 void PopulationOfParticles::ComputeAggregateParameters()

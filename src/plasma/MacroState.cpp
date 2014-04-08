@@ -45,7 +45,6 @@ void MacroState::Step()
 
 	(*_macro_iteration)++;
 	*_simulation_time = *_macro_iteration * _macro_dt;
-
 }
 
 void MacroState::WriteData(std::fstream & fout)

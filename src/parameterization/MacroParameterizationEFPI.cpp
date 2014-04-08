@@ -144,8 +144,7 @@ MacroParameterizationEFPI::MacroParameterizationEFPI(MacroParameterization & par
 		_quiet_start_icdf.at(i) *= norm;
 	}
 
-	_debye_scaling = -std::pow(_electron_thermal_vel, 2.) *  _unit_masses.front() * _plasma->get_length()
-			/ (_plasma->get_epsilon() * static_cast<double>(_population_sizes.front()) * std::pow(_unit_charges.front(), 2.));
+	_debye_scaling = std::pow(_electron_thermal_vel/_plasma_pulsations.at(1), 2.);
 }
 
 void MacroParameterizationEFPI::Initialize(const State & state)
@@ -218,7 +217,7 @@ void MacroParameterizationEFPI::Load(State & state) const
 			double dn = 1./static_cast<double>(bin_size);
 			double dv = *(it_vel+1) - *it_vel;
 			
-			double xs = 0.;
+			//double xs = 0.;
 			for (int i=0; i<bin_size; i++)
 			{
 				double fv = (static_cast<double>(i) + 0.5)*dn;
@@ -228,14 +227,15 @@ void MacroParameterizationEFPI::Load(State & state) const
 					it_icdf++;
 				}
 								/* bit-reversed scrambling to reduce the correlation with the positions */
-				double xsi = 0.5;
-				xs -= 0.5;
-				while (xs >= 0.0)
-				{
-					xsi *= 0.5;
-					xs -= xsi;
-				} 
-				xs += 2.0*xsi;
+				// double xsi = 0.5;
+				// xs -= 0.5;
+				// while (xs >= 0.0)
+				// {
+				// 	xsi *= 0.5;
+				// 	xs -= xsi;
+				// } 
+				// xs += 2.0*xsi;
+				double xs = RandomTools::Generate_randomly_uniform(0., 1.);
 				double cellpos = xs + 0.5/static_cast<double>(bin_size);
 
 				position->at(i+bin_start_index) = (static_cast<double>(bin)+cellpos) * dx;
@@ -461,7 +461,7 @@ void MacroParameterizationEFPI::Lift()
 	}
 
 
-
+	
 	// Another possibility : lift the pressure to the fine grid and then compute the thermal velocity
 
 	while (size < _grid_size)
@@ -487,20 +487,101 @@ void MacroParameterizationEFPI::Lift()
 	}
 	assert(size == _grid_size);
 
-	/* Initialize the electron density on the fine grid */
-	static std::vector<double> log_ion_density = std::vector<double>(size);
 
-	double scaling = _debye_scaling/_plasma->get_macro_dx();
-	for (int i=0; i<size; i++)
-		log_ion_density.at(i) = std::log(_densities.front().at(i));
+	/* Initialize the electron density on the coarse grid */
+
+	static std::vector<double> potential = std::vector<double>(size),
+							   	exp_potential = std::vector<double>(size), 
+							   	update = std::vector<double>(size);
+	static std::vector<double> residual = std::vector<double>(size),
+								conj_dir = std::vector<double>(size),
+								dir = std::vector<double>(size);
+
+	/* Newton's method solve for the electrostatic potential assuming a Boltzmann distribution for the electrons */
+	double tol2 = 1e-20, iter_max = 10;
+
+	/* Initialization */
 	for (int i=0; i<size; i++)
 	{
-		_densities.at(1).at(i)  = _densities.front().at(i) 
-						+ scaling * (
-								  0.5 *log_ion_density.at(i)
-								- 0.25*log_ion_density.at((i>0 ? i-1: size-1)) 
-								- 0.25*log_ion_density.at((i+1<size ? i+1: 0)) 
-									);
+		potential.at(i) = std::log(_densities.front().at(i));
+	}
+
+	/* Newton's method loop */
+	double scaling = -0.25 * _debye_scaling/std::pow(_plasma->get_dx(), 2.);
+	for (int count=0; count<iter_max; count++)
+	{
+		/* Inner solve : CG algorithm */
+
+		for (int i=0; i<size; i++)
+		{
+			exp_potential.at(i) = std::exp(potential.at(i));
+				/* Initial value for the CG algorithm : zero. */
+			residual.at(i)	=  exp_potential.at(i)  +  scaling * (	
+														  potential.at((i>0?i-1:size-1)) 
+														+ potential.at((i<size-1?i+1:0)) 
+														- 2*potential.at(i)
+															     )
+									- _densities.front().at(i);
+			conj_dir.at(i) = residual.at(i);
+		}
+		std::fill(update.begin(), update.end(), 0.);
+
+
+		/* Inner loop */
+
+		double rnorm2 = 0, delta, alpha, beta;
+		for (int i=0; i<size; i++)
+		{
+			rnorm2 += residual.at(i)*residual.at(i);
+		}
+
+		for (int count_cg=0; count_cg<iter_max; count_cg++)
+		{
+			/* Compute the matrix-vector product */
+			delta = 0;
+			for (int i=0; i<size; i++)
+			{
+				dir.at(i) = (exp_potential.at(i)-2*scaling)*conj_dir.at(i) 
+										+ scaling * (	conj_dir.at((i>0?i-1:size-1)) 
+													  + conj_dir.at((i<size-1?i+1:0)) 
+														
+															     			);
+				delta += dir.at(i) * conj_dir.at(i);
+			}
+
+			beta = 1./rnorm2;
+			alpha = rnorm2/delta;
+			rnorm2 = 0;
+			for (int i=0; i<size; i++)
+			{
+				update.at(i) += alpha * conj_dir.at(i);
+				residual.at(i) -= alpha* dir.at(i);
+				rnorm2 += residual.at(i)*residual.at(i);
+			}
+			if (rnorm2 < tol2/2.)
+				break;
+			beta *= rnorm2;
+			for (int i=0; i<size; i++)
+			{
+				conj_dir.at(i) *= beta;
+				conj_dir.at(i) += residual.at(i);
+			}
+		}
+
+		double err=0;
+		for (int i=0; i<size; i++)
+		{
+			err += update.at(i) * update.at(i);
+			potential.at(i) -= update.at(i);
+		}
+		if (err < tol2)
+			break;
+	}
+	
+	/* Deduce the electron density from the Boltzmann distribution */
+	for (int i=0; i<size; i++)
+	{
+		_densities.at(1).at(i) = std::exp(potential.at(i));
 	}
 
 	/* Finally, fill the electron velocity and thermal velocity on the fine grid */
@@ -509,7 +590,6 @@ void MacroParameterizationEFPI::Lift()
 		_velocities.at(1).at(i) = _velocities.front().at(i);
 	}
 	std::fill(_thermal_vel.at(1).begin(), _thermal_vel.at(1).end(), _electron_thermal_vel);
-
 }
 
 void MacroParameterizationEFPI::Step(State & state)

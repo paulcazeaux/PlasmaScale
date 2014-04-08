@@ -52,12 +52,7 @@ void State::Load(const MacroParameterization & parameterization)
 	/* First we check that the size and parameters are right */
 	for (int index=0; index<_number_of_populations; index++)
 	{
-		int size = parameterization.get_population_size(index);
-		double unit_charge = parameterization.get_unit_charge(index);
-		double unit_mass = parameterization.get_unit_mass(index);
-		double cyclotronic_rotation_parameter = parameterization.get_cyclotronic_rotation_parameter(index);
-
-		if (!_populations.at(index)->CheckParameters(size, unit_mass, unit_charge, cyclotronic_rotation_parameter))
+		if (!_populations.at(index)->CheckParameters(parameterization, index))
 		{
 			_populations.at(index).reset(new PopulationOfParticles(parameterization, index, _iteration));
 		}
