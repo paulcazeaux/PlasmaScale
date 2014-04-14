@@ -217,7 +217,7 @@ void MacroParameterizationEFPI::Load(State & state) const
 			double dn = 1./static_cast<double>(bin_size);
 			double dv = *(it_vel+1) - *it_vel;
 			
-			//double xs = 0.;
+			double xs = 0.;
 			for (int i=0; i<bin_size; i++)
 			{
 				double fv = (static_cast<double>(i) + 0.5)*dn;
@@ -227,15 +227,15 @@ void MacroParameterizationEFPI::Load(State & state) const
 					it_icdf++;
 				}
 								/* bit-reversed scrambling to reduce the correlation with the positions */
-				// double xsi = 0.5;
-				// xs -= 0.5;
-				// while (xs >= 0.0)
-				// {
-				// 	xsi *= 0.5;
-				// 	xs -= xsi;
-				// } 
-				// xs += 2.0*xsi;
-				double xs = RandomTools::Generate_randomly_uniform(0., 1.);
+				double xsi = 0.5;
+				xs -= 0.5;
+				while (xs >= 0.0)
+				{
+					xsi *= 0.5;
+					xs -= xsi;
+				} 
+				xs += 2.0*xsi;
+				//double xs = RandomTools::Generate_randomly_uniform(0., 1.);
 				double cellpos = xs + 0.5/static_cast<double>(bin_size);
 
 				position->at(i+bin_start_index) = (static_cast<double>(bin)+cellpos) * dx;
