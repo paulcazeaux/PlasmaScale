@@ -59,9 +59,9 @@ MacroParameterizationEFPI& MacroParameterizationEFPI::operator=(MacroParameteriz
 	_quiet_start_icdf = parameterization._quiet_start_icdf;
 
 	_record_times = std::move(parameterization._record_times);
-	_record_ion_density = std::move(parameterization._stack_ion_density);
-	_record_ion_velocity = std::move(parameterization._stack_ion_velocity);
-	_record_ion_pressure = std::move(parameterization._stack_ion_pressure);
+	_record_ion_density = std::move(parameterization._record_ion_density);
+	_record_ion_velocity = std::move(parameterization._record_ion_velocity);
+	_record_ion_pressure = std::move(parameterization._record_ion_pressure);
 
 
 	_electron_thermal_vel = parameterization._electron_thermal_vel;
@@ -293,8 +293,14 @@ void MacroParameterizationEFPI::RestrictAndPushback(const State & state)
 
 	// Now we weigh the particles and compute the moments on the fine grid
 
+	/* Sanity check */
+	std::resize(working_ion_density, _grid_size);
+	std::resize(working_ion_velocity, _grid_size);
+	std::resize(working_ion_pressure, _grid_size);
+
 	std::fill(working_ion_density.begin(), working_ion_density.end(), 0.);
 	std::fill(working_ion_velocity.begin(), working_ion_velocity.end(), 0.);
+	std::fill(working_ion_pressure.begin(), working_ion_pressure.end(), 0.);
 
 	double dt = _plasma->get_dt();
 	for (int i=0; i<ion_population_size; i++)
@@ -323,7 +329,6 @@ void MacroParameterizationEFPI::RestrictAndPushback(const State & state)
 		working_ion_density.at(bin) *= ion_population_density;
 	}
 
-	std::fill(working_ion_pressure.begin(), working_ion_pressure.end(), 0.);
 	for (int i=0; i<ion_population_size; i++)
 	{
 		int bin = bins.at(i);
@@ -377,15 +382,16 @@ void MacroParameterizationEFPI::RestrictAndPushback(const State & state)
 		_stack_ion_velocity.at(i).push_back(working_ion_velocity.at(i));
 		_stack_ion_pressure.at(i).push_back(working_ion_pressure.at(i));
 	}
+
 	if (_record_microsteps)
 	{
 		_record_times.push_back(*state.get_simulation_time());
 		int m = _record_times.size()-1;
 		for (int i=0; i<size; i++)
 		{
-			_record_ion_density.at(m).at(i) = working_ion_density.at(i);
-			_record_ion_velocity.at(m).at(i) = working_ion_velocity.at(i);
-			_record_ion_pressure.at(m).at(i) = working_ion_pressure.at(i);
+			std::swap(_record_ion_density.at(m).at(i), working_ion_density.at(i));
+			std::swap(_record_ion_velocity.at(m).at(i), working_ion_velocity.at(i));
+			std::swap(_record_ion_pressure.at(m).at(i), working_ion_pressure.at(i));
 		}
 	}
 }
@@ -460,8 +466,6 @@ void MacroParameterizationEFPI::Lift()
 		_stack_ion_pressure.at(i).resize(0);
 	}
 
-
-	
 	// Another possibility : lift the pressure to the fine grid and then compute the thermal velocity
 
 	while (size < _grid_size)
@@ -683,6 +687,8 @@ void MacroParameterizationEFPI::WriteData(std::fstream & fout)
 
 	}
 }
+
+
 
 
 

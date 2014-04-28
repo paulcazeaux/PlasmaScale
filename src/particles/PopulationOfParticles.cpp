@@ -19,6 +19,8 @@ PopulationOfParticles::PopulationOfParticles(std::shared_ptr<const Plasma> plasm
 	_position = std::vector<double> (population_size);
 	_velocity_x = std::vector<double> (population_size);
 	_velocity_y = std::vector<double> (population_size);
+	_particle_order = std::vector<int> (population_size);
+	std::iota(_particle_order.begin(), _particle_order.end(), 0);
 
 	_profiling_active = false;
 }
@@ -38,6 +40,8 @@ PopulationOfParticles::PopulationOfParticles(const MacroParameterization & param
 	_position = std::vector<double> (*_population_size);
 	_velocity_x = std::vector<double> (*_population_size);
 	_velocity_y = std::vector<double> (*_population_size);
+	_particle_order = std::vector<int> (population_size);
+	std::iota(_particle_order.begin(), _particle_order.end(), 0);
 
 	_total_mass = _unit_mass * (*_population_size);
 	_total_weight = *_population_size;
@@ -372,4 +376,9 @@ void PopulationOfParticles::ComputeVelocityProfile()
 		_count = 1;
 	}
 
+}
+
+void PopulationOfParticles::Sort()
+{
+	std::sort(_particle_order.begin(), _particle_order.end(), [](int a, int b){ return _velocity_x.at(a) < _velocity_x.at(b); });
 }

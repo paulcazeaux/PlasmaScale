@@ -1,5 +1,5 @@
 
-/* HEADER MacroParameterizationEFPI ===============================================================
+/* HEADER MacroParameterizationWavelets ===============================================================
  * author: Paul Cazeaux
  * date: 2014-01-27
  *
@@ -9,13 +9,14 @@
  *  
  * ============================================================================= */
 
-#ifndef DEF_PLASMASCALE_MACROPARAMETERIZATIONEFPI
-#define DEF_PLASMASCALE_MACROPARAMETERIZATIONEFPI
+#ifndef DEF_PLASMASCALE_MACROPARAMETERIZATIONWAVELETS
+#define DEF_PLASMASCALE_MACROPARAMETERIZATIONWAVELETS
 
 #include "parameterization/MacroParameterization.h"
 #include "plasma/State.h"
 #include "tools/Tools.h"
 #include "tools/CurveDiagnostic.h"
+#include "representation/WaveletRepresentation.h"
  
 #include <iostream>
 #include <exception>
@@ -30,64 +31,49 @@
 
 /* Declarations */
 
-class MacroParameterizationEFPI : public MacroParameterization
+class MacroParameterizationWavelets : public MacroParameterization
 {
 	private:
 		/* class members ======================================================================== */
 
-		int 									_grid_size;
-		int 									_macro_grid_size;
-		bool									_record_microsteps;
+		int 										_grid_size;
+		int 										_macro_grid_size;
+		bool										_record_microsteps;
 
-		/* Spatial quantities */
+		/* Fine grid wavelet coefficients by population */
+		typedef std::vector<std::unique_ptr<Representation> >	wavelet_coefficients;
 
-		typedef std::vector<std::vector<double> > 	spatial_quantity;
-		spatial_quantity						_densities;
-		spatial_quantity 						_thermal_vel;
-		spatial_quantity 						_velocities;
+		std::vector<wavelet_coefficients> 			_distributions;
 
 		/* Active variables : assuming that the ion population is the first population */
 		/* Data points storing the information used to determine the derivative */
-		typedef std::vector<std::vector<double> >		active_variable;
-		active_variable 						_stack_ion_density;
-		active_variable							_stack_ion_velocity;
-		active_variable 						_stack_ion_pressure;
+		typedef std::vector<WaveletRepresentation>	active_variable;
+		std::vector<active_variable> 				_stack_ion_distribution;
 
 		/* Value for the previous step, used for the leapfrog time integration */
-		std::vector<double>	 					_prev_step_ion_density;
-		std::vector<double>						_prev_step_ion_velocity;
-		std::vector<double>	 					_prev_step_ion_pressure;
+		active_variable	 							_prev_step_ion_distribution;
 
 		/* Value for the current step, used for the leapfrog time integration */
-		std::vector<double>  					_current_step_ion_density;
-		std::vector<double> 					_current_step_ion_velocity;
-		std::vector<double>  					_current_step_ion_pressure;
-
-		/* Helpers for the quiet start using a discretization of the Maxwellian */
-			// TODO = what size ?
-		std::vector<double> 					_quiet_start_vel;
-		std::vector<double> 					_quiet_start_icdf;
+		active_variable								_current_step_ion_distribution;
 
 		/* Record arrays for the datapoints from the microsolver */
-		std::vector<double>						_record_times;
-		active_variable 						_record_ion_density;
-		active_variable							_record_ion_velocity;
-		active_variable 						_record_ion_pressure;
+		std::vector<double>							_record_times;
+		std::vector<active_variable> 				_record_ion_distribution;
 
 		/* Parameters for the determination of the passive variables */
-		double									_electron_thermal_vel;
-		double 									_debye_scaling;
+		double										_electron_thermal_vel;
+		double 										_debye_scaling;
 
 	public:
 		/* constructor  ========================================================================= */
-		MacroParameterizationEFPI() {}
-		MacroParameterizationEFPI(MacroParameterization & parameterization, double electron_thermal_vel);
-		virtual ~MacroParameterizationEFPI() {}
+		MacroParameterizationWavelets() {}
+		MacroParameterizationWavelets(MacroParameterization & parameterization, double electron_thermal_vel, std::vector<double> vmax, int depth);
+		virtual ~MacroParameterizationWavelets() {}
 
 		/* move constuctor and assignment ======================================================= */
 
-		MacroParameterizationEFPI(MacroParameterizationEFPI &&parameterization);
-		MacroParameterizationEFPI& operator=(MacroParameterizationEFPI &&parameterization);
+		MacroParameterizationWavelets(MacroParameterizationWavelets &&parameterization);
+		MacroParameterizationWavelets& operator=(MacroParameterizationWavelets &&parameterization);
 
 		/* methods ============================================================================== */
 
