@@ -20,7 +20,7 @@ class Representation
 {
 	public:
 		/* friends */
-		friend std::ostream & operator<<( std::ostream& os, const WaveletRepresentation& representation)
+		friend std::ostream & operator<<( std::ostream& os, const Representation& representation)
 		{
 			representation.print(os);
 			return os;
@@ -30,44 +30,23 @@ class Representation
 
 		virtual void Weigh(int size,
 				std::vector<double>::iterator 	position,
-				std::vector<double>:iterator  	velocity,
-				std::vector<double>::iterator 	weight);
-		virtual void Reset();
+				std::vector<double>::iterator  	velocity,
+				std::vector<double>::iterator 	weight) = 0;
+		virtual void Reset() = 0;
 
 		virtual void Load(int size,
 				std::vector<double>::iterator 	position,
-				std::vector<double>:iterator  	velocity,
-				std::vector<double>::iterator 	weight);
-		virtual void Coarsen();
-		virtual void Refine();
+				std::vector<double>::iterator  	velocity,
+				std::vector<double>::iterator 	weight) = 0;
+		virtual void Coarsen() = 0;
+		virtual void Refine() = 0;
 
-		virtual void print(std::ostream& os) const;
-		virtual int get_grid_size() const;
+		virtual void SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const double & thermal_velocity) = 0;
+		virtual void SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const std::vector<double> & thermal_velocity) = 0;
+		virtual void GetDensityVelocity(std::vector<double> & density, std::vector<double> & velocity) const = 0;
+		virtual void GetDensityVelocityPressure(std::vector<double> & density, std::vector<double> & velocity, std::vector<double> & pressure) const = 0;
 
-		/* operator overload */
-		virtual WaveletRepresentation& operator+=(const WaveletRepresentation& rhs);
-
-		virtual WaveletRepresentation& operator*=(const double lambda);
+		virtual void print(std::ostream& os) const = 0;
+		virtual int get_grid_size() const = 0;
 };
-
-inline Representation operator+(Representation lhs, const Representation& rhs)
-{
-	lhs += rhs;
-	return lhs;
-}
-
-inline Representation operator*(Representation lhs, const double lambda)
-{
-	lhs *= lambda;
-	return lhs;
-}
-
-inline Representation operator*(const double lambda, Representation rhs)
-{
-	rhs *= lambda;
-	return rhs;
-}
-
-
-
 #endif

@@ -50,9 +50,7 @@ class PopulationOfParticles
 		std::vector<double>						_velocity_x;
 		std::vector<double>						_velocity_y;
 		std::vector<double>						_weights;
-
-		std::vector<int> 						_particle_order; // To sort the particles by velocity
-
+		
 		/* Energy */
 		double 									_moment;
 		double 									_kinetic_energy;
@@ -108,7 +106,6 @@ class PopulationOfParticles
 		void 	SetupVelocityDiagnostics(int nbins, int velocity_accumulation_interval, double vupper, double vlower, double v0, double vt1, double vt2);
 		void 	SetupVelocityDiagnostics(const MacroParameterization & parameterization, const int index);
 		void	ComputeVelocityProfile();
-		void 	Sort(); 
 };
 
 #endif

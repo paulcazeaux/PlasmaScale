@@ -49,6 +49,7 @@ std::ostream& operator<<( std::ostream& os, const State& state)
 
 void State::Load(const MacroParameterization & parameterization)
 {
+    std::cout << & (_populations.at(0)->_position) << " ===> " ;
 	/* First we check that the size and parameters are right */
 	for (int index=0; index<_number_of_populations; index++)
 	{
@@ -66,6 +67,7 @@ void State::Load(const MacroParameterization & parameterization)
 	this->Prepare();
 	this->Weigh();
 	_fields->ComputeAndFilter();
+    std::cout << & (_populations.at(0)->_position) << std::endl;
 }
 
 void State::Step()
@@ -91,7 +93,7 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 	std::vector<bool> magnetizations					= this->get_vector_of_magnetizations();
 	std::vector<int *> sizes 							= this->get_vector_of_sizes();
 
-	/*  set up  windows for velocity distributions.  */
+	/*  set up  windows for the phase space distribution of particles.  */
 	diagnostics.emplace_back(new ScatterDiagnostic(
 				"linlin", "X", "Vx-X Phase Space",
 				 410, 0, 
@@ -138,7 +140,6 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 		}
 	}
 
-		/* SKIP THE GRAPH OF f(v) TOTAL : IT IS FALSE IN THE ORIGINAL XES1 */
 
 	double * x_array 	= _plasma->get_x_grid_ptr();
 	int * grid_size 	= _plasma->get_grid_size_ptr(); 

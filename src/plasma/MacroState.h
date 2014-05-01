@@ -24,7 +24,9 @@
 #include "parameterization/MacroParameterization.h"
 #include "parameterization/MacroParameterizationFromFile.h"
 #include "parameterization/MacroParameterizationEFPI.h"
- #include "parameterization/MacroParameterizationFullPIC.h"
+#include "parameterization/MacroParameterizationFullPIC.h"
+#include "parameterization/MacroParameterizationWavelets.h"
+
 
 class MacroState
 {
@@ -64,11 +66,7 @@ class MacroState
 
 		/* methods =============================================================================== */
 		void Step();
-		void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic>	> &diagnostics)
-		{
-			_micro_state->SetupDiagnostics(diagnostics);
-			_parameterization->SetupDiagnostics(diagnostics);
-		}
+		void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic>	> &diagnostics);
 		void WriteData(std::fstream & fout);
 };
 

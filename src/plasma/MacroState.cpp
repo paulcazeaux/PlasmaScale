@@ -22,8 +22,10 @@ MacroState::MacroState(FILE *& InputDeck)
 	}
 	else	
 	{
+		double vti = initialization.get_initial_thermal_vel(0); // Recover the ion thermal velocity
 		double vte = initialization.get_initial_thermal_vel(1); // Recover the electron thermal velocity
 		_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationEFPI(initialization, vte));
+		//_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationWavelets(initialization, vte, 6.*vti, 6));
 	}
 	_parameterization->Initialize(*_micro_state);
 }
@@ -45,6 +47,12 @@ void MacroState::Step()
 
 	(*_macro_iteration)++;
 	*_simulation_time = *_macro_iteration * _macro_dt;
+}
+
+void MacroState::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
+{
+	_micro_state->SetupDiagnostics(diagnostics);
+	_parameterization->SetupDiagnostics(diagnostics);
 }
 
 void MacroState::WriteData(std::fstream & fout)

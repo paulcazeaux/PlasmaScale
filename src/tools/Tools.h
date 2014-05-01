@@ -37,8 +37,9 @@ class Tools
 		static T EvaluateSlope(const std::vector<T> & values )
 		{
 			int size = values.size();
-			T sum = 0, first_moment = 0;
-			for (int n=0; n<size; n++)
+			assert(size>0);
+			T sum = values.at(0), first_moment = 0 * sum;
+			for (int n=1; n<size; n++)
 			{
 				sum				+= values.at(n);
 				first_moment 	+= static_cast<double>(n)*values.at(n);

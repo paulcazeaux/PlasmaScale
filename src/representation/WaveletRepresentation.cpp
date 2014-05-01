@@ -1,40 +1,37 @@
 #include "representation/WaveletRepresentation.h"
 
 
-WaveletRepresentation(std::shared_ptr<const Plasma plasma, double vmax, double depth, int grid_size) :
+WaveletRepresentation::WaveletRepresentation(std::shared_ptr<const Plasma> plasma, double vmax, int depth, int grid_size) :
 _plasma(plasma), _vmax(vmax), _depth(depth), _grid_size(grid_size)
 {
 	_number_of_bins = std::pow(2, depth);
-	_dv = (2.*vmax)/std::static_cast<double>(_number_of_bins);
+	_dv = (2.*vmax)/static_cast<double>(_number_of_bins);
 	_filter = "db1";
 
 	_is_transformed = false;
-	_histogram = std::vector<std::vector<double> >(_grid_size);
+	_histogram = std::vector<std::vector<double> >(_grid_size, std::vector<double>(_number_of_bins));
 	_coefficients = std::vector<std::vector<double> >(_grid_size);
-	for (int n=0; n<_grid_size; n++)
-	{
-		_histogram.at(n).resize(_number_of_bins);
-		_coefficients.at(n).resize(_number_of_bins);
-	}
+	_flag = std::vector<std::vector<double> >(_grid_size);
+	_length = std::vector<std::vector<int> >(_grid_size);
 }
 
 
 void WaveletRepresentation::Weigh(int size,
 								std::vector<double>::iterator 	position,
-								std::vector<double>:iterator  	velocity,
-								std::vector<double>::iterator 	weight)
+								std::vector<double>::iterator  	velocity,
+								std::vector<double>::iterator 	weights)
 {
-	double scaling = static_cast<double>(_grid_size)/(static_cast<double>(size)*_plasma->get_dt());
+	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
+	double dt = _plasma->get_dt();
 	this->Reset();
 
 	for (int i=0; i<size; i++)
 	{
 		double pos = position[i];
-		double weight = weight[i];
+		double weight = weights[i];
 		int xbin = _plasma->find_index_on_grid(pos);
 
-		double vel = velocity[i] * scaling;
-		int vbin = static_cast<int>(vel/_dv) + _number_of_bins/2;
+		int vbin = static_cast<int>(velocity[i]/(dt*_dv)) + _number_of_bins/2;
 		if (vbin < 0)
 			vbin = 0;
 		if (vbin > _number_of_bins-1)
@@ -42,21 +39,29 @@ void WaveletRepresentation::Weigh(int size,
 
 		_histogram.at(xbin).at(vbin) += weight;
 	}
+    
+    for (auto & cell : _histogram)
+    {
+        for (auto & value : cell)
+            value *= population_density;
+    }
 }
 
 void WaveletRepresentation::Load(int size,
 								std::vector<double>::iterator 	position,
-								std::vector<double>:iterator  	velocity,
-								std::vector<double>::iterator 	weight)
+								std::vector<double>::iterator  	velocity,
+								std::vector<double>::iterator 	weights)
 {
 	assert(size > 1);
+	if (_is_transformed)
+		this->iDWT();
 
-	static std::vector<double> vel = std::vector<double>(_number_of_bins);
-	static std::vector<double> icdf = std::vector<std::vector<double> >(_grid_size);
+	static std::vector<double> vel = std::vector<double>(_number_of_bins+1);
+	static std::vector<std::vector<double> > icdf = std::vector<std::vector<double> >(_grid_size);
 	static std::vector<double> density = std::vector<double>(_grid_size);
 	/* sanity checks */
-	vel.resize(_number_of_bins);			
-	for (int i=0; i<=number_of_bins; i++)
+	vel.resize(_number_of_bins+1);
+	for (int i=0; i<=_number_of_bins; i++)
 	{
 		vel.at(i) = static_cast<double>(i)*_dv - _vmax;
 	}
@@ -77,7 +82,8 @@ void WaveletRepresentation::Load(int size,
 		}
 	}
 	
-	double mean_bin_size = static_cast<double>(population_size) / static_cast<double>(_grid_size) ;
+	double mean_bin_size = static_cast<double>(size) / static_cast<double>(_grid_size);
+	double dx = _plasma->get_dx();
 
 	int bin_start_index = 0;
 	for (int bin = 0; bin < _grid_size; bin++)
@@ -106,65 +112,148 @@ void WaveletRepresentation::Load(int size,
 				xs -= xsi;
 			} 
 			xs += 2.0*xsi;
-			//double xs = RandomTools::Generate_randomly_uniform(-0.5, 0.5);
+			//double xs = RandomTools::Generate_randomly_uniform(0., 1.);
 			double cellpos = xs + 0.5/static_cast<double>(bin_size);
 
 			position[bin_start_index+i] = (static_cast<double>(bin)+cellpos) * dx;
 			velocity[bin_start_index+i] = (*it_vel + _dv*(fv - *it_icdf)/(*(it_icdf+1) - *it_icdf));
-			weight[bin_start_index+i]   = density;
+			weights[bin_start_index+i]   = density.at(bin);
 		}
 		bin_start_index = bin_end_index;
 	}
+    
+    
 }
 
 void WaveletRepresentation::Coarsen()
 {
+	if (_is_transformed)
+		this->iDWT();
 	_grid_size /= 2;
-	double dis0 = this->at(0);
+	std::vector<double> dis0 = _histogram.at(0);
 	for (int n=0; n<_grid_size-1; n++)
 	{
 		for (int i=0; i<_number_of_bins; i++)
-			this->at(n).at(i) = 0.25 * this->at(2*n).at(i) + 0.5 * this->at(2*n+1).at(i) + 0.25 * this->at(2*n+2).at(i);
+			_histogram.at(n).at(i) = 0.25 * _histogram.at(2*n).at(i) + 0.5 * _histogram.at(2*n+1).at(i) + 0.25 * _histogram.at(2*n+2).at(i);
 	}
 	{
-		int n=size-1;
+		int n=_grid_size-1;
 		for (int i=0; i<_number_of_bins; i++)
-			this->at(n) = 0.25 * this->at(2*n).at(i) + 0.5 * this->at(2*n+1).at(i) + 0.25 * dis0.at(i);
+			_histogram.at(n).at(i) = 0.25 * _histogram.at(2*n).at(i) + 0.5 * _histogram.at(2*n+1).at(i) + 0.25 * dis0.at(i);
 	}
+
+	_histogram.resize(_grid_size);
+	_coefficients.resize(_grid_size);
+	_flag.resize(_grid_size);
+	_length.resize(_grid_size);
 }
 
 
 void WaveletRepresentation::Refine()
 {
+	if (_is_transformed)
+		this->iDWT();
+
+	_histogram.resize(2*_grid_size);
+	for (int n=_grid_size; n<2*_grid_size; n++)
+		_histogram.at(n).resize(_number_of_bins);
+
+	_coefficients.resize(2*_grid_size);
+	_flag.resize(2*_grid_size);
+	_length.resize(2*_grid_size);
+
 	for (int n=_grid_size-1; n>=0; n--)
 	{
 		for (int i=0; i<_number_of_bins; i++)
-			this->at(2*n+1).at(i) 	= this->at(n).at(i);
+			_histogram.at(2*n+1).at(i) 	= _histogram.at(n).at(i);
 	}
 	{
 		for (int i=0; i<_number_of_bins; i++)
-			this->front() 			= 0.5*(this->at(1).at(i) + this->at(2*size-1).at(i));
+			_histogram.front().at(i) 	= 0.5*(_histogram.at(1).at(i) + _histogram.at(2*_grid_size-1).at(i));
 	}
-	for (int n=1; n<size; n++)
+	for (int n=1; n<_grid_size; n++)
 	{
 		for (int i=0; i<_number_of_bins; i++)
-			this->at(2*n).at(i) 	= 0.5*(this->at(2*n-1).at(i) + this->at(2*n+1).at(i));
+			_histogram.at(2*n).at(i) 	= 0.5*(_histogram.at(2*n-1).at(i) + _histogram.at(2*n+1).at(i));
 	}
 	_grid_size *= 2;
 }
 
+void WaveletRepresentation::SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const double & thermal_velocity)
+{
+	// TODO
+}
+
+void WaveletRepresentation::SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const std::vector<double> & thermal_velocity)
+{
+	// TODO
+}
+
+
+void WaveletRepresentation::GetDensityVelocity(std::vector<double> & density, std::vector<double> & velocity) const
+{
+	density.resize(_grid_size);
+	velocity.resize(_grid_size);
+
+	assert(!_is_transformed);
+	for (int n=0; n<_grid_size; n++)
+	{
+		double mean = 0.;
+		double dens = 0.;
+		double v = _vmax + 0.5*_dv;
+		for (int i=0; i<_number_of_bins; i++)
+		{
+			dens += _histogram.at(n).at(i);
+			mean += _histogram.at(n).at(i) * v;
+			v += _dv;
+		}
+		density.at(n) = dens;
+		velocity.at(n) = mean / dens;
+	}
+}
+
+void WaveletRepresentation::GetDensityVelocityPressure(std::vector<double> & density, std::vector<double> & velocity, std::vector<double> & pressure) const
+{
+	density.resize(_grid_size);
+	velocity.resize(_grid_size);
+    pressure.resize(_grid_size);
+
+	assert(!_is_transformed);
+	for (int n=0; n<_grid_size; n++)
+	{
+		double mean = 0., dens = 0., sq = 0.;
+		double v = -_vmax + 0.5*_dv;
+		for (int i=0; i<_number_of_bins; i++)
+		{
+			dens += _histogram.at(n).at(i);
+			mean += _histogram.at(n).at(i) * v;
+			sq	 += _histogram.at(n).at(i) * v*v;
+			v += _dv;
+		}
+		density.at(n) = dens;
+		velocity.at(n) = mean / dens;
+		pressure.at(n) = sq - mean*velocity.at(n);
+	}
+}
+
+
 void WaveletRepresentation::DWT()
 {
-	for (int i=0; i<_number_of_bins; i++)
-		std::dwt(_histogram.at(i), _depth, _filter, _coefficients, _flag, _length);
+	for (int n=0; n<_number_of_bins; n++)
+	{
+		_coefficients.at(n).clear();
+		_length.at(n).clear();
+		_flag.at(n).clear();
+		dwt(_histogram.at(n), _depth, _filter, _coefficients.at(n), _flag.at(n), _length.at(n));
+	}
 	_is_transformed = true;
 }
 
 
 void WaveletRepresentation::iDWT()
 {
-	for (int i=0; i<_number_of_bins; i++)
-		std::idwt(_coefficients.at(i), _flag, _filter, _histogram, _length);
+	for (int n=0; n<_number_of_bins; n++)
+		idwt(_coefficients.at(n), _flag.at(n), _filter, _histogram.at(n), _length.at(n));
 	_is_transformed = false;
 }
 
@@ -172,11 +261,15 @@ void WaveletRepresentation::Denoise(int n_coef)
 {
 	if (_is_transformed)
 	{
-		double thresh;
-		for (int i=0; i<_number_of_bins; i++)
+		std::vector<double> help;
+		for (int n=0; n<_number_of_bins; n++)
 		{
-			std::findthresh(_coefficients.at(i), n_coef, thresh);
-			for (auto & coeff : _coefficients.at(i))
+			/* Find the correct threshold */
+			help = _coefficients.at(n);
+			std::sort(help.begin(), help.end(), greater<double>());
+			double thresh = help.at(n_coef-1);
+
+			for (auto & coeff : _coefficients.at(n))
 			{
 				if (abs(coeff) < thresh)
 				{
@@ -188,11 +281,15 @@ void WaveletRepresentation::Denoise(int n_coef)
 	else
 	{
 		this->DWT();
-		double thresh;
-		for (int i=0; i<_number_of_bins; i++)
+		std::vector<double> help;
+		for (int n=0; n<_number_of_bins; n++)
 		{
-			std::findthresh(_coefficients.at(i), n_coef, thresh);
-			for (auto & coeff : _coefficients.at(i))
+			/* Find the correct threshold */
+			help = _coefficients.at(n);
+			std::sort(help.begin(), help.end(), greater<double>());
+			double thresh = help.at(n_coef-1);
+
+			for (auto & coeff : _coefficients.at(n))
 			{
 				if (abs(coeff) < thresh)
 				{
@@ -202,15 +299,28 @@ void WaveletRepresentation::Denoise(int n_coef)
 		}
 		this->iDWT();
 	}
-
 }
 
 void WaveletRepresentation::Reset()
 {
-	std::fill(_histogram, 0.);
+	for (int n=0; n<_grid_size; n++)
+		std::fill(_histogram.at(n).begin(), _histogram.at(n).end(), 0.);
 	_is_transformed = false;
 }
 
-void WaveletRepresentation::print(std::ostream& os)
+void WaveletRepresentation::print(std::ostream& os) const
 {
+	std::vector<double> density_vector, velocity_vector, pressure_vector;
+	this->GetDensityVelocityPressure(density_vector, velocity_vector, pressure_vector);
+
+	os << "Density:" << std::endl;
+	for (double & density : density_vector)
+		os << density << "\t";
+	os << std::endl << "Velocity:" << std::endl;
+	for (double & velocity : velocity_vector)
+		os << velocity << "\t";
+	os << std::endl << "Pressure:" << std::endl;
+	for (double & pressure : pressure_vector)
+		os << pressure << "\t";
+	os << std::endl;
 }

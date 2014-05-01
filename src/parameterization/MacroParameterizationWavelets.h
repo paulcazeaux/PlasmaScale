@@ -17,6 +17,7 @@
 #include "tools/Tools.h"
 #include "tools/CurveDiagnostic.h"
 #include "representation/WaveletRepresentation.h"
+#include "representation/MaxwellianRepresentation.h"
  
 #include <iostream>
 #include <exception>
@@ -38,16 +39,16 @@ class MacroParameterizationWavelets : public MacroParameterization
 
 		int 										_grid_size;
 		int 										_macro_grid_size;
+		int 										_depth;
+		double 										_ion_vmax;
 		bool										_record_microsteps;
 
 		/* Fine grid wavelet coefficients by population */
-		typedef std::vector<std::unique_ptr<Representation> >	wavelet_coefficients;
-
-		std::vector<wavelet_coefficients> 			_distributions;
+		std::vector<std::unique_ptr<Representation> > 	_distributions;
 
 		/* Active variables : assuming that the ion population is the first population */
 		/* Data points storing the information used to determine the derivative */
-		typedef std::vector<WaveletRepresentation>	active_variable;
+		typedef WaveletRepresentation				active_variable;
 		std::vector<active_variable> 				_stack_ion_distribution;
 
 		/* Value for the previous step, used for the leapfrog time integration */
@@ -64,10 +65,16 @@ class MacroParameterizationWavelets : public MacroParameterization
 		double										_electron_thermal_vel;
 		double 										_debye_scaling;
 
+		/* Arrays for the diagnostics */
+		std::vector<double> 						_ion_density;
+		std::vector<double> 						_ion_velocity;
+		std::vector<double> 						_ion_pressure;
+
+
 	public:
 		/* constructor  ========================================================================= */
 		MacroParameterizationWavelets() {}
-		MacroParameterizationWavelets(MacroParameterization & parameterization, double electron_thermal_vel, std::vector<double> vmax, int depth);
+		MacroParameterizationWavelets(MacroParameterization & parameterization, double electron_thermal_vel, double ion_vmax, int depth);
 		virtual ~MacroParameterizationWavelets() {}
 
 		/* move constuctor and assignment ======================================================= */
