@@ -49,12 +49,12 @@ std::ostream& operator<<( std::ostream& os, const State& state)
 
 void State::Load(const MacroParameterization & parameterization)
 {
-    std::cout << & (_populations.at(0)->_position) << " ===> " ;
 	/* First we check that the size and parameters are right */
 	for (int index=0; index<_number_of_populations; index++)
 	{
 		if (!_populations.at(index)->CheckParameters(parameterization, index))
 		{
+            std::cout << "Attention ! Wrong parameters for the population. Creating a new one, this could break diagnostics pointers !!" << std::endl;
 			_populations.at(index).reset(new PopulationOfParticles(parameterization, index, _iteration));
 		}
 	}
@@ -67,7 +67,6 @@ void State::Load(const MacroParameterization & parameterization)
 	this->Prepare();
 	this->Weigh();
 	_fields->ComputeAndFilter();
-    std::cout << & (_populations.at(0)->_position) << std::endl;
 }
 
 void State::Step()
