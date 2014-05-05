@@ -70,6 +70,7 @@ class WaveletRepresentation : public Representation
 		void DWT();
 		void iDWT();
 		void Denoise(int n_coef);
+		void DiscardNegativeValues();
 
 		virtual void Reset();
 		virtual void print(std::ostream& os) const;

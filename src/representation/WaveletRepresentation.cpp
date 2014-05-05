@@ -31,7 +31,7 @@ void WaveletRepresentation::Weigh(int size,
 		double weight = weights[i];
 		int xbin = _plasma->find_index_on_grid(pos);
 
-		int vbin = static_cast<int>(velocity[i]/(dt*_dv)) + _number_of_bins/2;
+		int vbin = static_cast<int>(velocity[i]/(dt*_dv) + static_cast<double>(_number_of_bins/2));
 		if (vbin < 0)
 			vbin = 0;
 		if (vbin > _number_of_bins-1)
@@ -72,6 +72,8 @@ void WaveletRepresentation::Load(int size,
 	{
 		icdf.at(n).resize(_number_of_bins+1);
 		icdf.at(n).front() = 0.;
+        //for (int i=0; i<_number_of_bins; i++)
+        //    icdf.at(n).at(i+1) = icdf.at(n).at(i) + std::max(_histogram.at(n).at(i), 0.);
 		std::partial_sum(_histogram.at(n).begin(), _histogram.at(n).end(), icdf.at(n).begin()+1);
 
 		density.at(n) = icdf.at(n).back();
@@ -112,7 +114,7 @@ void WaveletRepresentation::Load(int size,
 				xs -= xsi;
 			} 
 			xs += 2.0*xsi;
-			//double xs = RandomTools::Generate_randomly_uniform(0., 1.);
+			// double xs = RandomTools::Generate_randomly_uniform(0., 1.);
 			double cellpos = xs + 0.5/static_cast<double>(bin_size);
 
 			position[bin_start_index+i] = (static_cast<double>(bin)+cellpos) * dx;
@@ -239,7 +241,7 @@ void WaveletRepresentation::GetDensityVelocityPressure(std::vector<double> & den
 
 void WaveletRepresentation::DWT()
 {
-	for (int n=0; n<_number_of_bins; n++)
+	for (int n=0; n<_grid_size; n++)
 	{
 		_coefficients.at(n).clear();
 		_length.at(n).clear();
@@ -252,7 +254,7 @@ void WaveletRepresentation::DWT()
 
 void WaveletRepresentation::iDWT()
 {
-	for (int n=0; n<_number_of_bins; n++)
+	for (int n=0; n<_grid_size; n++)
 		idwt(_coefficients.at(n), _flag.at(n), _filter, _histogram.at(n), _length.at(n));
 	_is_transformed = false;
 }
@@ -262,7 +264,7 @@ void WaveletRepresentation::Denoise(int n_coef)
 	if (_is_transformed)
 	{
 		std::vector<double> help;
-		for (int n=0; n<_number_of_bins; n++)
+		for (int n=0; n<_grid_size; n++)
 		{
 			/* Find the correct threshold */
 			help = _coefficients.at(n);
@@ -282,7 +284,7 @@ void WaveletRepresentation::Denoise(int n_coef)
 	{
 		this->DWT();
 		std::vector<double> help;
-		for (int n=0; n<_number_of_bins; n++)
+		for (int n=0; n<_grid_size; n++)
 		{
 			/* Find the correct threshold */
 			help = _coefficients.at(n);
@@ -301,10 +303,32 @@ void WaveletRepresentation::Denoise(int n_coef)
 	}
 }
 
+void WaveletRepresentation::DiscardNegativeValues()
+{
+	for (auto & hist : _histogram)
+	{
+		//double corr = 0;
+		for (auto & value : hist)
+		{
+			if (value < 0)
+			{
+				//corr -= value;
+				value=0;
+			}
+		}
+//		if (corr >0)
+//		{
+//			corr /= _number_of_bins;
+//			for (auto & value : hist)
+//				value += corr;
+//		}
+	}
+}
+
 void WaveletRepresentation::Reset()
 {
-	for (int n=0; n<_grid_size; n++)
-		std::fill(_histogram.at(n).begin(), _histogram.at(n).end(), 0.);
+	for (auto & hist : _histogram)
+		std::fill(hist.begin(), hist.end(), 0.);
 	_is_transformed = false;
 }
 

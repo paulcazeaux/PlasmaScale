@@ -26,7 +26,7 @@ make ${TARGET}
 # additional run
 echo "====================================================================================="
 InputFile=/Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/ionwave.inp
-ExportFile=/Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/TestIonWave/EFPIt4.dmp
+ExportFile=/Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/TestWavelets.dmp
 rm ${ExportFile}
 ./app/${TARGET} -i ${InputFile}  -d ${ExportFile} -dp 1
 echo "====================================================================================="

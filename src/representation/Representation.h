@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include "plasma/Plasma.h"
+#include "tools/RandomTools.h"
 
 class Representation
 {

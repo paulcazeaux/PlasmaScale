@@ -17,7 +17,9 @@
 #include "tools/Tools.h"
 #include "tools/CurveDiagnostic.h"
 #include "representation/WaveletRepresentation.h"
+#include "representation/WaveletRepresentationP1.h"
 #include "representation/MaxwellianRepresentation.h"
+#include "representation/MaxwellianRepresentationP1.h"
  
 #include <iostream>
 #include <exception>

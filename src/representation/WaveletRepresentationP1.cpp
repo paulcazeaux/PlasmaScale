@@ -10,7 +10,8 @@ void WaveletRepresentationP1::Weigh(int size,
 								std::vector<double>::iterator  	velocity,
 								std::vector<double>::iterator 	weights)
 {
-	double scaling = static_cast<double>(_grid_size)/(static_cast<double>(size)*_plasma->get_dt());
+	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
+    double dt = _plasma->get_dt();
 	this->Reset();
 
 	for (int i=0; i<size; i++)
@@ -22,8 +23,7 @@ void WaveletRepresentationP1::Weigh(int size,
 		double right_weight =  _plasma->find_position_in_cell(pos) * weight;
 		double left_weight = weight - right_weight;
 
-		double v = velocity[i] * scaling;
-		int vbin = static_cast<int>(v/_dv) + _number_of_bins/2;
+		int vbin = static_cast<int>(velocity[i]/(dt*_dv) + static_cast<double>(_number_of_bins/2));
 		if (vbin < 0)
 			vbin = 0;
 		if (vbin > _number_of_bins-1)
@@ -39,6 +39,12 @@ void WaveletRepresentationP1::Weigh(int size,
 			_histogram.at(0).at(vbin) += right_weight;
 		}
 	}
+    
+    for (auto & cell : _histogram)
+    {
+        for (auto & value : cell)
+            value *= population_density;
+    }
 }
 
 void WaveletRepresentationP1::Load(int size,
@@ -48,11 +54,11 @@ void WaveletRepresentationP1::Load(int size,
 {
 	assert(size > 1);
 
-	static std::vector<double> vel = std::vector<double>(_number_of_bins);
+	static std::vector<double> vel = std::vector<double>(_number_of_bins+1);
 	static std::vector<std::vector<double> > icdf = std::vector<std::vector<double> >(_grid_size);
 	static std::vector<double> density = std::vector<double>(_grid_size);
 	/* sanity checks */
-	vel.resize(_number_of_bins);			
+	vel.resize(_number_of_bins+1);
 	for (int i=0; i<=_number_of_bins; i++)
 	{
 		vel.at(i) = static_cast<double>(i)*_dv - _vmax;

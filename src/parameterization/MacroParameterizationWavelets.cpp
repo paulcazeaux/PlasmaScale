@@ -44,7 +44,7 @@ MacroParameterizationWavelets& MacroParameterizationWavelets::operator=(MacroPar
 	return *this;
 }
 
-MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterization & parameterization, 
+MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterization & parameterization,
 				double electron_thermal_vel, double ion_vmax, int depth) :
 	MacroParameterization(std::move(parameterization)), _depth(depth), _ion_vmax(ion_vmax), _electron_thermal_vel(electron_thermal_vel)
 {
@@ -55,11 +55,11 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 	_macro_grid_size = _plasma->get_macro_grid_size();
 	_record_microsteps = _plasma->get_record_microsteps();
 
-	_prev_step_ion_distribution 	= WaveletRepresentation(_plasma, _ion_vmax, _depth, _macro_grid_size);
-	_current_step_ion_distribution	= WaveletRepresentation(_plasma, _ion_vmax, _depth, _macro_grid_size);
+	_prev_step_ion_distribution 	= WaveletRepresentationP1(_plasma, _ion_vmax, _depth, _macro_grid_size);
+	_current_step_ion_distribution	= WaveletRepresentationP1(_plasma, _ion_vmax, _depth, _macro_grid_size);
 
 	_distributions.clear();
-	_distributions.emplace_back(new WaveletRepresentation(_plasma, _ion_vmax, _depth, _grid_size));
+	_distributions.emplace_back(new WaveletRepresentationP1(_plasma, _ion_vmax, _depth, _grid_size));
 	_distributions.emplace_back(new MaxwellianRepresentation(_plasma, _grid_size));
 
 	int number_of_microsteps = _plasma->get_number_of_microsteps();
@@ -136,7 +136,7 @@ void MacroParameterizationWavelets::Load(State & state) const
 
 void MacroParameterizationWavelets::RestrictAndPushback(const State & state)
 {
-	WaveletRepresentation working_ion_distribution = WaveletRepresentation(_plasma, _ion_vmax, _depth, _grid_size);
+	WaveletRepresentationP1 working_ion_distribution = WaveletRepresentationP1(_plasma, _ion_vmax, _depth, _grid_size);
 
 	/***********************************************************************/
 	/* Now we weigh the particles and compute the moments on the fine grid */
@@ -177,7 +177,10 @@ void MacroParameterizationWavelets::ExtrapolateFirstHalfStep()
 
 	_stack_ion_distribution.front()  = macro_to_micro_dt_ratio * Tools::EvaluateSlope(_stack_ion_distribution);
 	_stack_ion_distribution.resize(1);
+    //_stack_ion_distribution.front().Denoise(std::pow(2, _depth-2));
 	_stack_ion_distribution.front()  += 0.5*(_prev_step_ion_distribution + _current_step_ion_distribution);
+    //_stack_ion_distribution.front().Denoise(std::pow(2, _depth-1));
+    _stack_ion_distribution.front().DiscardNegativeValues();
 
 }
 
@@ -188,7 +191,10 @@ void MacroParameterizationWavelets::ExtrapolateSecondHalfStep()
 
 	_stack_ion_distribution.front()  = macro_to_micro_dt_ratio * Tools::EvaluateSlope(_stack_ion_distribution);
 	_stack_ion_distribution.resize(1);
+    //_stack_ion_distribution.front().Denoise(std::pow(2, _depth-2));
 	_stack_ion_distribution.front()  += _current_step_ion_distribution;
+    //_stack_ion_distribution.front().Denoise(std::pow(2, _depth-1));
+    _stack_ion_distribution.front().DiscardNegativeValues();
 
 	/* Initialize the next step */
 
@@ -199,7 +205,7 @@ void MacroParameterizationWavelets::ExtrapolateSecondHalfStep()
 void MacroParameterizationWavelets::Lift()
 {
 	int size = _macro_grid_size;
-	*dynamic_cast<WaveletRepresentation*>(_distributions.front().get()) = _stack_ion_distribution.front();          // Not very pretty...
+	*dynamic_cast<WaveletRepresentation*>(_distributions.front().get()) = _stack_ion_distribution.front();
 	_stack_ion_distribution.clear();
 
 	while (size < _grid_size)
@@ -370,7 +376,7 @@ void MacroParameterizationWavelets::WriteData(std::fstream & fout)
 {
 	if (!_record_microsteps)
 	{
-		fout << _current_step_ion_distribution;
+		fout << _current_step_ion_distribution; 
 	}
 	else
 	{
@@ -380,7 +386,7 @@ void MacroParameterizationWavelets::WriteData(std::fstream & fout)
 		for (int i=0; i<_record_times.size(); i++)
 		{
 			fout << "t = " << _record_times.at(i) << std::endl;
-			fout << _current_step_ion_distribution;
+			fout << _record_ion_distribution.at(i);
 		}
 
 	}
