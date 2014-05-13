@@ -57,7 +57,7 @@ class MacroParameterizationFullPIC : public MacroParameterization
 
 		/* methods ============================================================================== */
 
-		virtual void Initialize(const State & state);
+		virtual void Initialize(State & state);
 		virtual void Load(State & state) const {}
 
 		void ComputeVariables(const State & state);

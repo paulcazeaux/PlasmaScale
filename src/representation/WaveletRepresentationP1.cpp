@@ -71,63 +71,48 @@ void WaveletRepresentationP1::Load(int size,
 		icdf.at(n).resize(_number_of_bins+1);
 		icdf.at(n).front() = 0.;
 		std::partial_sum(_histogram.at(n).begin(), _histogram.at(n).end(), icdf.at(n).begin()+1);
-
 		density.at(n) = icdf.at(n).back();
-		double norm = 1./density.at(n);
-		for (int i=1; i<=_number_of_bins; i++)
-		{
-			icdf.at(n).at(i) *= norm;
-		}
 	}
 	
-	double mean_bin_size = static_cast<double>(size) / static_cast<double>(_grid_size);
-	double dx = _plasma->get_dx();
+	double L = _plasma->get_length();
+	double dn = 1./static_cast<double>(size);
 
-	int bin_start_index = 0;
-	for (int bin = 0; bin < _grid_size; bin++)
+	double xs = 0.;			
+	double fv = 0.5*dn;
+	
+	for (int i=0; i<size; i++)
 	{
-		int bin_end_index = std::ceil(static_cast<double>(bin+1)*mean_bin_size-0.5);
-		int bin_size = bin_end_index - bin_start_index;
-		auto it_vel_left = vel.begin();
-		auto it_icdf_left = icdf.at(bin).begin();
-		auto it_vel_right = vel.begin();			
-		auto it_icdf_right = icdf.at(bin+1 < _grid_size ? bin+1 : 0).begin();
-		double dn = 1./static_cast<double>(bin_size);
-		
-		double xs = 0.;
-		for (int i=0; i<bin_size; i++)
+		/* bit-reversed scrambling to reduce the correlation with the positions */
+		double xsi = 0.5;
+		xs -= 0.5;
+		while (xs >= 0.0)
 		{
-			/* bit-reversed scrambling to reduce the correlation with the positions */
-			double xsi = 0.5;
-			xs -= 0.5;
-			while (xs >= 0.0)
-			{
-				xsi *= 0.5;
-				xs -= xsi;
-			} 
-			xs += 2.0*xsi;
-			//double xs = RandomTools::Generate_randomly_uniform(0., 1.);
-			double cellpos = xs + 0.5/static_cast<double>(bin_size);
+			xsi *= 0.5;
+			xs -= xsi;
+		} 
+		xs += 2.0*xsi;
+		//double pos = RandomTools::Generate_randomly_uniform(0., L);
+		double pos = L*xs;
+		int bin = _plasma->find_index_on_grid(pos);
+		double cellpos = _plasma->find_position_in_cell(pos);
 
-			double fv = (static_cast<double>(i) + 0.5)*dn;
-			while (fv >= *(it_icdf_left+1)) 
-			{
-				it_vel_left++;
-				it_icdf_left++;
-			}
-			double vel_left =  (*it_vel_left + _dv*(fv - *it_icdf_left)/(*(it_icdf_left+1) - *it_icdf_left));
-			while (fv >= *(it_icdf_right+1)) 
-			{
-				it_vel_right++;
-				it_icdf_right++;
-			}
-			double vel_right =  (*it_vel_right + _dv*(fv - *it_icdf_right)/(*(it_icdf_right+1) - *it_icdf_right));
+		auto it_icdf_left = icdf.at(bin).begin();
+		auto it_icdf_right = icdf.at(bin+1 < _grid_size ? bin+1 : 0).begin();
+        double weight = Tools::EvaluateP1Function(density, bin, cellpos);
 
-			position[bin_start_index+i] = (static_cast<double>(bin)+cellpos) * dx;
-			weights[bin_start_index+i]  = Tools::EvaluateP1Function(density, bin, cellpos);
-			velocity[bin_start_index+i] = (1.-cellpos)*vel_left + cellpos*vel_right;
-
+		int vindex=0;
+		double fvdown = (1.-cellpos)*(*(it_icdf_left)) + cellpos*(*(it_icdf_right));
+		double fvup = (1.-cellpos)*(*(++it_icdf_left)) + cellpos*(*(++it_icdf_right));
+		while (weight*fv >= fvup)
+		{
+			vindex++;
+			fvdown = fvup;
+			fvup = (1.-cellpos)*(*(++it_icdf_left)) + cellpos*(*(++it_icdf_right));
 		}
-		bin_start_index = bin_end_index;
+
+		position[i] = pos;
+		weights[i]  = weight;
+		velocity[i] = vel.at(vindex) + _dv*(weight*fv - fvdown)/(fvup - fvdown);
+		fv += dn;
 	}
 }

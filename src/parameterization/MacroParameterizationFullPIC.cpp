@@ -36,7 +36,7 @@ MacroParameterizationFullPIC::MacroParameterizationFullPIC(MacroParameterization
 	_ion_velocity 			= std::vector<double>(_grid_size);
 }
 
-void MacroParameterizationFullPIC::Initialize(const State & state)
+void MacroParameterizationFullPIC::Initialize(State & state)
 {
 	this->ComputeVariables(state);
 }

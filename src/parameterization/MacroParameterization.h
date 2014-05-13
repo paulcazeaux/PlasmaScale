@@ -71,7 +71,7 @@ class MacroParameterization
 			std::cout << "A Load function should be implemented for your choice of parameterization !" << std::endl;
 		}
 
-		virtual void Initialize(const State &) {}
+		virtual void Initialize(State &) {}
 
 		/* If implemented, the Step() function should leave the PIC micro state in a correctly initialized state */
 		virtual void Step(State &) {}

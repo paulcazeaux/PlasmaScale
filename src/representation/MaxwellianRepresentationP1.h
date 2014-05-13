@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include "tools/Tools.h"
 #include "plasma/Plasma.h"
 #include "representation/MaxwellianRepresentation.h"
 

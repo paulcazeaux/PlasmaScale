@@ -334,17 +334,13 @@ void WaveletRepresentation::Reset()
 
 void WaveletRepresentation::print(std::ostream& os) const
 {
-	std::vector<double> density_vector, velocity_vector, pressure_vector;
-	this->GetDensityVelocityPressure(density_vector, velocity_vector, pressure_vector);
-
-	os << "Density:" << std::endl;
-	for (double & density : density_vector)
-		os << density << "\t";
-	os << std::endl << "Velocity:" << std::endl;
-	for (double & velocity : velocity_vector)
-		os << velocity << "\t";
-	os << std::endl << "Pressure:" << std::endl;
-	for (double & pressure : pressure_vector)
-		os << pressure << "\t";
-	os << std::endl;
+	os << "Histogram: " << _grid_size << " grid cells by " << _number_of_bins << " velocity bins" << std::endl;
+    for (auto & hist : _histogram)
+    {
+        for (auto & value : hist)
+        {
+            os << value << "\t";
+        }
+        os << std::endl;
+    }
 }

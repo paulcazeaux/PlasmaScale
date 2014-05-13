@@ -147,7 +147,7 @@ MacroParameterizationEFPI::MacroParameterizationEFPI(MacroParameterization & par
 	_debye_scaling = std::pow(_electron_thermal_vel/_plasma_pulsations.at(1), 2.);
 }
 
-void MacroParameterizationEFPI::Initialize(const State & state)
+void MacroParameterizationEFPI::Initialize(State & state)
 {
 	for (int bin=0; bin<_macro_grid_size; bin++)
 	{	
