@@ -103,6 +103,22 @@ class MaxwellianRepresentation : public Representation
 			return *this;
 		}
 
+		MaxwellianRepresentation& operator-=(const MaxwellianRepresentation& rhs)
+		{
+			for (int n=0; n<_grid_size; n++)
+			{
+				_density.at(n) -= rhs._density.at(n);
+				_velocity.at(n) -= rhs._velocity.at(n);
+
+				/* We add the pressures, not the thermal velocities */
+				double p;
+				p = _density.at(n) * std::pow(_thermal_velocity.at(n), 2.) 
+					- rhs._density.at(n) * std::pow(rhs._thermal_velocity.at(n), 2.);
+				_thermal_velocity.at(n) = std::sqrt(p / _density.at(n));
+			}
+			return *this;
+		}
+
 		MaxwellianRepresentation& operator*=(const double lambda)
 		{
 			for (int n=0; n<_grid_size; n++)
@@ -121,6 +137,12 @@ class MaxwellianRepresentation : public Representation
 inline MaxwellianRepresentation operator+(MaxwellianRepresentation lhs, const MaxwellianRepresentation& rhs)
 {
 	lhs += rhs;
+	return lhs;
+}
+
+inline MaxwellianRepresentation operator-(MaxwellianRepresentation lhs, const MaxwellianRepresentation& rhs)
+{
+	lhs -= rhs;
 	return lhs;
 }
 
