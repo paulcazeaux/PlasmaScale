@@ -70,11 +70,24 @@ class WaveletRepresentation : public Representation
 		void DWT();
 		void iDWT();
 		void Denoise(int n_coef);
+		void Denoise(double thresh);
+		void Cutoff(int depth);
 		void DiscardNegativeValues();
 
 		virtual void Reset();
 		virtual void print(std::ostream& os) const;
 		virtual int get_grid_size() const 	{ return _grid_size;	}
+		virtual void set_grid_size(const int new_grid_size)
+		{
+			_histogram.resize(new_grid_size);
+			for (int n=_grid_size; n<new_grid_size; n++)
+				_histogram.at(n).resize(_number_of_bins);
+
+			_coefficients.resize(new_grid_size);
+			_flag.resize(new_grid_size);
+			_length.resize(new_grid_size);
+			_grid_size = new_grid_size;
+		}
 
 		/* operator overload */
 		WaveletRepresentation& operator=(const WaveletRepresentation & rhs)

@@ -4,7 +4,7 @@
 
 Plasma::Plasma( double length, double dt, int number_of_microsteps, int macro_to_micro_dt_ratio,
 				double epsilon, double la, double rho0, double E0, double w0, 
-				int number_of_populations, int grid_size, int macro_grid_size, int velocity_accumulation_interval, int max_mode, int depth,
+				int number_of_populations, int grid_size, int macro_grid_size, int velocity_accumulation_interval, int max_mode, int depth, int cutoff,
 				double filter_parameter_1, double filter_parameter_2, int max_size_history, bool use_full_PIC, bool record_microsteps)
 				: 
 					_dt(dt),
@@ -14,6 +14,7 @@ Plasma::Plasma( double length, double dt, int number_of_microsteps, int macro_to
 					_use_full_PIC(use_full_PIC),
                     _length(length),
                     _depth(depth),
+                    _cutoff(cutoff),
 					_epsilon(epsilon),
 					_rho0(rho0),
 					_E0(E0), 
@@ -86,6 +87,7 @@ std::ostream& operator<<( std::ostream& os, const Plasma& plasma)
 	os << "\t\t Grid length: \t"	<< plasma._x_grid->back();
 	os << "\t\t Highest mode: \t"	<< plasma._highest_mode;
 	os << "\t\t Wavelet tree depth: \t" << plasma._depth 			<< std::endl;
+    os << "\t\t Wavelet tree cutoff: \t" << plasma._cutoff 			<< std::endl;
 
 	os << std::endl;
 	os << "Plasma parameters:	"	<< std::endl;

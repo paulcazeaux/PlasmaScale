@@ -17,7 +17,7 @@ enable_language(C)
 
 # Add first is for debugging second is for performance
 #SET(GCC_COMPILE_FLAGS "-std=c++11")
-SET(GCC_COMPILE_FLAGS "-std=c++11 -DNDEBUG -O3")
+SET(GCC_COMPILE_FLAGS "-std=c++11 -DNDEBUG -O3 -funroll-loops")
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS}")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/module")

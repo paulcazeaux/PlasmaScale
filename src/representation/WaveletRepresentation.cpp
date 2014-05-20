@@ -303,6 +303,82 @@ void WaveletRepresentation::Denoise(int n_coef)
 	}
 }
 
+void WaveletRepresentation::Denoise(double thresh)
+{
+	if (_is_transformed)
+	{
+		std::vector<double> help;
+		for (int n=0; n<_grid_size; n++)
+		{
+			for (auto & coeff : _coefficients.at(n))
+			{
+				if (abs(coeff) < thresh)
+				{
+					coeff = 0.;
+				}
+			}
+		}
+	}
+	else
+	{
+		this->DWT();
+		std::vector<double> help;
+		for (int n=0; n<_grid_size; n++)
+		{
+			for (auto & coeff : _coefficients.at(n))
+			{
+				if (abs(coeff) < thresh)
+				{
+					coeff = 0.;
+				}
+			}
+		}
+		this->iDWT();
+	}
+}
+
+
+
+void WaveletRepresentation::Cutoff(int depth)
+{
+    int cutoff = std::pow(2, depth);
+    if (cutoff >  _number_of_bins)
+        cutoff = _number_of_bins;
+    
+	if (_is_transformed)
+	{
+		std::vector<double> help;
+		for (int n=0; n<_grid_size; n++)
+		{
+            int i=0;
+			for (auto & coeff : _coefficients.at(n))
+			{
+				if ((i++)>cutoff)
+				{
+					coeff = 0.;
+				}
+			}
+		}
+	}
+	else
+	{
+		this->DWT();
+		std::vector<double> help;
+		for (int n=0; n<_grid_size; n++)
+		{
+            int i=0;
+			for (auto & coeff : _coefficients.at(n))
+			{
+				if ((i++)>cutoff)
+				{
+					coeff = 0.;
+				}
+			}
+		}
+		this->iDWT();
+	}
+}
+
 void WaveletRepresentation::DiscardNegativeValues()
 {
 	for (auto & hist : _histogram)

@@ -49,5 +49,6 @@ class Representation
 
 		virtual void print(std::ostream& os) const = 0;
 		virtual int get_grid_size() const = 0;
+		virtual void set_grid_size(const int new_grid_size) = 0;
 };
 #endif

@@ -1,7 +1,5 @@
 #include "representation/WaveletRepresentationP1.h"
 
-
-
 WaveletRepresentationP1::WaveletRepresentationP1(std::shared_ptr<const Plasma> plasma, double vmax, int depth, int grid_size) :
 WaveletRepresentation(plasma, vmax, depth, grid_size) {}
 

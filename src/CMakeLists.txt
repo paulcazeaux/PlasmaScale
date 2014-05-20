@@ -11,7 +11,7 @@ INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src/)
 
 SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/app)
 
-FILE( GLOB_RECURSE sourcefiles *.cpp )
+FILE( GLOB_RECURSE sourcefiles *.cpp)
 
 ADD_EXECUTABLE(PlasmaScale  ${sourcefiles})
 

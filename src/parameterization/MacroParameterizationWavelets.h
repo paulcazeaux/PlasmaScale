@@ -52,6 +52,7 @@ class MacroParameterizationWavelets : public MacroParameterization
 		/* Data points storing the information used to determine the derivative */
 		typedef WaveletRepresentation				active_variable;
 		std::vector<active_variable> 				_stack_ion_distribution;
+		int 										_stack_index;
 
 		/* Value for the previous step, used for the leapfrog time integration */
 		active_variable	 							_prev_step_ion_distribution;

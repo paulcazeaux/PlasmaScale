@@ -10,6 +10,7 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 			_record_microsteps(parameterization._record_microsteps),
 			_distributions(std::move(parameterization._distributions)),
 			_stack_ion_distribution(std::move(parameterization._stack_ion_distribution)),
+            _stack_index(parameterization._stack_index),
 			_prev_step_ion_distribution(std::move(parameterization._prev_step_ion_distribution)),
 			_current_step_ion_distribution(std::move(parameterization._current_step_ion_distribution)),
 			_record_times(std::move(parameterization._record_times)),
@@ -32,6 +33,7 @@ MacroParameterizationWavelets& MacroParameterizationWavelets::operator=(MacroPar
 
 	_distributions = std::move(parameterization._distributions);
 	_stack_ion_distribution = std::move(parameterization._stack_ion_distribution);
+    _stack_index = parameterization._stack_index;
 	_prev_step_ion_distribution = std::move(parameterization._prev_step_ion_distribution);
 	_current_step_ion_distribution = std::move(parameterization._current_step_ion_distribution);
 
@@ -64,6 +66,7 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 
 	int number_of_microsteps = _plasma->get_number_of_microsteps();
 	_stack_ion_distribution.reserve(number_of_microsteps+1);
+    _stack_index = 0;
 
 	if (_record_microsteps)
 	{
@@ -81,7 +84,7 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 
 void MacroParameterizationWavelets::Initialize(State & state)
 {
-	_stack_ion_distribution.clear();
+    _stack_index = 0;
 	std::shared_ptr<double> simulation_time = state.get_simulation_time();
 	double current_time = *simulation_time;
     
@@ -111,8 +114,9 @@ void MacroParameterizationWavelets::Initialize(State & state)
 		this->RestrictAndPushback(state);
 	}
 	/* Compute the derivative by least-squares and step backwards */
+	_stack_ion_distribution.resize(number_of_microsteps+1);
     _prev_step_ion_distribution = _current_step_ion_distribution - _plasma->get_macro_to_micro_dt_ratio() * Tools::EvaluateSlope(_stack_ion_distribution);
-	_stack_ion_distribution.resize(1);
+	_stack_index = 1;
     
 	this->Lift();
 	state.Load(*this);
@@ -166,49 +170,53 @@ void MacroParameterizationWavelets::Load(State & state) const
 
 void MacroParameterizationWavelets::RestrictAndPushback(const State & state)
 {
-	WaveletRepresentationP1 working_ion_distribution = WaveletRepresentationP1(_plasma, _ion_vmax, _depth, _grid_size);
-
 	/***********************************************************************/
 	/* Now we weigh the particles and compute the moments on the fine grid */
 	/***********************************************************************/
-
+    /* First, we initialize the arrays */
 	std::vector<double>::iterator 	ion_position 		= state.get_vector_of_position_arrays().front()->begin();
 	std::vector<double>::iterator	ion_velocity 		= state.get_vector_of_x_velocity_arrays().front()->begin();
 	std::vector<double>::iterator 	ion_weight 			= state.get_vector_of_weight_arrays().front()->begin();
 	int ion_population_size = state.get_vector_of_position_arrays().front()->size();
-
-	working_ion_distribution.Weigh(ion_population_size, ion_position, ion_velocity, ion_weight);
-	/* Then we restrict the values to the macroscopic grid using a linear smoothing. */
-	int size = working_ion_distribution.get_grid_size();
-	assert(size == _grid_size);
-
+    if (_stack_index >= _stack_ion_distribution.size())
+        _stack_ion_distribution.emplace_back(_plasma, _ion_vmax, _depth, _grid_size);
+    
+    int size = _stack_ion_distribution.at(_stack_index).get_grid_size();
+    
+    if (size != _grid_size)
+    {
+        _stack_ion_distribution.at(_stack_index).set_grid_size(_grid_size);
+        size = _grid_size;
+    }
+    
+    
+	/* Then we weigh the particles and restrict the values to the macroscopic grid using a linear smoothing. */
+	_stack_ion_distribution.at(_stack_index).Weigh(ion_population_size, ion_position, ion_velocity, ion_weight);
+    
 	while (size > _macro_grid_size)
 	{
-		working_ion_distribution.Coarsen();
-		size = working_ion_distribution.get_grid_size();
+		_stack_ion_distribution.at(_stack_index).Coarsen();
+		size = _stack_ion_distribution.at(_stack_index).get_grid_size();
 	}
-
-	/* Finally, we pushback into the data points. */
 	assert(size == _macro_grid_size);
-	_stack_ion_distribution.push_back(working_ion_distribution);
 
 	if (_record_microsteps)
 	{
 		_record_times.push_back(*state.get_simulation_time());
 		int m = _record_times.size()-1;
-		_record_ion_distribution.at(m) = working_ion_distribution;
+		_record_ion_distribution.at(m) = _stack_ion_distribution.at(_stack_index);
 	}
+	_stack_index++;
 }
 
 void MacroParameterizationWavelets::ExtrapolateFirstHalfStep(const double ratio)
 {
 	/* First, compute the derivative by least-squares and step forward */
 
-	_stack_ion_distribution.front()  = ratio * Tools::EvaluateSlope(_stack_ion_distribution);
-	_stack_ion_distribution.resize(1);
-    //_stack_ion_distribution.front().Denoise(std::pow(2, _depth-4));
-	_stack_ion_distribution.front()  += 0.5*(_prev_step_ion_distribution + _current_step_ion_distribution);
-    //_stack_ion_distribution.front().Denoise(std::pow(2, _depth-1));
+	_stack_ion_distribution.front() = ratio * Tools::EvaluateSlope(_stack_ion_distribution);
+    //_stack_ion_distribution.front().Cutoff(_plasma->get_wavelet_cutoff());
+	_stack_ion_distribution.front() += 0.5*(_prev_step_ion_distribution + _current_step_ion_distribution);
+	_stack_index = 1;
     
     if (_record_microsteps)
 	{
@@ -222,10 +230,9 @@ void MacroParameterizationWavelets::ExtrapolateSecondHalfStep(const double ratio
 {
 	/* First, compute the derivative by least-squares */
 	_stack_ion_distribution.front()  = ratio * Tools::EvaluateSlope(_stack_ion_distribution);
-	_stack_ion_distribution.resize(1);
-    //_stack_ion_distribution.front().Denoise(std::pow(2, _depth-4));
+    //_stack_ion_distribution.front().Cutoff(_plasma->get_wavelet_cutoff());
 	_stack_ion_distribution.front()  += _current_step_ion_distribution;
-    //_stack_ion_distribution.front().Denoise(std::pow(2, _depth-1));
+	_stack_index = 1;
     
     if (_record_microsteps)
 	{
@@ -239,7 +246,7 @@ void MacroParameterizationWavelets::Lift()
 {
 	int size = _macro_grid_size;
 	*dynamic_cast<WaveletRepresentation*>(_distributions.front().get()) = _stack_ion_distribution.front();
-	_stack_ion_distribution.clear();
+	_stack_index = 0;
 
 	while (size < _grid_size)
 	{

@@ -1314,24 +1314,51 @@ void* freq(vector<double> &sig, vector<double> &freq_resp) {
 }
 
 double convfft(vector<double> &a, vector<double> &b, vector<double> &c) {
-    fftw_complex *inp_data, *filt_data, *inp_fft, *filt_fft, *temp_data, *temp_ifft;
-    fftw_plan plan_forward_inp,plan_forward_filt, plan_backward;
+    //fftw_complex *inp_data, *filt_data, *inp_fft, *filt_fft, *temp_data, *temp_ifft;
+    //fftw_plan plan_forward_inp,plan_forward_filt, plan_backward;
+    
+    /* Static variables initialization */
+    static unsigned int sz = a.size() + b.size() - 1;
+    static fftw_complex *inp_data = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
+    static fftw_complex *filt_data = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
 
-    unsigned int sz = a.size() + b.size() - 1;
-    inp_data = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
-    filt_data = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
+    static fftw_complex *inp_fft = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
+    static fftw_complex *filt_fft = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
 
-    inp_fft = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
-    filt_fft = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
+    static fftw_complex *temp_data = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
+    static fftw_complex *temp_ifft = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
 
-    temp_data = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
-    temp_ifft = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
-
-    plan_forward_inp  = fftw_plan_dft_1d( sz, inp_data, inp_fft, FFTW_FORWARD, FFTW_ESTIMATE );
-    plan_forward_filt  = fftw_plan_dft_1d( sz, filt_data, filt_fft, FFTW_FORWARD, FFTW_ESTIMATE );
-    plan_backward = fftw_plan_dft_1d( sz, temp_data, temp_ifft, FFTW_BACKWARD, FFTW_ESTIMATE );
-
-
+    static fftw_plan plan_forward_inp  = fftw_plan_dft_1d( sz, inp_data, inp_fft, FFTW_FORWARD, FFTW_ESTIMATE );
+    static fftw_plan plan_forward_filt  = fftw_plan_dft_1d( sz, filt_data, filt_fft, FFTW_FORWARD, FFTW_ESTIMATE );
+    static fftw_plan plan_backward = fftw_plan_dft_1d( sz, temp_data, temp_ifft, FFTW_BACKWARD, FFTW_ESTIMATE );
+    
+    if (sz < a.size() + b.size() - 1)
+    {
+        fftw_free(inp_data);
+        fftw_free(filt_data);
+        fftw_free(inp_fft);
+        fftw_free(filt_fft);
+        fftw_free(temp_data);
+        fftw_free(temp_ifft);
+        fftw_destroy_plan(plan_forward_inp);
+        fftw_destroy_plan(plan_forward_filt);
+        fftw_destroy_plan(plan_backward);
+        
+        inp_data = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
+        filt_data = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
+        
+        inp_fft = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
+        filt_fft = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
+        
+        temp_data = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
+        temp_ifft = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
+        
+        plan_forward_inp  = fftw_plan_dft_1d( sz, inp_data, inp_fft, FFTW_FORWARD, FFTW_ESTIMATE );
+        plan_forward_filt  = fftw_plan_dft_1d( sz, filt_data, filt_fft, FFTW_FORWARD, FFTW_ESTIMATE );
+        plan_backward = fftw_plan_dft_1d( sz, temp_data, temp_ifft, FFTW_BACKWARD, FFTW_ESTIMATE );
+    }
+    
+    
     for (unsigned int i =0; i < sz; i++) {
          if (i < a.size()) {
         inp_data[i][0] = a[i];
@@ -1374,15 +1401,6 @@ double convfft(vector<double> &a, vector<double> &b, vector<double> &c) {
         c.push_back(temp1);
 
     }
-    fftw_free(inp_data);
-    fftw_free(filt_data);
-    fftw_free(inp_fft);
-    fftw_free(filt_fft);
-    fftw_free(temp_data);
-    fftw_free(temp_ifft);
-    fftw_destroy_plan(plan_forward_inp);
-    fftw_destroy_plan(plan_forward_filt);
-    fftw_destroy_plan(plan_backward);
 
     return 0;
 }
@@ -1413,7 +1431,7 @@ double convfftm(vector<double> &a, vector<double> &b, vector<double> &c) {
     plan_backward = fftw_plan_dft_1d( sz, temp_data, temp_ifft, FFTW_BACKWARD, FFTW_MEASURE );
     transient_size_of_fft = sz;
 
-}
+    }
 
     for (unsigned int i =0; i < sz; i++) {
          if (i < a.size()) {

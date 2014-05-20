@@ -66,6 +66,13 @@ class MaxwellianRepresentation : public Representation
 		virtual void Reset();
 		virtual void print(std::ostream& os) const;
 		virtual int get_grid_size() const 	{ return _grid_size;	}
+		virtual void set_grid_size(const int new_grid_size)
+		{
+			_density.resize(new_grid_size);
+			_velocity.resize(new_grid_size);
+			_thermal_velocity.resize(new_grid_size);
+			_grid_size = new_grid_size;
+		}
 
 		/* operator overload */
 		MaxwellianRepresentation& operator=(const MaxwellianRepresentation& rhs)
