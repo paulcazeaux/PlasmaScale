@@ -24,6 +24,7 @@ class WaveletRepresentationP1 : public WaveletRepresentation
 {
 	public:
 		/* constructor  ========================================================================= */
+		WaveletRepresentationP1() {}
 		WaveletRepresentationP1(std::shared_ptr<const Plasma> plasma, double vmax, int depth, int grid_size);
 
 		/* methods */
@@ -37,5 +38,29 @@ class WaveletRepresentationP1 : public WaveletRepresentation
 								std::vector<double>::iterator  	velocity,
 								std::vector<double>::iterator 	weight);
 };
+
+inline WaveletRepresentationP1 operator+(WaveletRepresentationP1 lhs, const WaveletRepresentationP1& rhs)
+{
+	lhs += rhs;
+	return lhs;
+}
+
+inline WaveletRepresentationP1 operator-(WaveletRepresentationP1 lhs, const WaveletRepresentationP1& rhs)
+{
+	lhs -= rhs;
+	return lhs;
+}
+
+inline WaveletRepresentationP1 operator*(WaveletRepresentationP1 lhs, const double lambda)
+{
+	lhs *= lambda;
+	return lhs;
+}
+
+inline WaveletRepresentationP1 operator*(const double lambda, WaveletRepresentationP1 rhs)
+{
+	rhs *= lambda;
+	return rhs;
+}
 
 #endif

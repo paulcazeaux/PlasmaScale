@@ -24,6 +24,7 @@ class MaxwellianRepresentationP1 : public MaxwellianRepresentation
 {
 	public:
 		/* constructor  ========================================================================= */
+		MaxwellianRepresentationP1() {}
 		MaxwellianRepresentationP1(std::shared_ptr<const Plasma> plasma, int grid_size);
 
 		/* methods */
@@ -38,5 +39,30 @@ class MaxwellianRepresentationP1 : public MaxwellianRepresentation
 								std::vector<double>::iterator 	weight);
 
 };
+
+
+inline MaxwellianRepresentationP1 operator+(MaxwellianRepresentationP1 lhs, const MaxwellianRepresentationP1& rhs)
+{
+	lhs += rhs;
+	return lhs;
+}
+
+inline MaxwellianRepresentationP1 operator-(MaxwellianRepresentationP1 lhs, const MaxwellianRepresentationP1& rhs)
+{
+	lhs -= rhs;
+	return lhs;
+}
+
+inline MaxwellianRepresentationP1 operator*(MaxwellianRepresentationP1 lhs, const double lambda)
+{
+	lhs *= lambda;
+	return lhs;
+}
+
+inline MaxwellianRepresentationP1 operator*(const double lambda, MaxwellianRepresentationP1 rhs)
+{
+	rhs *= lambda;
+	return rhs;
+}
 
 #endif

@@ -34,6 +34,9 @@
 
 /* Declarations */
 
+typedef WaveletRepresentationP1 ActiveWaveletRepresentation;
+typedef MaxwellianRepresentationP1 ActiveMaxwellianRepresentation;
+
 class MacroParameterizationWavelets : public MacroParameterization
 {
 	private:
@@ -50,19 +53,18 @@ class MacroParameterizationWavelets : public MacroParameterization
 
 		/* Active variables : assuming that the ion population is the first population */
 		/* Data points storing the information used to determine the derivative */
-		typedef WaveletRepresentation				active_variable;
-		std::vector<active_variable> 				_stack_ion_distribution;
+		std::vector<ActiveWaveletRepresentation> 	_stack_ion_distribution;
 		int 										_stack_index;
 
 		/* Value for the previous step, used for the leapfrog time integration */
-		active_variable	 							_prev_step_ion_distribution;
+		ActiveWaveletRepresentation					_prev_step_ion_distribution;
 
 		/* Value for the current step, used for the leapfrog time integration */
-		active_variable								_current_step_ion_distribution;
+		ActiveWaveletRepresentation					_current_step_ion_distribution;
 
 		/* Record arrays for the datapoints from the microsolver */
 		std::vector<double>							_record_times;
-		std::vector<active_variable> 				_record_ion_distribution;
+		std::vector<ActiveWaveletRepresentation> 	_record_ion_distribution;
 
 		/* Parameters for the determination of the passive variables */
 		double										_electron_thermal_vel;
