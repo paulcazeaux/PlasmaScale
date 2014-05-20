@@ -3,7 +3,7 @@ ION WAVE PROPAGATION
 A warm plasma with ions and electrons (mass ratio Mi/Me = 1800) is perturbed in the fundamental mode.
 
 number of populations -- dt ---- ndt ---- ratio --- accum --- depth --- cutoff
-		2 				0.0001    17      100          1        9		   5
+		2 				0.0001    17      100          1        5		   5
 
 l ----- ng ----- Mng ----- mmax ----- a1 ---- a2 ----- history_size ---- fullPIC ---- record_microsteps 
 4.8     128      128          1       0.00    0.00          4096           0                0

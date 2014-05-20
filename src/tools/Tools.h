@@ -32,11 +32,23 @@ class Tools
 				return (1-cellpos)*values.at(bin) + cellpos*values.front();
 		}
 
-
 		template<typename T>
 		static T EvaluateSlope(const std::vector<T> & values )
 		{
 			int size = values.size();
+			assert(size>0);
+			T sum = values.at(0), first_moment = 0 * sum;
+			for (int n=1; n<size; n++)
+			{
+				sum				+= values.at(n);
+				first_moment 	+= static_cast<double>(n)*values.at(n);
+			}
+			return 6./static_cast<double>(size*(size+1)) * (2./static_cast<double>(size-1)*first_moment - sum);
+		}
+
+		template<typename T>
+		static T EvaluateSlope(const std::vector<T> & values, const int size)
+		{
 			assert(size>0);
 			T sum = values.at(0), first_moment = 0 * sum;
 			for (int n=1; n<size; n++)

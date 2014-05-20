@@ -106,6 +106,7 @@ void MacroParameterizationWavelets::Initialize(State & state)
 	/* Leapfrog integration : using two-stage integration */
     /* Stage 1 */
     // Step 1: Run the fine solver
+    _stack_index = 0;
 	this->RestrictAndPushback(state);
     
 	for (int i=0; i<number_of_microsteps; i++)
@@ -114,8 +115,7 @@ void MacroParameterizationWavelets::Initialize(State & state)
 		this->RestrictAndPushback(state);
 	}
 	/* Compute the derivative by least-squares and step backwards */
-	_stack_ion_distribution.resize(number_of_microsteps+1);
-    _prev_step_ion_distribution = _current_step_ion_distribution - _plasma->get_macro_to_micro_dt_ratio() * Tools::EvaluateSlope(_stack_ion_distribution);
+    _prev_step_ion_distribution = _current_step_ion_distribution - _plasma->get_macro_to_micro_dt_ratio() * Tools::EvaluateSlope(_stack_ion_distribution, _stack_index);
 	_stack_index = 1;
     
 	this->Lift();
@@ -212,8 +212,7 @@ void MacroParameterizationWavelets::RestrictAndPushback(const State & state)
 void MacroParameterizationWavelets::ExtrapolateFirstHalfStep(const double ratio)
 {
 	/* First, compute the derivative by least-squares and step forward */
-
-	_stack_ion_distribution.front() = ratio * Tools::EvaluateSlope(_stack_ion_distribution);
+	_stack_ion_distribution.front() = ratio * Tools::EvaluateSlope(_stack_ion_distribution, _stack_index);
     //_stack_ion_distribution.front().Cutoff(_plasma->get_wavelet_cutoff());
 	_stack_ion_distribution.front() += 0.5*(_prev_step_ion_distribution + _current_step_ion_distribution);
 	_stack_index = 1;
@@ -229,7 +228,7 @@ void MacroParameterizationWavelets::ExtrapolateFirstHalfStep(const double ratio)
 void MacroParameterizationWavelets::ExtrapolateSecondHalfStep(const double ratio)
 {
 	/* First, compute the derivative by least-squares */
-	_stack_ion_distribution.front()  = ratio * Tools::EvaluateSlope(_stack_ion_distribution);
+	_stack_ion_distribution.front()  = ratio * Tools::EvaluateSlope(_stack_ion_distribution, _stack_index);
     //_stack_ion_distribution.front().Cutoff(_plasma->get_wavelet_cutoff());
 	_stack_ion_distribution.front()  += _current_step_ion_distribution;
 	_stack_index = 1;
@@ -246,7 +245,6 @@ void MacroParameterizationWavelets::Lift()
 {
 	int size = _macro_grid_size;
 	*dynamic_cast<WaveletRepresentation*>(_distributions.front().get()) = _stack_ion_distribution.front();
-	_stack_index = 0;
 
 	while (size < _grid_size)
 	{
@@ -370,6 +368,7 @@ void MacroParameterizationWavelets::Step(State & state)
 	/* Leapfrog integration : using two-stage integration */
 		/* Stage 1 */
 			// Step 1: Run the fine solver
+    _stack_index = 0;
 	this->RestrictAndPushback(state);
 	std::swap(_prev_step_ion_distribution, _current_step_ion_distribution);
 	_current_step_ion_distribution = _stack_ion_distribution.front();
@@ -385,7 +384,8 @@ void MacroParameterizationWavelets::Step(State & state)
 	state.Load(*this);
 	*simulation_time = current_time + .5*ratio*_plasma->get_dt();
 
-		/* And repeat for the stage 2 */
+    /* And repeat for stage 2 */
+    _stack_index = 0;
 	this->RestrictAndPushback(state);
     
 	for (int i=0; i<number_of_microsteps; i++)
