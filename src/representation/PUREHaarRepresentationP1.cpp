@@ -1,7 +1,7 @@
 #include "representation/PUREHaarRepresentationP1.h"
 
-PUREHaarRepresentationP1::PUREHaarRepresentationP1(std::shared_ptr<const Plasma> plasma, double vmax, int depth, int grid_size) :
-PUREHaarRepresentation(plasma, vmax, depth, grid_size) {}
+PUREHaarRepresentationP1::PUREHaarRepresentationP1(std::shared_ptr<const Plasma> plasma, double vmax, int max_depth, int grid_size, int min_depth, int buffer) :
+PUREHaarRepresentation(plasma, vmax, max_depth, grid_size, min_depth, buffer) {}
 
 void PUREHaarRepresentationP1::Weigh(int size,
 								std::vector<double>::iterator 	position,

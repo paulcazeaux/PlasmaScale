@@ -25,7 +25,7 @@ class PUREHaarRepresentationP1 : public PUREHaarRepresentation
 	public:
 		/* constructor  ========================================================================= */
 		PUREHaarRepresentationP1() {}
-		PUREHaarRepresentationP1(std::shared_ptr<const Plasma> plasma, double vmax, int depth, int grid_size);
+		PUREHaarRepresentationP1(std::shared_ptr<const Plasma> plasma, double vmax, int max_depth, int grid_size, int min_depth = 1, int buffer = 1);
 
 		/* methods */
 		virtual void Weigh(int size,

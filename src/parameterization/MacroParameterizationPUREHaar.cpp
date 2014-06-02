@@ -57,11 +57,11 @@ MacroParameterizationPUREHaar::MacroParameterizationPUREHaar(MacroParameterizati
 	_macro_grid_size = _plasma->get_macro_grid_size();
 	_record_microsteps = _plasma->get_record_microsteps();
 
-	_prev_step_ion_distribution 	= ActiveWaveletRepresentation(_plasma, _ion_vmax, _depth, _macro_grid_size);
-	_current_step_ion_distribution	= ActiveWaveletRepresentation(_plasma, _ion_vmax, _depth, _macro_grid_size);
+	_prev_step_ion_distribution 	= ActiveHaarRepresentation(_plasma, _ion_vmax, _depth, _macro_grid_size, _depth/2);
+	_current_step_ion_distribution	= ActiveHaarRepresentation(_plasma, _ion_vmax, _depth, _macro_grid_size, _depth/2);
 
 	_distributions.clear();
-	_distributions.emplace_back(new ActiveWaveletRepresentation(_plasma, _ion_vmax, _depth, _grid_size));
+	_distributions.emplace_back(new ActiveHaarRepresentation(_plasma, _ion_vmax, _depth, _grid_size, _depth/2));
 	_distributions.emplace_back(new ActiveMaxwellianRepresentation(_plasma, _grid_size));
 
 	int number_of_microsteps = _plasma->get_number_of_microsteps();
@@ -113,7 +113,7 @@ void MacroParameterizationPUREHaar::Initialize(State & state)
 	}
 	/* Compute the derivative by least-squares and step backwards */
     _prev_step_ion_distribution = _current_step_ion_distribution;
-    _prev_step_ion_distribution -= _plasma->get_macro_to_micro_dt_ratio() * Tools::EvaluateSlope<ActiveWaveletRepresentation>(_stack_ion_distribution, _stack_index);
+    _prev_step_ion_distribution -= _plasma->get_macro_to_micro_dt_ratio() * Tools::EvaluateSlope<ActiveHaarRepresentation>(_stack_ion_distribution, _stack_index);
 	_stack_index = 1;
     
 	this->Lift();
@@ -210,7 +210,7 @@ void MacroParameterizationPUREHaar::RestrictAndPushback(const State & state)
 void MacroParameterizationPUREHaar::ExtrapolateFirstHalfStep(const double ratio)
 {
 	/* First, compute the derivative by least-squares and step forward */
-	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveWaveletRepresentation>(_stack_ion_distribution, _stack_index);
+	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveHaarRepresentation>(_stack_ion_distribution, _stack_index);
     _stack_ion_distribution.front() *= ratio;
     _stack_ion_distribution.front().PUREAdapt();
 	_stack_ion_distribution.front() += 0.5*(_prev_step_ion_distribution + _current_step_ion_distribution);
@@ -227,7 +227,7 @@ void MacroParameterizationPUREHaar::ExtrapolateFirstHalfStep(const double ratio)
 void MacroParameterizationPUREHaar::ExtrapolateSecondHalfStep(const double ratio)
 {
 	/* First, compute the derivative by least-squares */
-	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveWaveletRepresentation>(_stack_ion_distribution, _stack_index);
+	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveHaarRepresentation>(_stack_ion_distribution, _stack_index);
     _stack_ion_distribution.front() *= ratio;
     _stack_ion_distribution.front().PUREAdapt();
 	_stack_ion_distribution.front()  += _current_step_ion_distribution;
@@ -244,7 +244,7 @@ void MacroParameterizationPUREHaar::ExtrapolateSecondHalfStep(const double ratio
 void MacroParameterizationPUREHaar::Lift()
 {
 	int size = _macro_grid_size;
-	*dynamic_cast<ActiveWaveletRepresentation*>(_distributions.front().get()) = _stack_ion_distribution.front();
+	*dynamic_cast<ActiveHaarRepresentation*>(_distributions.front().get()) = _stack_ion_distribution.front();
 
 	while (size < _grid_size)
 	{

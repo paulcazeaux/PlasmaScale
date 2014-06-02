@@ -26,6 +26,7 @@
 #include "parameterization/MacroParameterizationEFPI.h"
 #include "parameterization/MacroParameterizationFullPIC.h"
 #include "parameterization/MacroParameterizationWavelets.h"
+#include "parameterization/MacroParameterizationPUREHaar.h"
 
 
 class MacroState
