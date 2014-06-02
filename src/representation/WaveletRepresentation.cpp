@@ -6,7 +6,7 @@ _plasma(plasma), _vmax(vmax), _depth(depth), _grid_size(grid_size)
 {
 	_number_of_bins = std::pow(2, depth);
 	_dv = (2.*vmax)/static_cast<double>(_number_of_bins);
-	_filter = "db1";
+	_filter = "db3";
 
 	_is_transformed = false;
 	_histogram = std::vector<std::vector<double> >(_grid_size, std::vector<double>(_number_of_bins));
@@ -349,32 +349,28 @@ void WaveletRepresentation::Cutoff(int depth)
             std::vector<double> help;
             for (int n=0; n<_grid_size; n++)
             {
-                int i=0;
-                for (auto & coeff : _coefficients.at(n))
-                {
-                    if ((i++)>cutoff)
-                    {
-                        coeff = 0.;
-                    }
-                }
+                std::fill(_coefficients.at(n).begin()+cutoff, _coefficients.at(n).end(), 0.);
             }
         }
         else
         {
-            this->DWT();
-            std::vector<double> help;
+        	/* DWT */
+            for (int n=0; n<_grid_size; n++)
+			{
+				_coefficients.at(n).clear();
+				_length.at(n).clear();
+				_flag.at(n).clear();
+				dwt(_histogram.at(n), _depth-depth, _filter, _coefficients.at(n), _flag.at(n), _length.at(n));
+				assert(_length.at(n).at(1) == cutoff );
+			}
             for (int n=0; n<_grid_size; n++)
             {
-                int i=0;
-                for (auto & coeff : _coefficients.at(n))
-                {
-                    if ((i++)>cutoff)
-                    {
-                        coeff = 0.;
-                    }
-                }
+                std::fill(_coefficients.at(n).begin()+_length.at(n).at(1), _coefficients.at(n).end(), 0.);
             }
-            this->iDWT();
+
+            /* iDWT */
+			for (int n=0; n<_grid_size; n++)
+				idwt(_coefficients.at(n), _flag.at(n), _filter, _histogram.at(n), _length.at(n));
         }
     }
 }

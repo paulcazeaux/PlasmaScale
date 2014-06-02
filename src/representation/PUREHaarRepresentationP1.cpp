@@ -1,9 +1,9 @@
-#include "representation/WaveletRepresentationP1.h"
+#include "representation/PUREHaarRepresentationP1.h"
 
-WaveletRepresentationP1::WaveletRepresentationP1(std::shared_ptr<const Plasma> plasma, double vmax, int depth, int grid_size) :
-WaveletRepresentation(plasma, vmax, depth, grid_size) {}
+PUREHaarRepresentationP1::PUREHaarRepresentationP1(std::shared_ptr<const Plasma> plasma, double vmax, int depth, int grid_size) :
+PUREHaarRepresentation(plasma, vmax, depth, grid_size) {}
 
-void WaveletRepresentationP1::Weigh(int size,
+void PUREHaarRepresentationP1::Weigh(int size,
 								std::vector<double>::iterator 	position,
 								std::vector<double>::iterator  	velocity,
 								std::vector<double>::iterator 	weights)
@@ -45,7 +45,7 @@ void WaveletRepresentationP1::Weigh(int size,
     }
 }
 
-void WaveletRepresentationP1::Load(int size,
+void PUREHaarRepresentationP1::Load(int size,
 								std::vector<double>::iterator 	position,
 								std::vector<double>::iterator  	velocity,
 								std::vector<double>::iterator 	weights)
@@ -86,8 +86,8 @@ void WaveletRepresentationP1::Load(int size,
 			xs -= xsi;
 		} 
 		xs += 2.0*xsi;
-		double pos = RandomTools::Generate_randomly_uniform(0., L);
-		//double pos = L*xs;
+		//double pos = RandomTools::Generate_randomly_uniform(0., L);
+		double pos = L*xs;
 		int bin = _plasma->find_index_on_grid(pos);
 		double cellpos = _plasma->find_position_in_cell(pos);
 

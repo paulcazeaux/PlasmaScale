@@ -1,7 +1,7 @@
-#include "parameterization/MacroParameterizationWavelets.h"
+#include "parameterization/MacroParameterizationPUREHaar.h"
 
 
-MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizationWavelets &&parameterization) :
+MacroParameterizationPUREHaar::MacroParameterizationPUREHaar(MacroParameterizationPUREHaar &&parameterization) :
 			MacroParameterization(std::move(parameterization)),
 			_grid_size(parameterization._grid_size),
 			_macro_grid_size(parameterization._macro_grid_size),
@@ -19,7 +19,7 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 			_debye_scaling(parameterization._debye_scaling)
 		{}
 
-MacroParameterizationWavelets& MacroParameterizationWavelets::operator=(MacroParameterizationWavelets &&parameterization)
+MacroParameterizationPUREHaar& MacroParameterizationPUREHaar::operator=(MacroParameterizationPUREHaar &&parameterization)
 {
 	if (this == &parameterization)
 		return *this;
@@ -46,7 +46,7 @@ MacroParameterizationWavelets& MacroParameterizationWavelets::operator=(MacroPar
 	return *this;
 }
 
-MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterization & parameterization,
+MacroParameterizationPUREHaar::MacroParameterizationPUREHaar(MacroParameterization & parameterization,
 				double electron_thermal_vel, double ion_vmax, int depth) :
 	MacroParameterization(std::move(parameterization)), _depth(depth), _ion_vmax(ion_vmax), _electron_thermal_vel(electron_thermal_vel)
 {
@@ -82,7 +82,7 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 	_debye_scaling = std::pow(_electron_thermal_vel/_plasma_pulsations.at(1), 2.);
 }
 
-void MacroParameterizationWavelets::Initialize(State & state)
+void MacroParameterizationPUREHaar::Initialize(State & state)
 {
     _stack_index = 0;
 	std::shared_ptr<double> simulation_time = state.get_simulation_time();
@@ -127,7 +127,7 @@ void MacroParameterizationWavelets::Initialize(State & state)
     
 }
 
-void MacroParameterizationWavelets::Load(State & state) const
+void MacroParameterizationPUREHaar::Load(State & state) const
 /* Fill the particle arrays to initialize the microscopic state */
 {	
 	state.Reset();
@@ -166,7 +166,7 @@ void MacroParameterizationWavelets::Load(State & state) const
 	}
 }
 
-void MacroParameterizationWavelets::RestrictAndPushback(const State & state)
+void MacroParameterizationPUREHaar::RestrictAndPushback(const State & state)
 {
 	/***********************************************************************/
 	/* Now we weigh the particles and compute the moments on the fine grid */
@@ -207,12 +207,12 @@ void MacroParameterizationWavelets::RestrictAndPushback(const State & state)
 	_stack_index++;
 }
 
-void MacroParameterizationWavelets::ExtrapolateFirstHalfStep(const double ratio)
+void MacroParameterizationPUREHaar::ExtrapolateFirstHalfStep(const double ratio)
 {
 	/* First, compute the derivative by least-squares and step forward */
 	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveWaveletRepresentation>(_stack_ion_distribution, _stack_index);
     _stack_ion_distribution.front() *= ratio;
-    _stack_ion_distribution.front().Cutoff(_plasma->get_wavelet_cutoff());
+    _stack_ion_distribution.front().PUREAdapt();
 	_stack_ion_distribution.front() += 0.5*(_prev_step_ion_distribution + _current_step_ion_distribution);
 	_stack_index = 1;
     
@@ -224,12 +224,12 @@ void MacroParameterizationWavelets::ExtrapolateFirstHalfStep(const double ratio)
 	}
 }
 
-void MacroParameterizationWavelets::ExtrapolateSecondHalfStep(const double ratio)
+void MacroParameterizationPUREHaar::ExtrapolateSecondHalfStep(const double ratio)
 {
 	/* First, compute the derivative by least-squares */
 	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveWaveletRepresentation>(_stack_ion_distribution, _stack_index);
     _stack_ion_distribution.front() *= ratio;
-    _stack_ion_distribution.front().Cutoff(_plasma->get_wavelet_cutoff());
+    _stack_ion_distribution.front().PUREAdapt();
 	_stack_ion_distribution.front()  += _current_step_ion_distribution;
 	_stack_index = 1;
     
@@ -241,10 +241,10 @@ void MacroParameterizationWavelets::ExtrapolateSecondHalfStep(const double ratio
 	}
 }
 
-void MacroParameterizationWavelets::Lift()
+void MacroParameterizationPUREHaar::Lift()
 {
 	int size = _macro_grid_size;
-	*dynamic_cast<WaveletRepresentation*>(_distributions.front().get()) = _stack_ion_distribution.front();
+	*dynamic_cast<ActiveWaveletRepresentation*>(_distributions.front().get()) = _stack_ion_distribution.front();
 
 	while (size < _grid_size)
 	{
@@ -355,7 +355,7 @@ void MacroParameterizationWavelets::Lift()
 	_distributions.at(1)->SetAdiabaticValues(exp_potential, ion_velocity, _electron_thermal_vel);
 }
 
-void MacroParameterizationWavelets::Step(State & state)
+void MacroParameterizationPUREHaar::Step(State & state)
 {	
 	int number_of_microsteps = _plasma->get_number_of_microsteps();
     double ratio = static_cast<double>(_plasma->get_macro_to_micro_dt_ratio());
@@ -399,7 +399,7 @@ void MacroParameterizationWavelets::Step(State & state)
 	_distributions.front()->GetDensityVelocityPressure(_ion_density, _ion_velocity, _ion_pressure);
 }
 
-void MacroParameterizationWavelets::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
+void MacroParameterizationPUREHaar::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
 {
 	double * x_array 	= _plasma->get_x_grid_ptr();
 	int * grid_size 	= _plasma->get_grid_size_ptr();
@@ -417,7 +417,7 @@ void MacroParameterizationWavelets::SetupDiagnostics(std::vector<std::unique_ptr
 	diagnostics.back()->AddData(x_array, _ion_pressure.data(), grid_size, 4);
 }
 
-void MacroParameterizationWavelets::WriteData(std::fstream & fout)
+void MacroParameterizationPUREHaar::WriteData(std::fstream & fout)
 {
 	if (!_record_microsteps)
 	{
