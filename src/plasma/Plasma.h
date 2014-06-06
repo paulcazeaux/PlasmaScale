@@ -52,6 +52,7 @@ class Plasma
 		int 										_highest_mode;
 		int 										_depth;
 		int 										_cutoff;
+		double 										_intensity;
 
 		/* Plasma parameters */
 		const double								_epsilon;
@@ -94,6 +95,7 @@ class Plasma
 				int max_mode 						= 1,
 				int depth 							= 5,
 				int cutoff 							= 5,
+				double intensity 					= 1.,
 				double filter_parameter_1			= 0.,
 				double filter_parameter_2 			= 0.,
 				int max_size_history 				= 4096,
@@ -131,6 +133,7 @@ class Plasma
 		double *		get_k_grid_ptr()		const {	return _k_grid->data();	}
 		const int 		get_wavelet_depth()		const {return _depth; 	}
 		const int 		get_wavelet_cutoff() 	const {return _cutoff;	}
+		const double 	get_intensity() 		const {return _intensity;	}
 
 		/* Plasma parameters */
 		const double 	get_inverse_of_particle_radius()	const {	return _inverse_of_particle_radius;	}

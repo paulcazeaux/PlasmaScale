@@ -45,6 +45,7 @@ class MacroParameterizationWavelets : public MacroParameterization
 		int 										_grid_size;
 		int 										_macro_grid_size;
 		int 										_depth;
+		int 										_cutoff;
 		double 										_ion_vmax;
 		bool										_record_microsteps;
 
@@ -79,7 +80,7 @@ class MacroParameterizationWavelets : public MacroParameterization
 	public:
 		/* constructor  ========================================================================= */
 		MacroParameterizationWavelets() {}
-		MacroParameterizationWavelets(MacroParameterization & parameterization, double electron_thermal_vel, double ion_vmax, int depth);
+		MacroParameterizationWavelets(MacroParameterization & parameterization, double electron_thermal_vel, double ion_vmax);
 		virtual ~MacroParameterizationWavelets() {}
 
 		/* move constuctor and assignment ======================================================= */

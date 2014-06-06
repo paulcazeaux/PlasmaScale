@@ -12,6 +12,7 @@ _plasma(plasma), _vmax(vmax), _max_depth(max_depth), _grid_size(grid_size), _min
 	_histogram = std::vector<std::vector<double> >(_grid_size, std::vector<double>(_number_of_bins));
 	_scaling_coefficients = std::vector<std::vector<double> >(_grid_size);
 	_detail_coefficients = std::vector<std::vector<double> >(_grid_size);
+	_mask = std::vector<std::vector<bool> >(_grid_size, std::vector<bool>(_number_of_bins));
 }
 
 
@@ -71,8 +72,6 @@ void PUREHaarRepresentation::Load(int size,
 	{
 		icdf.at(n).resize(_number_of_bins+1);
 		icdf.at(n).front() = 0.;
-        //for (int i=0; i<_number_of_bins; i++)
-        //    icdf.at(n).at(i+1) = icdf.at(n).at(i) + std::max(_histogram.at(n).at(i), 0.);
 		std::partial_sum(_histogram.at(n).begin(), _histogram.at(n).end(), icdf.at(n).begin()+1);
 
 		density.at(n) = icdf.at(n).back();
@@ -132,20 +131,28 @@ void PUREHaarRepresentation::Coarsen()
 		this->Transform();
 	_grid_size /= 2;
 	std::vector<double> dis0 = _histogram.at(0);
+	std::vector<bool> mask0 = _mask.at(0);
 	for (int n=0; n<_grid_size-1; n++)
 	{
 		for (int i=0; i<_number_of_bins; i++)
+		{
 			_histogram.at(n).at(i) = 0.25 * _histogram.at(2*n).at(i) + 0.5 * _histogram.at(2*n+1).at(i) + 0.25 * _histogram.at(2*n+2).at(i);
+			_mask.at(n).at(i) = _mask.at(2*n).at(i) || _mask.at(2*n+1).at(i) || _mask.at(2*n+2).at(i);
+		}
 	}
 	{
 		int n=_grid_size-1;
 		for (int i=0; i<_number_of_bins; i++)
+		{
 			_histogram.at(n).at(i) = 0.25 * _histogram.at(2*n).at(i) + 0.5 * _histogram.at(2*n+1).at(i) + 0.25 * dis0.at(i);
+			_mask.at(n).at(i) = _mask.at(2*n).at(i) || _mask.at(2*n+1).at(i) || mask0.at(i);
+		}
 	}
 
 	_histogram.resize(_grid_size);
 	_scaling_coefficients.resize(_grid_size);
 	_detail_coefficients.resize(_grid_size);
+	_mask.resize(_grid_size);
 }
 
 
@@ -155,8 +162,12 @@ void PUREHaarRepresentation::Refine()
 		this->Transform();
 
 	_histogram.resize(2*_grid_size);
+	_mask.resize(2*_grid_size);
 	for (int n=_grid_size; n<2*_grid_size; n++)
+    {
 		_histogram.at(n).resize(_number_of_bins);
+        _mask.at(n).resize(_number_of_bins);
+    }
 
 	_scaling_coefficients.resize(2*_grid_size);
 	_detail_coefficients.resize(2*_grid_size);
@@ -164,16 +175,25 @@ void PUREHaarRepresentation::Refine()
 	for (int n=_grid_size-1; n>=0; n--)
 	{
 		for (int i=0; i<_number_of_bins; i++)
+		{
 			_histogram.at(2*n+1).at(i) 	= _histogram.at(n).at(i);
+			_mask.at(2*n+1).at(i) 		= _mask.at(n).at(i);
+		}
 	}
 	{
 		for (int i=0; i<_number_of_bins; i++)
+		{
 			_histogram.front().at(i) 	= 0.5*(_histogram.at(1).at(i) + _histogram.at(2*_grid_size-1).at(i));
+			_mask.front().at(i) 		= _mask.at(1).at(i) || _mask.at(2*_grid_size-1).at(i);
+		}
 	}
 	for (int n=1; n<_grid_size; n++)
 	{
 		for (int i=0; i<_number_of_bins; i++)
+		{
 			_histogram.at(2*n).at(i) 	= 0.5*(_histogram.at(2*n-1).at(i) + _histogram.at(2*n+1).at(i));
+			_mask.at(2*n).at(i) 		= _mask.at(2*n-1).at(i) || _mask.at(2*n+1).at(i);
+		}
 	}
 	_grid_size *= 2;
 }
@@ -193,17 +213,21 @@ void PUREHaarRepresentation::Transform()
 		/* Perform inverse transform */
 		for (int n=0; n<_grid_size; n++)
 		{
-			int size = std::pow(2, _min_depth);
-			std::copy(_scaling_coefficients.at(n).begin(), _scaling_coefficients.at(n).begin()+size, _histogram.at(n).begin());
-			for (int j=_min_depth; j<_max_depth; j++)
+			for (int j=_min_depth; j<_max_depth-1; j++)
 			{
-				int scale_begin = std::pow(2, j);
-				for (int i=size-1; i>=0; i--)
+                int scale_size = std::pow(2, j);
+				for (int i=scale_size; i<2*scale_size; i++)
 				{
-					_histogram.at(n).at(2*i+1) = 0.5 * (_histogram.at(n).at(i) - _detail_coefficients.at(n).at(scale_begin+i));
-					_histogram.at(n).at(2*i)   = 0.5 * (_histogram.at(n).at(i) + _detail_coefficients.at(n).at(scale_begin+i));
+					_scaling_coefficients.at(n).at(2*i+1) = 0.5 * (_scaling_coefficients.at(n).at(i) - _detail_coefficients.at(n).at(i));
+					_scaling_coefficients.at(n).at(2*i)   = 0.5 * (_scaling_coefficients.at(n).at(i) + _detail_coefficients.at(n).at(i));
 				}
-				size *= 2;
+			}
+            
+            int scale_size = std::pow(2, _max_depth-1);
+            for (int i=0; i<scale_size; i++)
+			{
+				_histogram.at(n).at(2*i) = 0.5*(_scaling_coefficients.at(n).at(scale_size+i) + _detail_coefficients.at(n).at(scale_size+i));
+                _histogram.at(n).at(2*i+1) = 0.5*(_scaling_coefficients.at(n).at(scale_size+i) - _detail_coefficients.at(n).at(scale_size+i));
 			}
 		}
 		_is_transformed = false;
@@ -213,25 +237,25 @@ void PUREHaarRepresentation::Transform()
 		/* Perform forward unnormalized transform */
 		for (int n=0; n<_grid_size; n++)
 		{
-			int size = std::pow(2, _max_depth-1);
-			_scaling_coefficients.resize(size);
-			_detail_coefficients.resize(size);
+			int scale_size = std::pow(2, _max_depth-1);
+			_scaling_coefficients.at(n).resize(2*scale_size);
+			_detail_coefficients.at(n).resize(2*scale_size);
 
-			for (int i=size-1; i>size/2; i--)
+			for (int i=0; i<scale_size; i++)
 			{
-				_scaling_coefficients.at(n).at(i) = _histogram.at(n).at(2*i) + _histogram.at(n).at(2*i+1);
-				_detail_coefficients.at(n).at(i)  = _histogram.at(n).at(2*i) - _histogram.at(n).at(2*i+1);
+				_scaling_coefficients.at(n).at(scale_size+i) = _histogram.at(n).at(2*i) + _histogram.at(n).at(2*i+1);
+				_detail_coefficients.at(n).at(scale_size+i)  = _histogram.at(n).at(2*i) - _histogram.at(n).at(2*i+1);
 			}
-			size /= 2;
+			scale_size /= 2;
 
 			for (int j=_max_depth-1; j>_min_depth; j--)
 			{
-				for (int i=size-1; i>size/2; i--)
+				for (int i=scale_size; i<2*scale_size; i++)
 				{
 					_scaling_coefficients.at(n).at(i) = _scaling_coefficients.at(n).at(2*i) + _scaling_coefficients.at(n).at(2*i+1);
 					_detail_coefficients.at(n).at(i)  = _scaling_coefficients.at(n).at(2*i) - _scaling_coefficients.at(n).at(2*i+1);
 				}
-				size /= 2;
+				scale_size /= 2;
 			}
 		}
 		_is_transformed = true;
@@ -357,14 +381,8 @@ void PUREHaarRepresentation::Cutoff(int depth)
     }
 }
 
-void PUREHaarRepresentation::PUREAdapt()
+void PUREHaarRepresentation::PUREAdapt(const double intensity)
 {
-	/* We rescale the data using the local density */
-	static std::vector<double> scaling = std::vector<double>(_grid_size);
-	for (int n=0; n<_grid_size; n++)
-	{
-		scaling.at(n) = std::accumulate(_histogram.at(n).begin(), _histogram.at(n).end(), 0.);
-	}
 
 	/* Empirical scaling : detect local empirical mean and variance */
 	const int patch_size = 8;
@@ -382,7 +400,7 @@ void PUREHaarRepresentation::PUREAdapt()
 			{
 				for (int ip=i; ip<i+patch_size; ip++)
 				{
-					double val=_histogram.at(np).at(ip)/scaling.at(n);
+					double val=_histogram.at(np).at(ip);
 					mean += val;
 					variance += val*val;
 				}
@@ -395,84 +413,31 @@ void PUREHaarRepresentation::PUREAdapt()
 		}
 	}
 
-	double alpha = Tools::EvaluateSlope(patch_mean, patch_variance);
+	double alpha = intensity*Tools::EvaluateSlope(patch_mean, patch_variance);
+
 	for (int n=0; n<_grid_size; n++)
 	{
-		scaling.at(n) *= alpha;
-		std::for_each(_histogram.at(n).begin(), _histogram.at(n).end(), [&](double val) { val /= scaling.at(n);});
+		std::for_each(_histogram.at(n).begin(), _histogram.at(n).end(), [&](double& val) { val /= alpha;});
 	}
 		
 	/* DWT */
+
 	if (!_is_transformed)
 		this->Transform();
-
-	/* Bandwise thresholding using PURE-LET */
-	static std::vector<double> theta0 = std::vector<double>(_grid_size/2), 
-								theta1 = std::vector<double>(_grid_size/2),
-								theta2 = std::vector<double>(_grid_size/2);
-	Eigen::Vector3d A;
-	Eigen::Vector3d C;
-	Eigen::Matrix3d M;
-	for (int j=_min_depth; j<_max_depth; j++)
+    
+	/* Bandwise thresholding using PURE threshold optimization */
+	for (int n=0; n<_grid_size; n++)
 	{
-		for (int n=0; n<_grid_size; n++)
-		{
-			int scale_size = std::pow(2, j);
-
-			/* Fill the predictors for the threshold */
-			for (int i=0; i<scale_size; i++)
-			{
-				double detail = _detail_coefficients.at(n).at(i+scale_size);
-				theta0.at(i) = detail;
-				theta1.at(i) = (1 - std::exp(-detail*detail/(12*_scaling_coefficients.at(n).at(i+scale_size)))) * detail;
-			}
-			theta2.at(0) = _scaling_coefficients.at(n).at(2*scale_size-1) - _scaling_coefficients.at(n).at(1+scale_size);
-			for (int i=1; i<scale_size-1; i++)
-				theta2.at(i) = _scaling_coefficients.at(n).at(i-1+scale_size) - _scaling_coefficients.at(n).at(i+1+scale_size);
-			theta2.at(scale_size-1) = _scaling_coefficients.at(n).at(2*scale_size-2) - _scaling_coefficients.at(n).at(scale_size);
-
-			/* Compute the linear system used to determine the LET coefficients */
-			M(0,0) = std::inner_product(theta0.begin(), theta0.end(), theta0.begin(), 0.);
-			M(0,1) = std::inner_product(theta0.begin(), theta0.end(), theta1.begin(), 0.);
-			M(1,0) = M(0,1);
-			M(0,2) = std::inner_product(theta0.begin(), theta0.end(), theta2.begin(), 0.);
-			M(2,0) = M(0,2);
-			M(1,1) = std::inner_product(theta0.begin(), theta1.end(), theta1.begin(), 0.);
-			M(1,2) = std::inner_product(theta0.begin(), theta1.end(), theta2.begin(), 0.);
-			M(2,1) = M(1,2);
-			M(2,2) = std::inner_product(theta0.begin(), theta2.end(), theta2.begin(), 0.);
-
-			C(0)=0;
-			C(1)=0; 
-			C(2)=0;
-			for (int i=0; i<scale_size; i++)
-			{
-				double detail = _detail_coefficients.at(n).at(i+scale_size);
-				double scale = _scaling_coefficients.at(n).at(i+scale_size);
-
-				C(0) += 0.5*detail*detail - scale;
-				C(1) += (1 - std::exp(-(detail-1)*(detail-1)/(12*(scale-1))))*(detail-1)*(detail+scale)*0.5
-				   	   +(1 - std::exp(-(detail+1)*(detail+1)/(12*(scale-1))))*(detail+1)*(detail-scale)*0.5;
-				C(2) += detail*theta2.at(i);
-			}
-
-			/* Solve for the LET coefficients and assemble the denoised representation */
-			A = M.ldlt().solve(C);
-			std::cout << "depth: " << j << " ; " << "a_0=" << A(0) << " ; " << "a_1=" << A(1) << " ; " << "a_2=" << A(2) << std::endl;
-			for (int i=0; i<scale_size; i++)
-			{
-				_detail_coefficients.at(n).at(i+scale_size) = A(0)*theta0.at(i) + A(1)*theta1.at(i) + A(2)*theta2.at(i);
-			}
-		}
+		Tools::PUREShrink(_scaling_coefficients.at(n), _detail_coefficients.at(n), _mask.at(n), _max_depth, _min_depth);
 	}
 
 	this->Transform();
-
 	/* Rescale the data */
 	for (int n=0; n<_grid_size; n++)
 	{
-		std::for_each(_histogram.at(n).begin(), _histogram.at(n).end(), [&](double val) { val *= scaling.at(n);});
+		std::for_each(_histogram.at(n).begin(), _histogram.at(n).end(), [&](double& val) { val *= alpha;});
 	}
+
 }
 
 void PUREHaarRepresentation::Reset()

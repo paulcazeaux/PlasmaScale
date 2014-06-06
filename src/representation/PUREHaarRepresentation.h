@@ -49,6 +49,8 @@ class PUREHaarRepresentation : public Representation
 		std::vector<std::vector<double> > 	_scaling_coefficients;
 		std::vector<std::vector<double> >   _detail_coefficients;
 
+		std::vector<std::vector<bool> >  	_mask;
+
 	public:
 		/* constructor  ========================================================================= */
 		PUREHaarRepresentation() {};
@@ -75,7 +77,7 @@ class PUREHaarRepresentation : public Representation
 		void Denoise(int n_coef);
 		void Denoise(double thresh);
 		void Cutoff(int depth);
-		void PUREAdapt();
+		void PUREAdapt(const double intensity = 1.);
 
 		virtual void Reset();
 		virtual void print(std::ostream& os) const;
@@ -83,8 +85,12 @@ class PUREHaarRepresentation : public Representation
 		virtual void set_grid_size(const int new_grid_size)
 		{
 			_histogram.resize(new_grid_size);
+			_mask.resize(new_grid_size);
 			for (int n=_grid_size; n<new_grid_size; n++)
+			{
 				_histogram.at(n).resize(_number_of_bins);
+				_mask.at(n).resize(_number_of_bins);
+			}
 
 			_scaling_coefficients.resize(new_grid_size);
 			_detail_coefficients.resize(new_grid_size);
@@ -106,6 +112,7 @@ class PUREHaarRepresentation : public Representation
 			_histogram.resize(_grid_size);
 			_scaling_coefficients.resize(_grid_size);
 			_detail_coefficients.resize(_grid_size);
+			_mask.resize(_grid_size);
 
             if (_is_transformed)
             {
@@ -115,7 +122,9 @@ class PUREHaarRepresentation : public Representation
             else
             {
                 std::copy(rhs._histogram.begin(), rhs._histogram.end(), _histogram.begin());
-            }
+            }                
+            std::copy(rhs._mask.begin(), rhs._mask.end(), _mask.begin());
+
 			return *this;
 		}
 
@@ -131,6 +140,7 @@ class PUREHaarRepresentation : public Representation
 					{
 						_scaling_coefficients.at(n).at(i) += rhs._scaling_coefficients.at(n).at(i);
 						_detail_coefficients.at(n).at(i) += rhs._detail_coefficients.at(n).at(i);
+						_mask.at(n).at(i) = _mask.at(n).at(i) || rhs._mask.at(n).at(i);
 					}
 				}
 			}
@@ -141,6 +151,7 @@ class PUREHaarRepresentation : public Representation
 					for (int i=0; i<_number_of_bins; i++)
 					{
 						_histogram.at(n).at(i) += rhs._histogram.at(n).at(i);
+						_mask.at(n).at(i) = _mask.at(n).at(i) || rhs._mask.at(n).at(i);
 					}
 				}
 			}
@@ -159,6 +170,8 @@ class PUREHaarRepresentation : public Representation
 					{
 						_scaling_coefficients.at(n).at(i) -= rhs._scaling_coefficients.at(n).at(i);
 						_detail_coefficients.at(n).at(i) -= rhs._detail_coefficients.at(n).at(i);
+						_mask.at(n).at(i) = _mask.at(n).at(i) || rhs._mask.at(n).at(i);
+
 					}
 				}
 			}
@@ -169,6 +182,8 @@ class PUREHaarRepresentation : public Representation
 					for (int i=0; i<_number_of_bins; i++)
 					{
 						_histogram.at(n).at(i) -= rhs._histogram.at(n).at(i);
+						_mask.at(n).at(i) = _mask.at(n).at(i) || rhs._mask.at(n).at(i);
+
 					}
 				}
 			}

@@ -12,9 +12,11 @@
 
 /* includes ===================================================================================== */
 #include <iostream>
+#include <cmath>
 #include <vector>
 #include <numeric>
 #include <cassert>
+#include <utility>
 
 class Tools
 {
@@ -115,6 +117,8 @@ class Tools
 			}
 			return covar/var;
 		}
+
+		static void PUREShrink(std::vector<double>& scaling, std::vector<double>& detail, std::vector<bool>& pattern, const int& maxdepth, const int& mindepth = 0.);
 
 };
 

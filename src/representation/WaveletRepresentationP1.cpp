@@ -86,8 +86,8 @@ void WaveletRepresentationP1::Load(int size,
 			xs -= xsi;
 		} 
 		xs += 2.0*xsi;
-		double pos = RandomTools::Generate_randomly_uniform(0., L);
-		//double pos = L*xs;
+		//double pos = RandomTools::Generate_randomly_uniform(0., L);
+		double pos = L*xs;
 		int bin = _plasma->find_index_on_grid(pos);
 		double cellpos = _plasma->find_position_in_cell(pos);
 

@@ -5,7 +5,8 @@ MacroParameterizationPUREHaar::MacroParameterizationPUREHaar(MacroParameterizati
 			MacroParameterization(std::move(parameterization)),
 			_grid_size(parameterization._grid_size),
 			_macro_grid_size(parameterization._macro_grid_size),
-			_depth(parameterization._depth),
+			_min_depth(parameterization._min_depth),
+			_max_depth(parameterization._max_depth),
 			_ion_vmax(parameterization._ion_vmax),
 			_record_microsteps(parameterization._record_microsteps),
 			_distributions(std::move(parameterization._distributions)),
@@ -27,7 +28,8 @@ MacroParameterizationPUREHaar& MacroParameterizationPUREHaar::operator=(MacroPar
 	MacroParameterization::operator=(std::move(parameterization));
 	_grid_size = parameterization._plasma->get_grid_size();
    	_macro_grid_size = parameterization._plasma->get_macro_grid_size();
-   	_depth = parameterization._depth;
+   	_min_depth = parameterization._min_depth;
+   	_max_depth = parameterization._max_depth;
    	_ion_vmax = parameterization._ion_vmax;
    	_record_microsteps = parameterization._plasma->get_record_microsteps();
 
@@ -47,21 +49,23 @@ MacroParameterizationPUREHaar& MacroParameterizationPUREHaar::operator=(MacroPar
 }
 
 MacroParameterizationPUREHaar::MacroParameterizationPUREHaar(MacroParameterization & parameterization,
-				double electron_thermal_vel, double ion_vmax, int depth) :
-	MacroParameterization(std::move(parameterization)), _depth(depth), _ion_vmax(ion_vmax), _electron_thermal_vel(electron_thermal_vel)
+				double electron_thermal_vel, double ion_vmax) :
+	MacroParameterization(std::move(parameterization)), _ion_vmax(ion_vmax), _electron_thermal_vel(electron_thermal_vel)
 {
 	if (_number_of_populations != 2)
 		throw std::runtime_error("There are " + std::to_string(_number_of_populations) + " and not 2 populations as required.\n");
 
 	_grid_size = _plasma->get_grid_size();
 	_macro_grid_size = _plasma->get_macro_grid_size();
+	_min_depth = _plasma->get_wavelet_cutoff();
+	_max_depth = _plasma->get_wavelet_depth();
 	_record_microsteps = _plasma->get_record_microsteps();
 
-	_prev_step_ion_distribution 	= ActiveHaarRepresentation(_plasma, _ion_vmax, _depth, _macro_grid_size, _depth/2);
-	_current_step_ion_distribution	= ActiveHaarRepresentation(_plasma, _ion_vmax, _depth, _macro_grid_size, _depth/2);
+	_prev_step_ion_distribution 	= ActiveHaarRepresentation(_plasma, _ion_vmax, _max_depth, _macro_grid_size, _min_depth);
+	_current_step_ion_distribution	= ActiveHaarRepresentation(_plasma, _ion_vmax, _max_depth, _macro_grid_size, _min_depth);
 
 	_distributions.clear();
-	_distributions.emplace_back(new ActiveHaarRepresentation(_plasma, _ion_vmax, _depth, _grid_size, _depth/2));
+	_distributions.emplace_back(new ActiveHaarRepresentation(_plasma, _ion_vmax, _max_depth, _grid_size, _min_depth));
 	_distributions.emplace_back(new ActiveMaxwellianRepresentation(_plasma, _grid_size));
 
 	int number_of_microsteps = _plasma->get_number_of_microsteps();
@@ -74,11 +78,11 @@ MacroParameterizationPUREHaar::MacroParameterizationPUREHaar(MacroParameterizati
 		_record_times.reserve(2*number_of_microsteps+4);
 		for (int i = 0; i < 2*number_of_microsteps+4; i++)
 		{
-			_record_ion_distribution.emplace_back(_plasma, _ion_vmax, _depth, _macro_grid_size);
+			_record_ion_distribution.emplace_back(_plasma, _ion_vmax, _max_depth, _macro_grid_size, _min_depth);
 		}
 	}
 
-	MaxwellianRepresentation::InitializeQuietStartArrays(std::pow(2, _depth));
+	MaxwellianRepresentation::InitializeQuietStartArrays(std::pow(2, _max_depth));
 	_debye_scaling = std::pow(_electron_thermal_vel/_plasma_pulsations.at(1), 2.);
 }
 
@@ -115,6 +119,7 @@ void MacroParameterizationPUREHaar::Initialize(State & state)
     _prev_step_ion_distribution = _current_step_ion_distribution;
     _prev_step_ion_distribution -= _plasma->get_macro_to_micro_dt_ratio() * Tools::EvaluateSlope<ActiveHaarRepresentation>(_stack_ion_distribution, _stack_index);
 	_stack_index = 1;
+    _stack_ion_distribution.at(_stack_index).PUREAdapt(_plasma->get_intensity());
     
 	this->Lift();
 	state.Load(*this);
@@ -177,7 +182,7 @@ void MacroParameterizationPUREHaar::RestrictAndPushback(const State & state)
 	std::vector<double>::iterator 	ion_weight 			= state.get_vector_of_weight_arrays().front()->begin();
 	int ion_population_size = state.get_vector_of_position_arrays().front()->size();
     if (_stack_index >= _stack_ion_distribution.size())
-        _stack_ion_distribution.emplace_back(_plasma, _ion_vmax, _depth, _grid_size);
+        _stack_ion_distribution.emplace_back(_plasma, _ion_vmax, _max_depth, _grid_size, _min_depth);
     
     int size = _stack_ion_distribution.at(_stack_index).get_grid_size();
     
@@ -212,8 +217,8 @@ void MacroParameterizationPUREHaar::ExtrapolateFirstHalfStep(const double ratio)
 	/* First, compute the derivative by least-squares and step forward */
 	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveHaarRepresentation>(_stack_ion_distribution, _stack_index);
     _stack_ion_distribution.front() *= ratio;
-    _stack_ion_distribution.front().PUREAdapt();
 	_stack_ion_distribution.front() += 0.5*(_prev_step_ion_distribution + _current_step_ion_distribution);
+    _stack_ion_distribution.front().PUREAdapt(_plasma->get_intensity());
 	_stack_index = 1;
     
     if (_record_microsteps)
@@ -229,8 +234,8 @@ void MacroParameterizationPUREHaar::ExtrapolateSecondHalfStep(const double ratio
 	/* First, compute the derivative by least-squares */
 	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveHaarRepresentation>(_stack_ion_distribution, _stack_index);
     _stack_ion_distribution.front() *= ratio;
-    _stack_ion_distribution.front().PUREAdapt();
 	_stack_ion_distribution.front()  += _current_step_ion_distribution;
+    _stack_ion_distribution.front().PUREAdapt(_plasma->get_intensity());
 	_stack_index = 1;
     
     if (_record_microsteps)

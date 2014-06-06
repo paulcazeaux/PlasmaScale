@@ -44,7 +44,8 @@ class MacroParameterizationPUREHaar : public MacroParameterization
 
 		int 										_grid_size;
 		int 										_macro_grid_size;
-		int 										_depth;
+		int 										_min_depth;
+		int 										_max_depth;
 		double 										_ion_vmax;
 		bool										_record_microsteps;
 
@@ -53,7 +54,7 @@ class MacroParameterizationPUREHaar : public MacroParameterization
 
 		/* Active variables : assuming that the ion population is the first population */
 		/* Data points storing the information used to determine the derivative */
-		std::vector<ActiveHaarRepresentation> 	_stack_ion_distribution;
+		std::vector<ActiveHaarRepresentation> 		_stack_ion_distribution;
 		int 										_stack_index;
 
 		/* Value for the previous step, used for the leapfrog time integration */
@@ -64,7 +65,7 @@ class MacroParameterizationPUREHaar : public MacroParameterization
 
 		/* Record arrays for the datapoints from the microsolver */
 		std::vector<double>							_record_times;
-		std::vector<ActiveHaarRepresentation> 	_record_ion_distribution;
+		std::vector<ActiveHaarRepresentation> 		_record_ion_distribution;
 
 		/* Parameters for the determination of the passive variables */
 		double										_electron_thermal_vel;
@@ -79,7 +80,7 @@ class MacroParameterizationPUREHaar : public MacroParameterization
 	public:
 		/* constructor  ========================================================================= */
 		MacroParameterizationPUREHaar() {}
-		MacroParameterizationPUREHaar(MacroParameterization & parameterization, double electron_thermal_vel, double ion_vmax, int depth);
+		MacroParameterizationPUREHaar(MacroParameterization & parameterization, double electron_thermal_vel, double ion_vmax);
 		virtual ~MacroParameterizationPUREHaar() {}
 
 		/* move constuctor and assignment ======================================================= */

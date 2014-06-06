@@ -6,6 +6,7 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 			_grid_size(parameterization._grid_size),
 			_macro_grid_size(parameterization._macro_grid_size),
 			_depth(parameterization._depth),
+			_cutoff(parameterization._cutoff),
 			_ion_vmax(parameterization._ion_vmax),
 			_record_microsteps(parameterization._record_microsteps),
 			_distributions(std::move(parameterization._distributions)),
@@ -28,6 +29,7 @@ MacroParameterizationWavelets& MacroParameterizationWavelets::operator=(MacroPar
 	_grid_size = parameterization._plasma->get_grid_size();
    	_macro_grid_size = parameterization._plasma->get_macro_grid_size();
    	_depth = parameterization._depth;
+   	_cutoff = parameterization._cutoff;
    	_ion_vmax = parameterization._ion_vmax;
    	_record_microsteps = parameterization._plasma->get_record_microsteps();
 
@@ -47,14 +49,16 @@ MacroParameterizationWavelets& MacroParameterizationWavelets::operator=(MacroPar
 }
 
 MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterization & parameterization,
-				double electron_thermal_vel, double ion_vmax, int depth) :
-	MacroParameterization(std::move(parameterization)), _depth(depth), _ion_vmax(ion_vmax), _electron_thermal_vel(electron_thermal_vel)
+				double electron_thermal_vel, double ion_vmax) :
+	MacroParameterization(std::move(parameterization)), _ion_vmax(ion_vmax), _electron_thermal_vel(electron_thermal_vel)
 {
 	if (_number_of_populations != 2)
 		throw std::runtime_error("There are " + std::to_string(_number_of_populations) + " and not 2 populations as required.\n");
 
 	_grid_size = _plasma->get_grid_size();
 	_macro_grid_size = _plasma->get_macro_grid_size();
+	_depth = _plasma->get_wavelet_depth();
+	_cutoff = _plasma->get_wavelet_cutoff();
 	_record_microsteps = _plasma->get_record_microsteps();
 
 	_prev_step_ion_distribution 	= ActiveWaveletRepresentation(_plasma, _ion_vmax, _depth, _macro_grid_size);
@@ -212,7 +216,7 @@ void MacroParameterizationWavelets::ExtrapolateFirstHalfStep(const double ratio)
 	/* First, compute the derivative by least-squares and step forward */
 	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveWaveletRepresentation>(_stack_ion_distribution, _stack_index);
     _stack_ion_distribution.front() *= ratio;
-    _stack_ion_distribution.front().Cutoff(_plasma->get_wavelet_cutoff());
+    _stack_ion_distribution.front().Cutoff(_cutoff);
 	_stack_ion_distribution.front() += 0.5*(_prev_step_ion_distribution + _current_step_ion_distribution);
 	_stack_index = 1;
     
@@ -229,7 +233,7 @@ void MacroParameterizationWavelets::ExtrapolateSecondHalfStep(const double ratio
 	/* First, compute the derivative by least-squares */
 	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveWaveletRepresentation>(_stack_ion_distribution, _stack_index);
     _stack_ion_distribution.front() *= ratio;
-    _stack_ion_distribution.front().Cutoff(_plasma->get_wavelet_cutoff());
+    _stack_ion_distribution.front().Cutoff(_cutoff);
 	_stack_ion_distribution.front()  += _current_step_ion_distribution;
 	_stack_index = 1;
     
