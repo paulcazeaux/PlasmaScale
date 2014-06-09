@@ -34,7 +34,12 @@ find_package(XGRAFIX)
 include_directories(${FFTW_INCLUDES} ${XGRAFIX_INCLUDES})
 include(CMakeBackwardCompatibilityCXX)
 include(CheckLibraryExists)
-              
+           
+######################################################################################
+### activate test mode
+######################################################################################
+
+ENABLE_TESTING()   
 
 #####################################################################################
 ### Manage the build type
@@ -61,6 +66,8 @@ add_definitions(-DDEPRECATED_MESSAGES)
 ######################################################################################
 
 add_subdirectory(src)
+add_subdirectory(test)
+add_subdirectory(app)
 
 ######################################################################################
 

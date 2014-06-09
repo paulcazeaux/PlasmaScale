@@ -195,6 +195,7 @@ void MacroParameterizationPUREHaar::RestrictAndPushback(const State & state)
     
 	/* Then we weigh the particles and restrict the values to the macroscopic grid using a linear smoothing. */
 	_stack_ion_distribution.at(_stack_index).Weigh(ion_population_size, ion_position, ion_velocity, ion_weight);
+    _stack_ion_distribution.at(_stack_index).PUREAdapt(_plasma->get_intensity());
     
 	while (size > _macro_grid_size)
 	{
@@ -218,7 +219,6 @@ void MacroParameterizationPUREHaar::ExtrapolateFirstHalfStep(const double ratio)
 	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveHaarRepresentation>(_stack_ion_distribution, _stack_index);
     _stack_ion_distribution.front() *= ratio;
 	_stack_ion_distribution.front() += 0.5*(_prev_step_ion_distribution + _current_step_ion_distribution);
-    _stack_ion_distribution.front().PUREAdapt(_plasma->get_intensity());
 	_stack_index = 1;
     
     if (_record_microsteps)
@@ -235,7 +235,6 @@ void MacroParameterizationPUREHaar::ExtrapolateSecondHalfStep(const double ratio
 	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveHaarRepresentation>(_stack_ion_distribution, _stack_index);
     _stack_ion_distribution.front() *= ratio;
 	_stack_ion_distribution.front()  += _current_step_ion_distribution;
-    _stack_ion_distribution.front().PUREAdapt(_plasma->get_intensity());
 	_stack_index = 1;
     
     if (_record_microsteps)

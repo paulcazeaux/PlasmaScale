@@ -2,6 +2,7 @@
 
 # user parameter
 TARGET="PlasmaScale"
+#TARGET="t-HaarTools"
 
 # cmake parameters
 export CC=clang
@@ -25,8 +26,8 @@ make ${TARGET}
 
 # additional run
 echo "====================================================================================="
-InputFile=/Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/ionwave.inp
-ExportFile=/Users/cazeaux/Dropbox/Postdocs/Plasma/Output/Wavelets/ShortDomain.dmp
+InputFile=/Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/app/cfg/ionwave.inp
+ExportFile=/Users/cazeaux/Dropbox/Postdocs/Plasma/Output/Wavelets/Denoising.dmp
 rm ${ExportFile}
 ./app/${TARGET} -i ${InputFile}  -d ${ExportFile} -dp 1
 echo "====================================================================================="

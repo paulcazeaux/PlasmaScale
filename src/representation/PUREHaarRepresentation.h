@@ -22,6 +22,7 @@
 #include "wavelets/wavelet2s.h"
 #include "plasma/Plasma.h"
 #include "tools/Tools.h"
+#include "tools/HaarTools.h"
 #include "representation/Representation.h"
 
 class PUREHaarRepresentation : public Representation

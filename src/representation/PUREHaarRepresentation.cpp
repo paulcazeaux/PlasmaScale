@@ -206,29 +206,12 @@ void PUREHaarRepresentation::Transform()
 		std::cerr << "Warning, no transform when min_depth = max_depth for the Haar representation !" << std::endl;
 		return;
 	}
-
-
 	if (_is_transformed)
 	{
 		/* Perform inverse transform */
 		for (int n=0; n<_grid_size; n++)
 		{
-			for (int j=_min_depth; j<_max_depth-1; j++)
-			{
-                int scale_size = std::pow(2, j);
-				for (int i=scale_size; i<2*scale_size; i++)
-				{
-					_scaling_coefficients.at(n).at(2*i+1) = 0.5 * (_scaling_coefficients.at(n).at(i) - _detail_coefficients.at(n).at(i));
-					_scaling_coefficients.at(n).at(2*i)   = 0.5 * (_scaling_coefficients.at(n).at(i) + _detail_coefficients.at(n).at(i));
-				}
-			}
-            
-            int scale_size = std::pow(2, _max_depth-1);
-            for (int i=0; i<scale_size; i++)
-			{
-				_histogram.at(n).at(2*i) = 0.5*(_scaling_coefficients.at(n).at(scale_size+i) + _detail_coefficients.at(n).at(scale_size+i));
-                _histogram.at(n).at(2*i+1) = 0.5*(_scaling_coefficients.at(n).at(scale_size+i) - _detail_coefficients.at(n).at(scale_size+i));
-			}
+			HaarTools::InverseTransform(_histogram.at(n), _scaling_coefficients.at(n), _detail_coefficients.at(n), _max_depth, _min_depth);
 		}
 		_is_transformed = false;
 	}
@@ -237,26 +220,7 @@ void PUREHaarRepresentation::Transform()
 		/* Perform forward unnormalized transform */
 		for (int n=0; n<_grid_size; n++)
 		{
-			int scale_size = std::pow(2, _max_depth-1);
-			_scaling_coefficients.at(n).resize(2*scale_size);
-			_detail_coefficients.at(n).resize(2*scale_size);
-
-			for (int i=0; i<scale_size; i++)
-			{
-				_scaling_coefficients.at(n).at(scale_size+i) = _histogram.at(n).at(2*i) + _histogram.at(n).at(2*i+1);
-				_detail_coefficients.at(n).at(scale_size+i)  = _histogram.at(n).at(2*i) - _histogram.at(n).at(2*i+1);
-			}
-			scale_size /= 2;
-
-			for (int j=_max_depth-1; j>_min_depth; j--)
-			{
-				for (int i=scale_size; i<2*scale_size; i++)
-				{
-					_scaling_coefficients.at(n).at(i) = _scaling_coefficients.at(n).at(2*i) + _scaling_coefficients.at(n).at(2*i+1);
-					_detail_coefficients.at(n).at(i)  = _scaling_coefficients.at(n).at(2*i) - _scaling_coefficients.at(n).at(2*i+1);
-				}
-				scale_size /= 2;
-			}
+			HaarTools::ForwardTransform(_histogram.at(n), _scaling_coefficients.at(n), _detail_coefficients.at(n), _max_depth, _min_depth);
 		}
 		_is_transformed = true;
 	}
@@ -383,61 +347,23 @@ void PUREHaarRepresentation::Cutoff(int depth)
 
 void PUREHaarRepresentation::PUREAdapt(const double intensity)
 {
-
+    if (intensity==0)
+        return;
+	if (_is_transformed)
+		this->Transform();
 	/* Empirical scaling : detect local empirical mean and variance */
-	const int patch_size = 8;
-	static std::vector<double> patch_mean = std::vector<double>(_grid_size*_number_of_bins/(patch_size*patch_size));
-	static std::vector<double> patch_variance = std::vector<double>(_grid_size*_number_of_bins/(patch_size*patch_size));
+	double alpha = intensity*Tools::ComputePoissonEmpiricalScaling(_histogram);
 
-	auto it_mean = patch_mean.begin();
-	auto it_variance = patch_variance.begin();
-	for (int n=0; n<_grid_size; n+=8)
-	{
-		for (int i=0; i<_number_of_bins; i+=8)
-		{
-			double mean=0., variance=0.;
-			for (int np=n; np<n+patch_size; np++)
-			{
-				for (int ip=i; ip<i+patch_size; ip++)
-				{
-					double val=_histogram.at(np).at(ip);
-					mean += val;
-					variance += val*val;
-				}
-			}
-			mean /= static_cast<double>(patch_size*patch_size);
-			variance = variance/static_cast<double>(patch_size*patch_size) - mean*mean;
-
-			*it_mean++ 		= mean;
-			*it_variance++ 	= variance;
-		}
-	}
-
-	double alpha = intensity*Tools::EvaluateSlope(patch_mean, patch_variance);
+	/* Bandwise thresholding using PURE threshold optimization */
 
 	for (int n=0; n<_grid_size; n++)
 	{
 		std::for_each(_histogram.at(n).begin(), _histogram.at(n).end(), [&](double& val) { val /= alpha;});
-	}
-		
-	/* DWT */
-
-	if (!_is_transformed)
-		this->Transform();
-    
-	/* Bandwise thresholding using PURE threshold optimization */
-	for (int n=0; n<_grid_size; n++)
-	{
-		Tools::PUREShrink(_scaling_coefficients.at(n), _detail_coefficients.at(n), _mask.at(n), _max_depth, _min_depth);
-	}
-
-	this->Transform();
-	/* Rescale the data */
-	for (int n=0; n<_grid_size; n++)
-	{
+		HaarTools::ForwardTransform(_histogram.at(n), _scaling_coefficients.at(n), _detail_coefficients.at(n), _max_depth, _min_depth);
+		HaarTools::PUREShrink(_scaling_coefficients.at(n), _detail_coefficients.at(n), _mask.at(n), _max_depth, _min_depth);
+		HaarTools::InverseTransform(_histogram.at(n), _scaling_coefficients.at(n), _detail_coefficients.at(n), _max_depth, _min_depth);
 		std::for_each(_histogram.at(n).begin(), _histogram.at(n).end(), [&](double& val) { val *= alpha;});
 	}
-
 }
 
 void PUREHaarRepresentation::Reset()
