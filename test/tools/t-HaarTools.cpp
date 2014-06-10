@@ -52,7 +52,7 @@ double NormDiff(std::vector<double>& u, std::vector<double>& v)
  	std::cout << "\t> Test Inverse transform ...... ok" << std::endl;
  	
   	std::vector<double> Ds = {0.,0,-1.0385,5.3558,0.,-0.9733,3.0340,0.0272,0.,0.,0.,0.,0.,0.,0.,0.};
-  	std::vector<bool> Pt(size), P = {false,false,true,true,false,true,true,true,false,false,false,false,false,false,false,false};
+  	std::vector<int> Pt(size), P = {false,false,true,true,false,true,true,true,false,false,false,false,false,false,false,false};
 
   	HaarTools::PUREShrink(S, D, Pt, maxdepth, mindepth);
 

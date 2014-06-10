@@ -6,7 +6,7 @@ _plasma(plasma), _vmax(vmax), _depth(depth), _grid_size(grid_size)
 {
 	_number_of_bins = std::pow(2, depth);
 	_dv = (2.*vmax)/static_cast<double>(_number_of_bins);
-	_filter = "db1";
+	_filter = "db6";
 
 	_is_transformed = false;
 	_histogram = std::vector<std::vector<double> >(_grid_size, std::vector<double>(_number_of_bins));

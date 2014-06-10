@@ -216,8 +216,8 @@ void MacroParameterizationWavelets::ExtrapolateFirstHalfStep(const double ratio)
 	/* First, compute the derivative by least-squares and step forward */
 	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveWaveletRepresentation>(_stack_ion_distribution, _stack_index);
     _stack_ion_distribution.front() *= ratio;
-    _stack_ion_distribution.front().Cutoff(_cutoff);
 	_stack_ion_distribution.front() += 0.5*(_prev_step_ion_distribution + _current_step_ion_distribution);
+    _stack_ion_distribution.front().Cutoff(_cutoff);
 	_stack_index = 1;
     
     if (_record_microsteps)
@@ -233,8 +233,8 @@ void MacroParameterizationWavelets::ExtrapolateSecondHalfStep(const double ratio
 	/* First, compute the derivative by least-squares */
 	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveWaveletRepresentation>(_stack_ion_distribution, _stack_index);
     _stack_ion_distribution.front() *= ratio;
-    _stack_ion_distribution.front().Cutoff(_cutoff);
 	_stack_ion_distribution.front()  += _current_step_ion_distribution;
+    _stack_ion_distribution.front().Cutoff(_cutoff);
 	_stack_index = 1;
     
     if (_record_microsteps)

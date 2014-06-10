@@ -24,7 +24,8 @@
 #include "parameterization/MacroParameterization.h"
 #include "parameterization/MacroParameterizationFromFile.h"
 #include "parameterization/MacroParameterizationEFPI.h"
-#include "parameterization/MacroParameterizationFullPIC.h"
+#include "parameterization/MacroParameterizationFullPICtoMaxwell.h"
+#include "parameterization/MacroParameterizationFullPICtoHistogram.h"
 #include "parameterization/MacroParameterizationWavelets.h"
 #include "parameterization/MacroParameterizationPUREHaar.h"
 

@@ -89,7 +89,7 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 	std::vector<std::vector<double> * > positions 		= this->get_vector_of_position_arrays();
 	std::vector<std::vector<double> * > x_velocities 	= this->get_vector_of_x_velocity_arrays();
 	std::vector<std::vector<double> * > y_velocities 	= this->get_vector_of_y_velocity_arrays();
-	std::vector<bool> magnetizations					= this->get_vector_of_magnetizations();
+	std::vector<int> magnetizations					= this->get_vector_of_magnetizations();
 	std::vector<int *> sizes 							= this->get_vector_of_sizes();
 
 	/*  set up  windows for the phase space distribution of particles.  */
@@ -132,7 +132,7 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 
 		/********************************************/
 		/*  this graph puts up a curve of ALL the velocity distributions. */
-		diagnostics.emplace_back(new CurveDiagnostic("linlin","Velocity","f(v) ALL species", 820, 0));		
+		diagnostics.emplace_back(new CurveDiagnostic("linlin","Velocity","f(v) ALL", 820, 0));
 		for (int i = 0; i<_number_of_populations; i++)
 		{
 			diagnostics.back()->AddData(mid_bin_arrays[i], velocity_profiles[i], number_of_bins[i], i);
@@ -200,9 +200,9 @@ std::vector<std::vector<double> * >	State::get_vector_of_weight_arrays() const
 	return weights;
 }
 
-std::vector<bool> State::get_vector_of_magnetizations() const
+std::vector<int> State::get_vector_of_magnetizations() const
 {
-	std::vector<bool> magnetizations = std::vector<bool>(_populations.size());
+	std::vector<int> magnetizations = std::vector<int>(_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
 	{
 		magnetizations[i] = _populations.at(i)->_magnetized;

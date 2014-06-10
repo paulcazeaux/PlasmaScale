@@ -50,7 +50,7 @@ class PUREHaarRepresentation : public Representation
 		std::vector<std::vector<double> > 	_scaling_coefficients;
 		std::vector<std::vector<double> >   _detail_coefficients;
 
-		std::vector<std::vector<bool> >  	_mask;
+		std::vector<std::vector<int> >  	_mask;
 
 	public:
 		/* constructor  ========================================================================= */
@@ -141,7 +141,7 @@ class PUREHaarRepresentation : public Representation
 					{
 						_scaling_coefficients.at(n).at(i) += rhs._scaling_coefficients.at(n).at(i);
 						_detail_coefficients.at(n).at(i) += rhs._detail_coefficients.at(n).at(i);
-						_mask.at(n).at(i) = _mask.at(n).at(i) || rhs._mask.at(n).at(i);
+						_mask.at(n)[i] = _mask.at(n)[i] || rhs._mask.at(n)[i];
 					}
 				}
 			}
@@ -152,7 +152,7 @@ class PUREHaarRepresentation : public Representation
 					for (int i=0; i<_number_of_bins; i++)
 					{
 						_histogram.at(n).at(i) += rhs._histogram.at(n).at(i);
-						_mask.at(n).at(i) = _mask.at(n).at(i) || rhs._mask.at(n).at(i);
+						_mask.at(n)[i] = _mask.at(n)[i] || rhs._mask.at(n)[i];
 					}
 				}
 			}
@@ -171,7 +171,7 @@ class PUREHaarRepresentation : public Representation
 					{
 						_scaling_coefficients.at(n).at(i) -= rhs._scaling_coefficients.at(n).at(i);
 						_detail_coefficients.at(n).at(i) -= rhs._detail_coefficients.at(n).at(i);
-						_mask.at(n).at(i) = _mask.at(n).at(i) || rhs._mask.at(n).at(i);
+						_mask.at(n)[i] = _mask.at(n)[i] || rhs._mask.at(n)[i];
 
 					}
 				}
@@ -183,7 +183,7 @@ class PUREHaarRepresentation : public Representation
 					for (int i=0; i<_number_of_bins; i++)
 					{
 						_histogram.at(n).at(i) -= rhs._histogram.at(n).at(i);
-						_mask.at(n).at(i) = _mask.at(n).at(i) || rhs._mask.at(n).at(i);
+						_mask.at(n)[i] = _mask.at(n)[i] || rhs._mask.at(n)[i];
 
 					}
 				}

@@ -24,11 +24,4 @@
  	std::cout << "Start of t-Tools" << std::endl;
 
  	// Instanciation
- 	int size = 16;
- 	std::vector<double> H, S, D, P;
-
- 	genH(H);
- 	genSD(S,D);
-
- 	Tools::PUREShrink
  }

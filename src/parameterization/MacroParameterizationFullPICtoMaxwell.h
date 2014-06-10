@@ -1,5 +1,5 @@
 
-/* HEADER MacroParameterization ===============================================================
+/* HEADER MacroParameterizationFullPICtoMaxwell ===============================================================
  * author: Paul Cazeaux
  * date: 2014-01-27
  *
@@ -9,8 +9,8 @@
  *  
  * ============================================================================= */
 
-#ifndef DEF_PLASMASCALE_MACROPARAMETERIZATIONFULLPIC
-#define DEF_PLASMASCALE_MACROPARAMETERIZATIONFULLPIC
+#ifndef DEF_PLASMASCALE_MACROPARAMETERIZATIONFULLPICTOMAXWELL
+#define DEF_PLASMASCALE_MACROPARAMETERIZATIONFULLPICTOMAXWELL
 
 #include "parameterization/MacroParameterization.h"
 #include "plasma/State.h"
@@ -30,7 +30,7 @@
 
 /* Declarations */
 
-class MacroParameterizationFullPIC : public MacroParameterization
+class MacroParameterizationFullPICtoMaxwell : public MacroParameterization
 {
 	private:
 		/* class members ======================================================================== */
@@ -46,14 +46,14 @@ class MacroParameterizationFullPIC : public MacroParameterization
 
 	public:
 		/* constructor  ========================================================================= */
-		MacroParameterizationFullPIC() {}
-		MacroParameterizationFullPIC(MacroParameterization & parameterization);
-		virtual ~MacroParameterizationFullPIC() {}
+		MacroParameterizationFullPICtoMaxwell() {}
+		MacroParameterizationFullPICtoMaxwell(MacroParameterization & parameterization);
+		virtual ~MacroParameterizationFullPICtoMaxwell() {}
 
 		/* move constuctor and assignment ======================================================= */
 
-		MacroParameterizationFullPIC(MacroParameterizationFullPIC &&parameterization);
-		MacroParameterizationFullPIC& operator=(MacroParameterizationFullPIC &&parameterization);
+		MacroParameterizationFullPICtoMaxwell(MacroParameterizationFullPICtoMaxwell &&parameterization);
+		MacroParameterizationFullPICtoMaxwell& operator=(MacroParameterizationFullPICtoMaxwell &&parameterization);
 
 		/* methods ============================================================================== */
 

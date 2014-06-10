@@ -12,7 +12,7 @@ _plasma(plasma), _vmax(vmax), _max_depth(max_depth), _grid_size(grid_size), _min
 	_histogram = std::vector<std::vector<double> >(_grid_size, std::vector<double>(_number_of_bins));
 	_scaling_coefficients = std::vector<std::vector<double> >(_grid_size);
 	_detail_coefficients = std::vector<std::vector<double> >(_grid_size);
-	_mask = std::vector<std::vector<bool> >(_grid_size, std::vector<bool>(_number_of_bins));
+	_mask = std::vector<std::vector<int> >(_grid_size, std::vector<int>(_number_of_bins));
 }
 
 
@@ -131,13 +131,13 @@ void PUREHaarRepresentation::Coarsen()
 		this->Transform();
 	_grid_size /= 2;
 	std::vector<double> dis0 = _histogram.at(0);
-	std::vector<bool> mask0 = _mask.at(0);
+	std::vector<int> mask0 = _mask.at(0);
 	for (int n=0; n<_grid_size-1; n++)
 	{
 		for (int i=0; i<_number_of_bins; i++)
 		{
 			_histogram.at(n).at(i) = 0.25 * _histogram.at(2*n).at(i) + 0.5 * _histogram.at(2*n+1).at(i) + 0.25 * _histogram.at(2*n+2).at(i);
-			_mask.at(n).at(i) = _mask.at(2*n).at(i) || _mask.at(2*n+1).at(i) || _mask.at(2*n+2).at(i);
+			_mask.at(n)[i] = _mask.at(2*n)[i] || _mask.at(2*n+1)[i] || _mask.at(2*n+2)[i];
 		}
 	}
 	{
@@ -145,7 +145,7 @@ void PUREHaarRepresentation::Coarsen()
 		for (int i=0; i<_number_of_bins; i++)
 		{
 			_histogram.at(n).at(i) = 0.25 * _histogram.at(2*n).at(i) + 0.5 * _histogram.at(2*n+1).at(i) + 0.25 * dis0.at(i);
-			_mask.at(n).at(i) = _mask.at(2*n).at(i) || _mask.at(2*n+1).at(i) || mask0.at(i);
+			_mask.at(n)[i] = _mask.at(2*n)[i] || _mask.at(2*n+1)[i] || mask0[i];
 		}
 	}
 
@@ -177,14 +177,14 @@ void PUREHaarRepresentation::Refine()
 		for (int i=0; i<_number_of_bins; i++)
 		{
 			_histogram.at(2*n+1).at(i) 	= _histogram.at(n).at(i);
-			_mask.at(2*n+1).at(i) 		= _mask.at(n).at(i);
+			_mask.at(2*n+1)[i]		= _mask.at(n)[i];
 		}
 	}
 	{
 		for (int i=0; i<_number_of_bins; i++)
 		{
 			_histogram.front().at(i) 	= 0.5*(_histogram.at(1).at(i) + _histogram.at(2*_grid_size-1).at(i));
-			_mask.front().at(i) 		= _mask.at(1).at(i) || _mask.at(2*_grid_size-1).at(i);
+			_mask.front()[i] 		= _mask.at(1)[i] || _mask.at(2*_grid_size-1)[i];
 		}
 	}
 	for (int n=1; n<_grid_size; n++)
@@ -192,7 +192,7 @@ void PUREHaarRepresentation::Refine()
 		for (int i=0; i<_number_of_bins; i++)
 		{
 			_histogram.at(2*n).at(i) 	= 0.5*(_histogram.at(2*n-1).at(i) + _histogram.at(2*n+1).at(i));
-			_mask.at(2*n).at(i) 		= _mask.at(2*n-1).at(i) || _mask.at(2*n+1).at(i);
+			_mask.at(2*n)[i] 		= _mask.at(2*n-1)[i] || _mask.at(2*n+1)[i];
 		}
 	}
 	_grid_size *= 2;

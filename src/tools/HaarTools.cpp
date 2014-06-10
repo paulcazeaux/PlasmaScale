@@ -46,7 +46,7 @@ void HaarTools::InverseTransform(std::vector<double>& hist, std::vector<double>&
 	}
 }
 
-void HaarTools::PUREShrink(std::vector<double>& scaling, std::vector<double>& detail, std::vector<bool>& pattern, const int& maxdepth, const int& mindepth)
+void HaarTools::PUREShrink(std::vector<double>& scaling, std::vector<double>& detail, std::vector<int>& pattern, const int& maxdepth, const int& mindepth)
 {
 	assert(scaling.size() == std::pow(2, maxdepth));
 	static std::vector<double> breaks;
