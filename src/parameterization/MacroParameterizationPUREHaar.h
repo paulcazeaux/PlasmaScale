@@ -93,9 +93,8 @@ class MacroParameterizationPUREHaar : public MacroParameterization
 		virtual void Initialize(State & state);
 		virtual void Load(State & state) const;
 
-		void RestrictAndPushback(const State & state);
-		void ExtrapolateFirstHalfStep(const double ratio);
-		void ExtrapolateSecondHalfStep(const double ratio);
+		void RestrictAndPushback(const State & state, const double delay);
+		void Extrapolate(const double ratio);
 		void Lift();
 
 		virtual void Step(State & state);

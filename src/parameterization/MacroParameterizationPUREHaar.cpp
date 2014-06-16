@@ -88,7 +88,7 @@ MacroParameterizationPUREHaar::MacroParameterizationPUREHaar(MacroParameterizati
 
 void MacroParameterizationPUREHaar::Initialize(State & state)
 {
-    _stack_index = 0;
+    double ratio = static_cast<double>(_plasma->get_macro_to_micro_dt_ratio());
 	std::shared_ptr<double> simulation_time = state.get_simulation_time();
 	double current_time = *simulation_time;
     
@@ -96,8 +96,11 @@ void MacroParameterizationPUREHaar::Initialize(State & state)
 	{
 		_record_times.clear();
 	}
-	this->RestrictAndPushback(state);
-	_current_step_ion_distribution = _stack_ion_distribution.front();
+    _stack_index = 0;
+	this->RestrictAndPushback(state, ratio*_plasma->get_dt());
+	std::swap(_current_step_ion_distribution, _stack_ion_distribution.front());
+    _stack_index = 0;
+	this->RestrictAndPushback(state, 0.);
     
     /* Take an Euler step backwards to initialize the distribution at the previous step */
     
@@ -106,19 +109,16 @@ void MacroParameterizationPUREHaar::Initialize(State & state)
 	{
 		_record_times.clear();
 	}
-	/* Leapfrog integration : using two-stage integration */
-    /* Stage 1 */
-    // Step 1: Run the fine solver
 	for (int i=0; i<number_of_microsteps; i++)
 	{
 		state.Step();
-		this->RestrictAndPushback(state);
+		this->RestrictAndPushback(state, (ratio-i-1)*_plasma->get_dt());
 	}
 	/* Compute the derivative by least-squares and step backwards */
     _prev_step_ion_distribution = _current_step_ion_distribution;
-    _prev_step_ion_distribution -= _plasma->get_macro_to_micro_dt_ratio() * Tools::EvaluateSlope<ActiveHaarRepresentation>(_stack_ion_distribution, _stack_index);
+    _prev_step_ion_distribution -= ratio * Tools::EvaluateSlope<ActiveHaarRepresentation>(_stack_ion_distribution, _stack_index);
+
 	_stack_index = 1;
-    
 	this->Lift();
 	state.Load(*this);
     _distributions.front()->GetDensityVelocityPressure(_ion_density, _ion_velocity, _ion_pressure);
@@ -168,7 +168,7 @@ void MacroParameterizationPUREHaar::Load(State & state) const
 	}
 }
 
-void MacroParameterizationPUREHaar::RestrictAndPushback(const State & state)
+void MacroParameterizationPUREHaar::RestrictAndPushback(const State & state, const double delay)
 {
 	/***********************************************************************/
 	/* Now we weigh the particles and compute the moments on the fine grid */
@@ -191,7 +191,7 @@ void MacroParameterizationPUREHaar::RestrictAndPushback(const State & state)
     
     
 	/* Then we weigh the particles and restrict the values to the macroscopic grid using a linear smoothing. */
-	_stack_ion_distribution.at(_stack_index).Weigh(ion_population_size, ion_position, ion_velocity, ion_weight);
+	_stack_ion_distribution.at(_stack_index).Weigh(ion_population_size, ion_position, ion_velocity, ion_weight, delay);
     
 	while (size > _macro_grid_size)
 	{
@@ -216,35 +216,15 @@ void MacroParameterizationPUREHaar::RestrictAndPushback(const State & state)
 	_stack_index++;
 }
 
-void MacroParameterizationPUREHaar::ExtrapolateFirstHalfStep(const double ratio)
+void MacroParameterizationPUREHaar::Extrapolate(const double ratio)
 {
 	/* First, compute the derivative by least-squares and step forward */
-	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveHaarRepresentation>(_stack_ion_distribution, _stack_index);
-    _stack_ion_distribution.front() *= ratio;
-	_stack_ion_distribution.front() += 0.5*(_prev_step_ion_distribution + _current_step_ion_distribution);
-    _stack_ion_distribution.front().PUREAdapt(_plasma->get_intensity());
+	_stack_ion_distribution.front() += ratio * Tools::EvaluateSlope<ActiveHaarRepresentation>(_stack_ion_distribution, _stack_index);
 	_stack_index = 1;
     
     if (_record_microsteps)
 	{
 		_record_times.push_back(_record_times.front() + ratio/2.*_plasma->get_dt());
-		int m = _record_times.size()-1;
-		_record_ion_distribution.at(m) = _stack_ion_distribution.front();
-	}
-}
-
-void MacroParameterizationPUREHaar::ExtrapolateSecondHalfStep(const double ratio)
-{
-	/* First, compute the derivative by least-squares */
-	_stack_ion_distribution.front() = Tools::EvaluateSlope<ActiveHaarRepresentation>(_stack_ion_distribution, _stack_index);
-    _stack_ion_distribution.front() *= ratio;
-	_stack_ion_distribution.front()  += _current_step_ion_distribution;
-    _stack_ion_distribution.front().PUREAdapt(_plasma->get_intensity());
-	_stack_index = 1;
-    
-    if (_record_microsteps)
-	{
-		_record_times.push_back(_record_times.front()+ratio*_plasma->get_dt());
 		int m = _record_times.size()-1;
 		_record_ion_distribution.at(m) = _stack_ion_distribution.front();
 	}
@@ -377,44 +357,46 @@ void MacroParameterizationPUREHaar::Step(State & state)
 	/* Leapfrog integration : using two-stage integration */
 		/* Stage 1 */
 			// Step 1: Run the fine solver
-    _stack_index = 0;
-	this->RestrictAndPushback(state);
-	_current_step_ion_distribution = _stack_ion_distribution.front();
 
-	// Let the system relax
-    //for (int i=0; i<number_of_microsteps; i++)
-		state.Step();
-	
+	std::swap(_current_step_ion_distribution, _prev_step_ion_distribution);
+
+	/* Prepare the next step for leap-frog integration */
     _stack_index = 0;
-	this->RestrictAndPushback(state);
+	this->RestrictAndPushback(state, 2.*ratio*_plasma->get_dt());
+	std::swap(_prev_step_ion_distribution, _stack_ion_distribution.front());
+    _stack_index = 0;
+	this->RestrictAndPushback(state, ratio*_plasma->get_dt());
+	_current_step_ion_distribution += _stack_ion_distribution.front();
+	_current_step_ion_distribution *= 0.5;
+	std::swap(_current_step_ion_distribution, _stack_ion_distribution.front());
+
+	/* Initial value for this half-step in stored in _stack_ion_distribution.front() */
 	for (int i=0; i<number_of_microsteps; i++)
 	{
 		state.Step();
-		this->RestrictAndPushback(state);
+		this->RestrictAndPushback(state, (ratio-i-1)*_plasma->get_dt());
 	}
 			// Step 2: Extrapolate using EFPI
-	this->ExtrapolateFirstHalfStep(ratio);
+	this->Extrapolate(ratio);
 	this->Lift();
 	state.Load(*this);
 	*simulation_time = current_time + .5*ratio*_plasma->get_dt();
 
     /* And repeat for stage 2 */
-    //for (int i=0; i<number_of_microsteps; i++)
-		state.Step();
 
-    _stack_index = 0;
-	this->RestrictAndPushback(state);
-    
+    _stack_index = 1;
+	std::swap(_current_step_ion_distribution, _stack_ion_distribution.front());
+
+    /* Initial value for this half-step in stored in _stack_ion_distribution.front() */
 	for (int i=0; i<number_of_microsteps; i++)
 	{
 		state.Step();
-		this->RestrictAndPushback(state);
+		this->RestrictAndPushback(state, (.5*ratio-i-1)*_plasma->get_dt());
 	}
-	this->ExtrapolateSecondHalfStep(ratio);
+	this->Extrapolate(ratio);
 	this->Lift();
 	state.Load(*this);
 	_distributions.front()->GetDensityVelocityPressure(_ion_density, _ion_velocity, _ion_pressure);
-	std::swap(_prev_step_ion_distribution, _current_step_ion_distribution);
 }
 
 void MacroParameterizationPUREHaar::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
@@ -439,22 +421,16 @@ void MacroParameterizationPUREHaar::WriteData(std::fstream & fout)
 {
 	if (!_record_microsteps)
 	{
-		fout << _prev_step_ion_distribution; 
+		fout << _stack_ion_distribution.front(); 
 	}
 	else
 	{
-		if (_record_times.size()!=_plasma->get_number_of_microsteps()*2+5)
+		if (_record_times.size()!=_plasma->get_number_of_microsteps()*2+4)
 			return;
 		for (int i=0; i<_record_times.size(); i++)
 		{
 			fout << "t = " << _record_times.at(i) << std::endl;
 			fout << _record_ion_distribution.at(i);
 		}
-
 	}
 }
-
-
-
-
-

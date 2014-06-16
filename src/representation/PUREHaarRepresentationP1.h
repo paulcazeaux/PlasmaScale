@@ -32,7 +32,11 @@ class PUREHaarRepresentationP1 : public PUREHaarRepresentation
 								std::vector<double>::iterator 	position,
 								std::vector<double>::iterator  	velocity,
 								std::vector<double>::iterator 	weight);
-
+		virtual void Weigh(int size,
+				std::vector<double>::iterator 	position,
+				std::vector<double>::iterator  	velocity,
+				std::vector<double>::iterator 	weight,
+				const double delay);
 		virtual void Load(int size,
 								std::vector<double>::iterator 	position,
 								std::vector<double>::iterator  	velocity,

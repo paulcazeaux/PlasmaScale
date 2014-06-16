@@ -45,6 +45,52 @@ void PUREHaarRepresentationP1::Weigh(int size,
     }
 }
 
+void PUREHaarRepresentationP1::Weigh(int size,
+								std::vector<double>::iterator 	position,
+								std::vector<double>::iterator  	velocity,
+								std::vector<double>::iterator 	weights,
+								double delay)
+{
+	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
+    double dt = _plasma->get_dt();
+    delay = delay/dt;
+	this->Reset();
+
+	for (int i=0; i<size; i++)
+	{
+		double pos = position[i] + delay*velocity[i];
+		while (pos<0)
+			pos += _plasma->get_length();
+		double weight = weights[i];
+
+		int xbin = _plasma->find_index_on_grid(pos);
+		double right_weight =  _plasma->find_position_in_cell(pos) * weight;
+		double left_weight = weight - right_weight;
+
+		int vbin = static_cast<int>(velocity[i]/(dt*_dv) + static_cast<double>(_number_of_bins/2));
+		if (vbin < 0)
+			vbin = 0;
+		if (vbin > _number_of_bins-1)
+			vbin = _number_of_bins-1;
+
+		_histogram.at(xbin).at(vbin) += left_weight;
+		if (xbin < _grid_size-1)
+		{
+			_histogram.at(xbin+1).at(vbin) += right_weight;
+		}
+		else
+		{
+			_histogram.at(0).at(vbin) += right_weight;
+		}
+	}
+    
+    for (auto & cell : _histogram)
+    {
+        for (auto & value : cell)
+            value *= population_density;
+    }
+}
+
 void PUREHaarRepresentationP1::Load(int size,
 								std::vector<double>::iterator 	position,
 								std::vector<double>::iterator  	velocity,
