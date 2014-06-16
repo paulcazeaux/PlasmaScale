@@ -12,7 +12,7 @@ _plasma(plasma), _vmax(vmax), _max_depth(max_depth), _grid_size(grid_size), _min
 	_histogram = std::vector<std::vector<double> >(_grid_size, std::vector<double>(_number_of_bins));
 	_scaling_coefficients = std::vector<std::vector<double> >(_grid_size);
 	_detail_coefficients = std::vector<std::vector<double> >(_grid_size);
-	_mask = std::vector<std::vector<int> >(_grid_size, std::vector<int>(_number_of_bins));
+	_mask = std::vector<std::vector<int> >(_grid_size, std::vector<int>(_number_of_bins, true));
 }
 
 
@@ -363,6 +363,51 @@ void PUREHaarRepresentation::PUREAdapt(const double intensity)
 		HaarTools::PUREShrink(_scaling_coefficients.at(n), _detail_coefficients.at(n), _mask.at(n), _max_depth, _min_depth);
 		HaarTools::InverseTransform(_histogram.at(n), _scaling_coefficients.at(n), _detail_coefficients.at(n), _max_depth, _min_depth);
 		std::for_each(_histogram.at(n).begin(), _histogram.at(n).end(), [&](double& val) { val *= alpha;});
+	}
+
+	double count=0;
+	for (auto& col : _mask)
+	{
+		for (int i = std::pow(2, _min_depth); i<_number_of_bins; i++)
+		{
+			if (col.at(i))
+				count += 1;
+		}
+	}
+	std::cout << "Compression ratio: " << 100*count / (_grid_size * (_number_of_bins - std::pow(2, _min_depth))) << "%"<< std::endl;
+}
+
+void PUREHaarRepresentation::CopyMask(const PUREHaarRepresentation& representation)
+{
+	if (this == &representation)
+		return;
+
+	assert(representation._grid_size == _grid_size);
+	assert(representation._number_of_bins == _number_of_bins);
+	for (int n=0; n<_grid_size; n++)
+		std::copy(representation._mask.at(n).begin(), representation._mask.at(n).end(), _mask.at(n).begin());
+    
+}
+
+void PUREHaarRepresentation::ResetMask()
+{
+	for (int n=0; n<_grid_size; n++)
+	{
+		std::fill(_mask.at(n).begin(), _mask.at(n).end(), true);
+	}
+}
+
+void PUREHaarRepresentation::ApplyMask()
+{
+	for (int n=0; n<_grid_size; n++)
+	{
+		HaarTools::ForwardTransform(_histogram.at(n), _scaling_coefficients.at(n), _detail_coefficients.at(n), _max_depth, _min_depth);
+		for (int i=0; i<_number_of_bins; i++)
+		{
+			if (!_mask.at(n).at(i))
+				_detail_coefficients.at(n).at(i) = 0;
+		}
+		HaarTools::InverseTransform(_histogram.at(n), _scaling_coefficients.at(n), _detail_coefficients.at(n), _max_depth, _min_depth);
 	}
 }
 

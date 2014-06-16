@@ -57,6 +57,12 @@ void HaarTools::PUREShrink(std::vector<double>& scaling, std::vector<double>& de
 	index.reserve(std::pow(2, maxdepth-1));
     
 	pattern.resize(scaling.size());
+	for (int j=0; j<mindepth; j++)
+	{
+		int scale_size = std::pow(2, j);
+		for (int i=scale_size; i<2*scale_size; i++)
+			pattern.at(i) = true;
+	}
     
     
 	for (int j=mindepth; j<maxdepth; j++)
@@ -68,7 +74,7 @@ void HaarTools::PUREShrink(std::vector<double>& scaling, std::vector<double>& de
         int b=0;
 		for (int i=scale_size; i<2*scale_size; i++)
 		{
-			if (std::abs(scaling.at(i)) > 1e-10)
+			if (std::abs(scaling.at(i)) > 1e-15)
 			{
 				breaks.push_back( std::abs(detail.at(i)) / std::sqrt(std::abs(scaling.at(i))) );
 				index.emplace_back(i,b++);
@@ -84,7 +90,7 @@ void HaarTools::PUREShrink(std::vector<double>& scaling, std::vector<double>& de
 			int prev = index.at(i-1).first;
             
 			c1 += std::abs(scaling.at(prev));
-			c2 += 2*(std::abs(scaling.at(prev)) - std::pow(detail.at(prev), 2.));
+			c2 += (2*std::abs(scaling.at(prev)) - std::pow(detail.at(prev), 2.));
 			tmp = c1 * std::pow(breaks.at(index.at(i).second), 2.) + c2;
 			if (tmp<PURE)
 			{
@@ -92,7 +98,7 @@ void HaarTools::PUREShrink(std::vector<double>& scaling, std::vector<double>& de
 				PURE = tmp;
 			}
 		}
-		c2 += 2*(std::abs(scaling.at(index.back().first)) - std::pow(detail.at(index.back().first), 2.));
+		c2 += (2*std::abs(scaling.at(index.back().first)) - std::pow(detail.at(index.back().first), 2.));
 		if (c2 < PURE)
         {
 			a=0;
@@ -101,18 +107,23 @@ void HaarTools::PUREShrink(std::vector<double>& scaling, std::vector<double>& de
 		/* Update the detail coefficients and the sparsity pattern */
 		for (int i=scale_size; i<2*scale_size; i++)
 		{
-			double d = std::abs(detail.at(i)) - a*std::sqrt(std::abs(scaling.at(i)));
-			if (d>0)
+			if (std::abs( scaling.at(i) ) > 1e-15)
 			{
-				detail.at(i) = d * (detail.at(i) > 0 ? 1 : -1);
-				pattern.at(i) = true;
-			}
-			else
-			{
-				detail.at(i) = 0.;
-				pattern.at(i) = false;
+				double d = std::abs(detail.at(i)) * ( 1 - std::exp(1-detail.at(i)*detail.at(i)/(a*a*std::abs( scaling.at(i) ) ))  );
+				if (d>0)
+				{
+					//detail.at(i) = d * (detail.at(i) > 0 ? 1 : -1);
+					pattern.at(i) = true;
+				}
+				else
+				{
+					detail.at(i) = 0.;
+					if (j>mindepth && (detail.at(i/2)<1e-10))
+						pattern.at(i) = false;
+					else
+						pattern.at(i) = true;
+				}
 			}
 		}
 	}
-    
 }

@@ -75,8 +75,8 @@ MacroParameterizationPUREHaar::MacroParameterizationPUREHaar(MacroParameterizati
 	if (_record_microsteps)
 	{
         _record_ion_distribution.clear();
-		_record_times.reserve(2*number_of_microsteps+5);
-		for (int i = 0; i < 2*number_of_microsteps+5; i++)
+		_record_times.reserve(2*number_of_microsteps+4);
+		for (int i = 0; i < 2*number_of_microsteps+4; i++)
 		{
 			_record_ion_distribution.emplace_back(_plasma, _ion_vmax, _max_depth, _macro_grid_size, _min_depth);
 		}
@@ -199,6 +199,13 @@ void MacroParameterizationPUREHaar::RestrictAndPushback(const State & state)
 		size = _stack_ion_distribution.at(_stack_index).get_grid_size();
 	}
 	assert(size == _macro_grid_size);
+	if (_stack_index>0)
+	{
+		_stack_ion_distribution.at(_stack_index).CopyMask(_stack_ion_distribution.front());
+		_stack_ion_distribution.at(_stack_index).ApplyMask();
+	}
+	else
+    	_stack_ion_distribution.front().PUREAdapt(_plasma->get_intensity());
 
 	if (_record_microsteps)
 	{

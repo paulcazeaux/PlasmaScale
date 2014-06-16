@@ -39,29 +39,31 @@ class Tools
 
 		template<typename T>
 		static T EvaluateSlope(const std::vector<T> & values )
+		// We do not take into accout the first element of the vector
 		{
-			int size = values.size();
+			int size = values.size()-1;
 			assert(size>0);
-			T sum = values.at(0), first_moment = 0 * sum;
+			T sum = values.at(1), first_moment = 0 * sum;
 			for (int n=1; n<size; n++)
 			{
-				sum				+= values.at(n);
-				first_moment 	+= static_cast<double>(n)*values.at(n);
+				sum				+= values.at(n+1);
+				first_moment 	+= static_cast<double>(n)*values.at(n+1);
 			}
 			return 6./static_cast<double>(size*(size+1)) * (2./static_cast<double>(size-1)*first_moment - sum);
 		}
 
 		template<typename T>
 		static T EvaluateSlope(const std::vector<T> & values, const int size)
+		// We do not take into accout the first element of the vector
 		{
 			assert(size>0);
-			T sum = values.at(0), first_moment = 0 * sum;
-			for (int n=1; n<size; n++)
+			T sum = values.at(1), first_moment = 0 * sum;
+			for (int n=1; n<size-1; n++)
 			{
-				sum				+= values.at(n);
-				first_moment 	+= static_cast<double>(n)*values.at(n);
+				sum				+= values.at(n+1);
+				first_moment 	+= static_cast<double>(n)*values.at(n+1);
 			}
-			return 6./static_cast<double>(size*(size+1)) * (2./static_cast<double>(size-1)*first_moment - sum);
+			return 6./static_cast<double>(size*(size-1)) * (2./static_cast<double>(size-2)*first_moment - sum);
 		}
 
 		template<typename T>

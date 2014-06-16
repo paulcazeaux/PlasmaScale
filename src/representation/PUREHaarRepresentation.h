@@ -79,6 +79,9 @@ class PUREHaarRepresentation : public Representation
 		void Denoise(double thresh);
 		void Cutoff(int depth);
 		void PUREAdapt(const double intensity = 1.);
+		void CopyMask(const PUREHaarRepresentation& representation);
+		void ApplyMask();
+		void ResetMask();
 
 		virtual void Reset();
 		virtual void print(std::ostream& os) const;
