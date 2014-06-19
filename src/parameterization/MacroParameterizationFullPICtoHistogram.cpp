@@ -45,6 +45,62 @@ void MacroParameterizationFullPICtoHistogram::Initialize(State & state)
 
 void MacroParameterizationFullPICtoHistogram::ComputeVariables(const State & state)
 {
+	int p = 1;
+	std::vector<double>::iterator 	position 		= state.get_vector_of_position_arrays().at(p)->begin();
+	std::vector<double>::iterator	velocity 		= state.get_vector_of_x_velocity_arrays().at(p)->begin();
+	std::vector<double>::iterator 	weights 		= state.get_vector_of_weight_arrays().at(p)->begin();
+	int size = state.get_vector_of_position_arrays().at(p)->size();
+	double dv = (2.*_ion_vmax)/static_cast<double>(_number_of_bins);
+	double dt = _plasma->get_dt();
+
+    _grid_size = _plasma->get_grid_size();	
+    double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
+
+	_histogram.resize(_grid_size);
+    for (auto & col : _histogram)
+    {
+        col.resize(_number_of_bins);
+		std::fill(col.begin(), col.end(), 0.);
+    }
+
+	for (int i=0; i<size; i++)
+	{
+		double pos = position[i];
+		double weight = weights[i];
+
+		int xbin = _plasma->find_index_on_grid(pos);
+		double right_weight =  _plasma->find_position_in_cell(pos) * weight;
+		double left_weight = weight - right_weight;
+
+		int vbin = static_cast<int>(velocity[i]/(dt*dv) + static_cast<double>(_number_of_bins/2));
+		if (vbin < 0)
+			vbin = 0;
+		if (vbin > _number_of_bins-1)
+			vbin = _number_of_bins-1;
+		_histogram.at(xbin).at(vbin) += left_weight;
+		if (xbin < _grid_size-1)
+		{
+			_histogram.at(xbin+1).at(vbin) += right_weight;
+		}
+		else
+		{
+			_histogram.at(0).at(vbin) += right_weight;
+		}
+	}
+    
+    for (auto & cell : _histogram)
+    {
+        for (auto & value : cell)
+            value *= population_density;
+    }
+
+    while (_grid_size>_plasma->get_macro_grid_size())
+    	this->Coarsen();
+}
+
+/*
+void MacroParameterizationFullPICtoHistogram::ComputeVariables(const State & state)
+{
 	std::vector<double>::iterator 	position 		= state.get_vector_of_position_arrays().front()->begin();
 	std::vector<double>::iterator	velocity 		= state.get_vector_of_x_velocity_arrays().front()->begin();
 	std::vector<double>::iterator 	weights 		= state.get_vector_of_weight_arrays().front()->begin();
@@ -96,6 +152,7 @@ void MacroParameterizationFullPICtoHistogram::ComputeVariables(const State & sta
     while (_grid_size>_plasma->get_macro_grid_size())
     	this->Coarsen();
 }
+*/
 
 void MacroParameterizationFullPICtoHistogram::Coarsen()
 {

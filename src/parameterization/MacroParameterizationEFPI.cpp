@@ -180,7 +180,6 @@ void MacroParameterizationEFPI::Initialize(State & state)
 void MacroParameterizationEFPI::Load(State & state) const
 /* Fill the particle arrays to initialize the microscopic state */
 {	
-	state.Reset();
 	double dx = _plasma->get_dx();
 
 	/* Initialize the particle arrays */

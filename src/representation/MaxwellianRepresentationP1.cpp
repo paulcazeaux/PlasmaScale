@@ -7,7 +7,8 @@ MaxwellianRepresentation(plasma, grid_size) {}
 void MaxwellianRepresentationP1::Weigh(int size,
 								std::vector<double>::iterator 	position,
 								std::vector<double>::iterator  	velocity,
-								std::vector<double>::iterator 	weights)
+								std::vector<double>::iterator 	weights,
+								const double delay)
 {
 	double dt = _plasma->get_dt();
 	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
@@ -19,7 +20,7 @@ void MaxwellianRepresentationP1::Weigh(int size,
 
 	for (int i=0; i<size; i++)
 	{		
-		double pos = position[i];
+		double pos = position[i] + delay*velocity[i];
 		double weight = weights[i];
 		double vel = velocity[i];
 

@@ -27,7 +27,7 @@ make ${TARGET}
 # additional run
 echo "====================================================================================="
 InputFile=/Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/app/cfg/ionwave.inp
-ExportFile=~/Dropbox/Postdocs/Plasma/Output/Upwind/t-invhaar2.dmp
+ExportFile=~/Dropbox/Postdocs/Plasma/Output/Upwind/t-test.dmp
 rm ${ExportFile}
 ./app/${TARGET} -i ${InputFile}  -d ${ExportFile} -dp 1
 echo "====================================================================================="

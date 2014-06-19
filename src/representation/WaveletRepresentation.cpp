@@ -19,7 +19,8 @@ _plasma(plasma), _vmax(vmax), _depth(depth), _grid_size(grid_size)
 void WaveletRepresentation::Weigh(int size,
 								std::vector<double>::iterator 	position,
 								std::vector<double>::iterator  	velocity,
-								std::vector<double>::iterator 	weights)
+								std::vector<double>::iterator 	weights,
+								const double delay)
 {
 	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
 	double dt = _plasma->get_dt();
@@ -27,7 +28,9 @@ void WaveletRepresentation::Weigh(int size,
 
 	for (int i=0; i<size; i++)
 	{
-		double pos = position[i];
+		double pos = position[i] + delay*velocity[i];
+		while (pos<0)
+			pos += _plasma->get_length();
 		double weight = weights[i];
 		int xbin = _plasma->find_index_on_grid(pos);
 

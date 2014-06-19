@@ -36,7 +36,8 @@ void MaxwellianRepresentation::InitializeQuietStartArrays(int number_of_bins)
 void MaxwellianRepresentation::Weigh(int size,
 								std::vector<double>::iterator 	position,
 								std::vector<double>::iterator  	velocity,
-								std::vector<double>::iterator 	weights)
+								std::vector<double>::iterator 	weights,
+								const double delay)
 {
 	double dt = _plasma->get_dt();
 	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
@@ -48,7 +49,7 @@ void MaxwellianRepresentation::Weigh(int size,
 
 	for (int i=0; i<size; i++)
 	{
-		int xbin = _plasma->find_index_on_grid(position[i]);
+		int xbin = _plasma->find_index_on_grid(position[i] + delay*velocity[i]);
 		double weight = weights[i];
 		double vel = velocity[i];
 
@@ -167,6 +168,7 @@ void MaxwellianRepresentation::SetAdiabaticValues(const std::vector<double> & de
 {
 	_density = density;
 	_velocity = velocity;
+	_thermal_velocity.resize(_density.size());
 	std::fill(_thermal_velocity.begin(), _thermal_velocity.end(), thermal_velocity);
 }
 
