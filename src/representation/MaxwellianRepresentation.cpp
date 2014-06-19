@@ -49,7 +49,10 @@ void MaxwellianRepresentation::Weigh(int size,
 
 	for (int i=0; i<size; i++)
 	{
-		int xbin = _plasma->find_index_on_grid(position[i] + delay*velocity[i]);
+		double pos = position[i] + delay*velocity[i];
+		while (pos<0)
+			pos += _plasma->get_length();
+		int xbin = _plasma->find_index_on_grid(pos);
 		double weight = weights[i];
 		double vel = velocity[i];
 

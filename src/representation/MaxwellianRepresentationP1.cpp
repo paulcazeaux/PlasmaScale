@@ -21,6 +21,8 @@ void MaxwellianRepresentationP1::Weigh(int size,
 	for (int i=0; i<size; i++)
 	{		
 		double pos = position[i] + delay*velocity[i];
+		while (pos<0)
+			pos += _plasma->get_length();
 		double weight = weights[i];
 		double vel = velocity[i];
 

@@ -82,8 +82,8 @@ class MaxwellianRepresentation : public Representation
 			_grid_size = rhs._grid_size;
 
 			_density = std::vector<double>(rhs._density.begin(), rhs._density.begin()+_grid_size);
-			_density = std::vector<double>(rhs._velocity.begin(), rhs._velocity.begin()+_grid_size);
-			_density = std::vector<double>(rhs._thermal_velocity.begin(), rhs._thermal_velocity.begin()+_grid_size);
+			_velocity = std::vector<double>(rhs._velocity.begin(), rhs._velocity.begin()+_grid_size);
+			_thermal_velocity = std::vector<double>(rhs._thermal_velocity.begin(), rhs._thermal_velocity.begin()+_grid_size);
 
 			return *this;
 		}
@@ -94,12 +94,7 @@ class MaxwellianRepresentation : public Representation
 			{
 				_density.at(n) += rhs._density.at(n);
 				_velocity.at(n) += rhs._velocity.at(n);
-
-				/* We add the pressures, not the thermal velocities */
-				double p;
-				p = _density.at(n) * std::pow(_thermal_velocity.at(n), 2.) 
-					+ rhs._density.at(n) * std::pow(rhs._thermal_velocity.at(n), 2.);
-				_thermal_velocity.at(n) = std::sqrt(p / _density.at(n));
+				_thermal_velocity.at(n) += rhs._thermal_velocity.at(n);
 			}
 			return *this;
 		}
@@ -110,12 +105,7 @@ class MaxwellianRepresentation : public Representation
 			{
 				_density.at(n) -= rhs._density.at(n);
 				_velocity.at(n) -= rhs._velocity.at(n);
-
-				/* We add the pressures, not the thermal velocities */
-				double p;
-				p = _density.at(n) * std::pow(_thermal_velocity.at(n), 2.) 
-					- rhs._density.at(n) * std::pow(rhs._thermal_velocity.at(n), 2.);
-				_thermal_velocity.at(n) = std::sqrt(p / _density.at(n));
+				_thermal_velocity.at(n) -= rhs._thermal_velocity.at(n);
 			}
 			return *this;
 		}

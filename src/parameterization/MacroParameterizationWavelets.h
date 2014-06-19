@@ -55,32 +55,35 @@ class MacroParameterizationWavelets : public MacroParameterization
 		/* Active variables : assuming that the ion population is the first population */
 		/* Data points storing the information used to determine the derivative */
 		std::vector<ActiveWaveletRepresentation> 	_stack_ion_distribution;
+		std::vector<ActiveMaxwellianRepresentation> _stack_electron_distribution;
 		int 										_stack_index;
 
 		/* Value for the previous step, used for the leapfrog time integration */
 		ActiveWaveletRepresentation					_prev_step_ion_distribution;
+		ActiveMaxwellianRepresentation				_prev_step_electron_distribution;
 
 		/* Value for the current step, used for the leapfrog time integration */
 		ActiveWaveletRepresentation					_current_step_ion_distribution;
+		ActiveMaxwellianRepresentation				_current_step_electron_distribution;
 
 		/* Record arrays for the datapoints from the microsolver */
 		std::vector<double>							_record_times;
 		std::vector<ActiveWaveletRepresentation> 	_record_ion_distribution;
-
-		/* Parameters for the determination of the passive variables */
-		double										_electron_thermal_vel;
-		double 										_debye_scaling;
+		std::vector<ActiveMaxwellianRepresentation> _record_electron_distribution;
 
 		/* Arrays for the diagnostics */
 		std::vector<double> 						_ion_density;
 		std::vector<double> 						_ion_velocity;
 		std::vector<double> 						_ion_pressure;
+		std::vector<double> 						_electron_density;
+		std::vector<double> 						_electron_velocity;
+		std::vector<double> 						_electron_pressure;
 
 
 	public:
 		/* constructor  ========================================================================= */
 		MacroParameterizationWavelets() {}
-		MacroParameterizationWavelets(MacroParameterization & parameterization, double electron_thermal_vel, double ion_vmax);
+		MacroParameterizationWavelets(MacroParameterization & parameterization, double ion_vmax);
 		virtual ~MacroParameterizationWavelets() {}
 
 		/* move constuctor and assignment ======================================================= */

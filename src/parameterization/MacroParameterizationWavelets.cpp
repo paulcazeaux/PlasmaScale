@@ -11,13 +11,15 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 			_record_microsteps(parameterization._record_microsteps),
 			_distributions(std::move(parameterization._distributions)),
 			_stack_ion_distribution(std::move(parameterization._stack_ion_distribution)),
+			_stack_electron_distribution(std::move(parameterization._stack_electron_distribution)),
             _stack_index(parameterization._stack_index),
 			_prev_step_ion_distribution(std::move(parameterization._prev_step_ion_distribution)),
+			_prev_step_electron_distribution(std::move(parameterization._prev_step_electron_distribution)),
 			_current_step_ion_distribution(std::move(parameterization._current_step_ion_distribution)),
+			_current_step_electron_distribution(std::move(parameterization._current_step_electron_distribution)),
 			_record_times(std::move(parameterization._record_times)),
 			_record_ion_distribution(std::move(parameterization._record_ion_distribution)),
-			_electron_thermal_vel(parameterization._electron_thermal_vel),
-			_debye_scaling(parameterization._debye_scaling)
+			_record_electron_distribution(std::move(parameterization._record_electron_distribution))
 		{}
 
 MacroParameterizationWavelets& MacroParameterizationWavelets::operator=(MacroParameterizationWavelets &&parameterization)
@@ -35,22 +37,23 @@ MacroParameterizationWavelets& MacroParameterizationWavelets::operator=(MacroPar
 
 	_distributions = std::move(parameterization._distributions);
 	_stack_ion_distribution = std::move(parameterization._stack_ion_distribution);
+	_stack_electron_distribution = std::move(parameterization._stack_electron_distribution);
     _stack_index = parameterization._stack_index;
 	_prev_step_ion_distribution = std::move(parameterization._prev_step_ion_distribution);
+	_prev_step_electron_distribution = std::move(parameterization._prev_step_electron_distribution);
 	_current_step_ion_distribution = std::move(parameterization._current_step_ion_distribution);
+	_current_step_electron_distribution = std::move(parameterization._current_step_electron_distribution);
 
 	_record_times = std::move(parameterization._record_times);
 	_record_ion_distribution = std::move(parameterization._record_ion_distribution);
+	_record_electron_distribution = std::move(parameterization._record_electron_distribution);
 
-
-	_electron_thermal_vel = parameterization._electron_thermal_vel;
-	_debye_scaling = parameterization._debye_scaling;
 	return *this;
 }
 
 MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterization & parameterization,
-				double electron_thermal_vel, double ion_vmax) :
-	MacroParameterization(std::move(parameterization)), _ion_vmax(ion_vmax), _electron_thermal_vel(electron_thermal_vel)
+				double ion_vmax) :
+	MacroParameterization(std::move(parameterization)), _ion_vmax(ion_vmax)
 {
 	if (_number_of_populations != 2)
 		throw std::runtime_error("There are " + std::to_string(_number_of_populations) + " and not 2 populations as required.\n");
@@ -63,6 +66,9 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 
 	_prev_step_ion_distribution 	= ActiveWaveletRepresentation(_plasma, _ion_vmax, _depth, _macro_grid_size);
 	_current_step_ion_distribution	= ActiveWaveletRepresentation(_plasma, _ion_vmax, _depth, _macro_grid_size);
+	_prev_step_electron_distribution 	= ActiveMaxwellianRepresentation(_plasma, _macro_grid_size);
+	_current_step_electron_distribution	= ActiveMaxwellianRepresentation(_plasma, _macro_grid_size);
+
 
 	_distributions.clear();
 	_distributions.emplace_back(new ActiveWaveletRepresentation(_plasma, _ion_vmax, _depth, _grid_size));
@@ -79,11 +85,10 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 		for (int i = 0; i < 2*number_of_microsteps+2; i++)
 		{
 			_record_ion_distribution.emplace_back(_plasma, _ion_vmax, _depth, _macro_grid_size);
+			_record_electron_distribution.emplace_back(_plasma, _macro_grid_size);
 		}
 	}
-
 	MaxwellianRepresentation::InitializeQuietStartArrays(std::pow(2, _depth));
-	_debye_scaling = std::pow(_electron_thermal_vel/_plasma_pulsations.at(1), 2.);
 }
 
 void MacroParameterizationWavelets::Initialize(State & state)
@@ -99,6 +104,7 @@ void MacroParameterizationWavelets::Initialize(State & state)
     _stack_index = 0;
 	this->RestrictAndPushback(state, ratio);
 	std::swap(_current_step_ion_distribution, _stack_ion_distribution.front());
+	std::swap(_current_step_electron_distribution, _stack_electron_distribution.front());
     _stack_index = 0;
 	this->RestrictAndPushback(state, 0.);
     
@@ -117,11 +123,14 @@ void MacroParameterizationWavelets::Initialize(State & state)
 	/* Compute the derivative by least-squares and step backwards */
     _prev_step_ion_distribution = _current_step_ion_distribution;
     _prev_step_ion_distribution -= ratio * Tools::EvaluateSlope<ActiveWaveletRepresentation>(_stack_ion_distribution, _stack_index);
+    _prev_step_electron_distribution = _current_step_electron_distribution;
+    _prev_step_electron_distribution -= ratio * Tools::EvaluateSlope<ActiveMaxwellianRepresentation>(_stack_electron_distribution, _stack_index);
 
 	_stack_index = 1;
 	this->Lift();
 	state.Load(*this);
     _distributions.front()->GetDensityVelocityPressure(_ion_density, _ion_velocity, _ion_pressure);
+    _distributions.back()->GetDensityVelocityPressure(_electron_density, _electron_velocity, _electron_pressure);
     *simulation_time = current_time;
     if (_record_microsteps)
 	{
@@ -173,10 +182,11 @@ void MacroParameterizationWavelets::RestrictAndPushback(const State & state, con
 	/* Now we weigh the particles and compute the moments on the fine grid */
 	/***********************************************************************/
     /* First, we initialize the arrays */
-	std::vector<double>::iterator 	ion_position 		= state.get_vector_of_position_arrays().front()->begin();
-	std::vector<double>::iterator	ion_velocity 		= state.get_vector_of_x_velocity_arrays().front()->begin();
-	std::vector<double>::iterator 	ion_weight 			= state.get_vector_of_weight_arrays().front()->begin();
-	int ion_population_size = state.get_vector_of_position_arrays().front()->size();
+	/* We start with the ions */
+	std::vector<double>::iterator 	position 		= state.get_vector_of_position_arrays().front()->begin();
+	std::vector<double>::iterator	velocity 		= state.get_vector_of_x_velocity_arrays().front()->begin();
+	std::vector<double>::iterator 	weight 			= state.get_vector_of_weight_arrays().front()->begin();
+	int population_size = state.get_vector_of_position_arrays().front()->size();
     if (_stack_index >= _stack_ion_distribution.size())
         _stack_ion_distribution.emplace_back(_plasma, _ion_vmax, _depth, _grid_size);
     
@@ -187,15 +197,34 @@ void MacroParameterizationWavelets::RestrictAndPushback(const State & state, con
         _stack_ion_distribution.at(_stack_index).set_grid_size(_grid_size);
         size = _grid_size;
     }
+	/* We weigh the ions */
+	_stack_ion_distribution.at(_stack_index).Weigh(population_size, position, velocity, weight, delay);
+   
+
+	/* Repeat for the electrons */
+	position 		= state.get_vector_of_position_arrays().back()->begin();
+	velocity 		= state.get_vector_of_x_velocity_arrays().back()->begin();
+	weight 			= state.get_vector_of_weight_arrays().back()->begin();
+	population_size = state.get_vector_of_position_arrays().back()->size();
+    if (_stack_index >= _stack_electron_distribution.size())
+        _stack_electron_distribution.emplace_back(_plasma, _grid_size);
     
+    size = _stack_electron_distribution.at(_stack_index).get_grid_size();
     
-	/* Then we weigh the particles and restrict the values to the macroscopic grid using a linear smoothing. */
-	_stack_ion_distribution.at(_stack_index).Weigh(ion_population_size, ion_position, ion_velocity, ion_weight, delay);
+    if (size != _grid_size)
+    {
+        _stack_electron_distribution.at(_stack_index).set_grid_size(_grid_size);
+        size = _grid_size;
+    }
+    /* We weigh the electrons */
+	_stack_electron_distribution.at(_stack_index).Weigh(population_size, position, velocity, weight, delay);
     
+	/* Then we restrict the values to the macroscopic grid using a linear smoothing. */
 	while (size > _macro_grid_size)
 	{
 		_stack_ion_distribution.at(_stack_index).Coarsen();
-		size = _stack_ion_distribution.at(_stack_index).get_grid_size();
+		_stack_electron_distribution.at(_stack_index).Coarsen();
+		size /= 2;
 	}
 	assert(size == _macro_grid_size);
 
@@ -204,7 +233,9 @@ void MacroParameterizationWavelets::RestrictAndPushback(const State & state, con
 		_record_times.push_back(*state.get_simulation_time());
 		int m = _record_times.size()-1;
 		_record_ion_distribution.at(m) = _stack_ion_distribution.at(_stack_index);
+		_record_electron_distribution.at(m) = _stack_electron_distribution.at(_stack_index);
 	}
+
 	_stack_index++;
 }
 
@@ -212,6 +243,7 @@ void MacroParameterizationWavelets::Extrapolate(const double ratio)
 {
 	/* First, compute the derivative by least-squares and step forward */
 	_stack_ion_distribution.front() += ratio * Tools::EvaluateSlope<ActiveWaveletRepresentation>(_stack_ion_distribution, _stack_index);
+	_stack_electron_distribution.front() += ratio * Tools::EvaluateSlope<ActiveMaxwellianRepresentation>(_stack_electron_distribution, _stack_index);
     _stack_ion_distribution.front().Cutoff(_cutoff);
 	_stack_index = 1;
 }
@@ -220,113 +252,15 @@ void MacroParameterizationWavelets::Lift()
 {
 	int size = _macro_grid_size;
 	*dynamic_cast<ActiveWaveletRepresentation*>(_distributions.front().get()) = _stack_ion_distribution.front();
+	*dynamic_cast<ActiveMaxwellianRepresentation*>(_distributions.back().get()) = _stack_electron_distribution.front();
 
 	while (size < _grid_size)
 	{
 		_distributions.front()->Refine();
-		size = _distributions.front()->get_grid_size();
+		_distributions.back()->Refine();
+		size *= 2;
 	}
 	assert(size == _grid_size);
-
-
-	/* Initialize the electron density on the coarse grid */
-
-	static std::vector<double> ion_density = std::vector<double>(size),
-							   ion_velocity = std::vector<double>(size),
-								potential = std::vector<double>(size),
-							   	exp_potential = std::vector<double>(size), 
-							   	update = std::vector<double>(size);
-	static std::vector<double> residual = std::vector<double>(size),
-								conj_dir = std::vector<double>(size),
-								dir = std::vector<double>(size);
-
-	/* Newton's method solve for the electrostatic potential assuming a Boltzmann distribution for the electrons */
-	double tol2 = 1e-20, iter_max = 10;
-	_distributions.front()->GetDensityVelocity(ion_density, ion_velocity);
-
-	/* Initialization */
-	for (int i=0; i<size; i++)
-	{
-		potential.at(i) = std::log(ion_density.at(i));
-	}
-
-	/* Newton's method loop */
-	double scaling = -0.25 * _debye_scaling/std::pow(_plasma->get_dx(), 2.);
-	for (int count=0; count<iter_max; count++)
-	{
-		/* Inner solve : CG algorithm */
-
-		for (int i=0; i<size; i++)
-		{
-			exp_potential.at(i) = std::exp(potential.at(i));
-				/* Initial value for the CG algorithm : zero. */
-			residual.at(i)	=  exp_potential.at(i)  +  scaling * (	
-														  potential.at((i>0?i-1:size-1)) 
-														+ potential.at((i<size-1?i+1:0)) 
-														- 2*potential.at(i)
-															     )
-									- ion_density.at(i);
-			conj_dir.at(i) = residual.at(i);
-		}
-		std::fill(update.begin(), update.end(), 0.);
-
-
-		/* Inner loop */
-
-		double rnorm2 = 0, delta, alpha, beta;
-		for (int i=0; i<size; i++)
-		{
-			rnorm2 += residual.at(i)*residual.at(i);
-		}
-
-		for (int count_cg=0; count_cg<iter_max; count_cg++)
-		{
-			/* Compute the matrix-vector product */
-			delta = 0;
-			for (int i=0; i<size; i++)
-			{
-				dir.at(i) = (exp_potential.at(i)-2*scaling)*conj_dir.at(i) 
-										+ scaling * (	conj_dir.at((i>0?i-1:size-1)) 
-													  + conj_dir.at((i<size-1?i+1:0))
-													);
-				delta += dir.at(i) * conj_dir.at(i);
-			}
-
-			beta = 1./rnorm2;
-			alpha = rnorm2/delta;
-			rnorm2 = 0;
-			for (int i=0; i<size; i++)
-			{
-				update.at(i) += alpha * conj_dir.at(i);
-				residual.at(i) -= alpha* dir.at(i);
-				rnorm2 += residual.at(i)*residual.at(i);
-			}
-			if (rnorm2 < tol2/2.)
-				break;
-			beta *= rnorm2;
-			for (int i=0; i<size; i++)
-			{
-				conj_dir.at(i) *= beta;
-				conj_dir.at(i) += residual.at(i);
-			}
-		}
-
-		double err=0;
-		for (int i=0; i<size; i++)
-		{
-			err += update.at(i) * update.at(i);
-			potential.at(i) -= update.at(i);
-		}
-		if (err < tol2)
-			break;
-	}
-	for (int i=0; i<size; i++)
-	{
-		exp_potential.at(i) = std::exp(potential.at(i));
-	}
-	
-	/* Deduce the electron density from the Boltzmann distribution */
-	_distributions.at(1)->SetAdiabaticValues(exp_potential, ion_velocity, _electron_thermal_vel);
 }
 
 void MacroParameterizationWavelets::Step(State & state)
@@ -338,28 +272,34 @@ void MacroParameterizationWavelets::Step(State & state)
 
 	/* Prepare the next step for leap-frog integration */
 	_current_step_ion_distribution = _prev_step_ion_distribution;
+	_current_step_electron_distribution = _prev_step_electron_distribution;
 	if (_record_microsteps)
 		_record_times.clear();
 
     _stack_index = 0;
 	this->RestrictAndPushback(state, 2.*ratio);
 	_prev_step_ion_distribution = _stack_ion_distribution.front();
+	_prev_step_electron_distribution = _stack_electron_distribution.front();
 
 	/* Leapfrog integration : using two-stage integration */
 		/* Stage 1 */
     _stack_index = 0;
 	this->RestrictAndPushback(state, ratio);
 	_current_step_ion_distribution += _stack_ion_distribution.front();
+	_current_step_electron_distribution += _stack_electron_distribution.front();
 	_current_step_ion_distribution *= 0.5;
+	_current_step_electron_distribution *= 0.5;
 
     if (_record_microsteps)
 	{
 		_record_times.clear();
 		_record_times.push_back(current_time - .5*ratio*_plasma->get_dt());
 		_record_ion_distribution.front() = _current_step_ion_distribution;
+		_record_electron_distribution.front() = _current_step_electron_distribution;
 	}
 
 	std::swap(_current_step_ion_distribution, _stack_ion_distribution.front());
+	std::swap(_current_step_electron_distribution, _stack_electron_distribution.front());
 
 	/* Initial value for this half-step in stored in _stack_ion_distribution.front() */
 	for (int i=0; i<number_of_microsteps; i++)
@@ -377,12 +317,14 @@ void MacroParameterizationWavelets::Step(State & state)
 
     _stack_index = 1;
 	_stack_ion_distribution.front() = _current_step_ion_distribution;
+	_stack_electron_distribution.front() = _current_step_electron_distribution;
 
     if (_record_microsteps)
 	{
 		_record_times.push_back(current_time);
 		int m = _record_times.size()-1;
 		_record_ion_distribution.at(m) = _current_step_ion_distribution;
+		_record_electron_distribution.at(m) = _current_step_electron_distribution;
 	}
 
     /* Initial value for this half-step in stored in _stack_ion_distribution.front() */
@@ -395,6 +337,7 @@ void MacroParameterizationWavelets::Step(State & state)
 	this->Lift();
 	state.Load(*this);
 	_distributions.front()->GetDensityVelocityPressure(_ion_density, _ion_velocity, _ion_pressure);
+	_distributions.back()->GetDensityVelocityPressure(_electron_density, _electron_velocity, _electron_pressure);
 }
 
 void MacroParameterizationWavelets::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
@@ -413,6 +356,19 @@ void MacroParameterizationWavelets::SetupDiagnostics(std::vector<std::unique_ptr
 	diagnostics.emplace_back(new CurveDiagnostic(
 				"linlin", "X", "Ion pressure", 820, 340));
 	diagnostics.back()->AddData(x_array, _ion_pressure.data(), grid_size, 4);
+
+
+	diagnostics.emplace_back(new CurveDiagnostic(
+				"linlin", "X", "Electron density", 0, 340));
+	diagnostics.back()->AddData(x_array, _electron_density.data(), grid_size, 2);
+
+	diagnostics.emplace_back(new CurveDiagnostic(
+				"linlin", "X", "Electron velocity", 410, 340));
+	diagnostics.back()->AddData(x_array, _electron_velocity.data(), grid_size, 2);
+
+	diagnostics.emplace_back(new CurveDiagnostic(
+				"linlin", "X", "Electron pressure", 820, 340));
+	diagnostics.back()->AddData(x_array, _electron_pressure.data(), grid_size, 4);
 }
 
 void MacroParameterizationWavelets::WriteData(std::fstream & fout)
@@ -429,7 +385,7 @@ void MacroParameterizationWavelets::WriteData(std::fstream & fout)
 		for (int i=0; i<_record_times.size(); i++)
 		{
 			fout << "t = " << _record_times.at(i) << std::endl;
-			fout << _record_ion_distribution.at(i);
+			fout << _record_electron_distribution.at(i);
 		}
 
 	}
