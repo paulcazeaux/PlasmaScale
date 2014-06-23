@@ -42,7 +42,7 @@ class Diagnostic
 
 	public:
 		Diagnostic(std::string type, std::string x_label, std::string y_label, int ul_x, int ul_y, double x_scaling, double y_scaling, 
-				bool auto_rescale_x, bool auto_rescale_y, double x_min, double x_max, double y_min, double y_max);
+				bool auto_rescale_x, bool auto_rescale_y, double x_min, double x_max, double y_min, double y_max, std::string state = std::string("closed"));
 		~Diagnostic() {}
 		void AddData(std::vector<double> * x_data, std::vector<double> * y_data, int * length, int color);
 		void AddData(double * x_data, double * y_data, int * length, int color);
