@@ -109,7 +109,7 @@ void MaxwellianRepresentation::Load(int size,
 
 			*(position+bin_start_index+i) = (static_cast<double>(bin)+cellpos) * dx;
 			*(velocity+bin_start_index+i) = _velocity.at(bin) + _thermal_velocity.at(bin) * (*it_vel + dv*(fv - *it_icdf)/(*(it_icdf+1) - *it_icdf));
-			*(weights+bin_start_index+i)   = _density.at(bin);
+			*(weights+bin_start_index+i)  = _density.at(bin);
 		}
 		bin_start_index = bin_end_index;
 	}
@@ -166,6 +166,7 @@ void MaxwellianRepresentation::Refine()
 
 void MaxwellianRepresentation::SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const double & thermal_velocity)
 {
+	_grid_size = density.size();
 	_density = density;
 	_velocity = velocity;
 	_thermal_velocity.resize(_density.size());
@@ -174,6 +175,7 @@ void MaxwellianRepresentation::SetAdiabaticValues(const std::vector<double> & de
 
 void MaxwellianRepresentation::SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const std::vector<double> & thermal_velocity)
 {
+	_grid_size = density.size();
 	_density = density;
 	_velocity = velocity;
 	_thermal_velocity = thermal_velocity;
