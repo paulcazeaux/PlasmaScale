@@ -18,8 +18,42 @@ _plasma(plasma), _vmax(vmax), _max_depth(max_depth), _grid_size(grid_size), _min
 void PUREHaarRepresentation::Weigh(int size,
 								std::vector<double>::iterator 	position,
 								std::vector<double>::iterator  	velocity,
+								std::vector<double>::iterator 	weights)
+{
+	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
+    double dt = _plasma->get_dt();
+	this->Reset();
+
+	for (int i=0; i<size; i++)
+	{
+		double pos = position[i];
+		while (pos<0)
+			pos += _plasma->get_length();
+		double weight = weights[i];
+		int xbin = _plasma->find_index_on_grid(pos);
+
+		int vbin = static_cast<int>(velocity[i]/(dt*_dv) + static_cast<double>(_number_of_bins/2));
+		if (vbin < 0)
+			vbin = 0;
+		if (vbin > _number_of_bins-1)
+			vbin = _number_of_bins-1;
+
+		_histogram.at(xbin).at(vbin) += weight;
+	}
+    
+    for (auto & cell : _histogram)
+    {
+        for (auto & value : cell)
+            value *= population_density;
+    }
+}
+
+void PUREHaarRepresentation::Weigh(int size,
+								std::vector<double>::iterator 	position,
+								std::vector<double>::iterator  	velocity,
 								std::vector<double>::iterator 	weights,
-								const double delay)
+								const double delay,
+								const std::vector<double> & accfield)
 {
 	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
     double dt = _plasma->get_dt();
@@ -30,10 +64,14 @@ void PUREHaarRepresentation::Weigh(int size,
 		double pos = position[i] + delay*velocity[i];
 		while (pos<0)
 			pos += _plasma->get_length();
-		double weight = weights[i];
-		int xbin = _plasma->find_index_on_grid(pos);
 
-		int vbin = static_cast<int>(velocity[i]/(dt*_dv) + static_cast<double>(_number_of_bins/2));
+		int xbin = _plasma->find_index_on_grid(pos);
+		double cellpos = _plasma->find_position_in_cell(pos);
+		
+		double vel = velocity[i] + delay*Tools::EvaluateP1Function(accfield, xbin, cellpos);
+		double weight = weights[i];
+
+		int vbin = static_cast<int>(vel/(dt*_dv) + static_cast<double>(_number_of_bins/2));
 		if (vbin < 0)
 			vbin = 0;
 		if (vbin > _number_of_bins-1)
@@ -249,7 +287,7 @@ void PUREHaarRepresentation::GetDensityVelocity(std::vector<double> & density, s
 	{
 		double mean = 0.;
 		double dens = 0.;
-		double v = _vmax + 0.5*_dv;
+		double v = -_vmax + 0.5*_dv;
 		for (int i=0; i<_number_of_bins; i++)
 		{
 			dens += _histogram.at(n).at(i);

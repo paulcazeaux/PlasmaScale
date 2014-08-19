@@ -96,6 +96,9 @@ void MacroParameterizationWavelets::Initialize(State & state)
 	{
 		_record_times.clear();
 	}
+	/* Obtain the ion acceleration field for approximation of the characteristics */
+	this->SetAccField(state);
+
     _stack_index = 0;
 	this->RestrictAndPushback(state, ratio);
 	std::swap(_current_step_ion_distribution, _stack_ion_distribution.front());
@@ -167,6 +170,16 @@ void MacroParameterizationWavelets::Load(State & state) const
 	}
 }
 
+void MacroParameterizationWavelets::SetAccField(State & state)
+{
+	state.GetEField(_accfield);
+	double e_to_acc_factor = _unit_charges.front()/_unit_masses.front() *_plasma->get_dt()*_plasma->get_dt();
+	for (auto & val : _accfield)
+	{
+		val *= e_to_acc_factor;
+	}
+}
+
 void MacroParameterizationWavelets::RestrictAndPushback(const State & state, const double delay)
 {
 	/***********************************************************************/
@@ -188,9 +201,8 @@ void MacroParameterizationWavelets::RestrictAndPushback(const State & state, con
         size = _grid_size;
     }
     
-    
 	/* Then we weigh the particles and restrict the values to the macroscopic grid using a linear smoothing. */
-	_stack_ion_distribution.at(_stack_index).Weigh(ion_population_size, ion_position, ion_velocity, ion_weight, delay);
+	_stack_ion_distribution.at(_stack_index).Weigh(ion_population_size, ion_position, ion_velocity, ion_weight, delay, _accfield);
     
 	while (size > _macro_grid_size)
 	{
@@ -321,7 +333,6 @@ void MacroParameterizationWavelets::Lift()
 	/* Deduce the electron density from the Boltzmann distribution */
 	_distributions.at(1)->SetAdiabaticValues(exp_potential, ion_velocity, _electron_thermal_vel);
 
-
 	while (size < _grid_size)
 	{
 		_distributions.front()->Refine();
@@ -329,7 +340,6 @@ void MacroParameterizationWavelets::Lift()
 		size *= 2;
 	}
 	assert(size == _grid_size);
-	
 }
 
 void MacroParameterizationWavelets::Step(State & state)
@@ -338,6 +348,9 @@ void MacroParameterizationWavelets::Step(State & state)
     double ratio = static_cast<double>(_plasma->get_macro_to_micro_dt_ratio());
 	std::shared_ptr<double> simulation_time = state.get_simulation_time();
 	double current_time = *simulation_time;
+
+	/* Obtain the ion acceleration field for approximation of the characteristics */
+	this->SetAccField(state);
 
 	/* Prepare the next step for leap-frog integration */
 	_current_step_ion_distribution = _prev_step_ion_distribution;

@@ -20,6 +20,7 @@
 #include "fields/PlasmaFields.h"
 #include "plasma/Plasma.h"
 #include "parameterization/MacroParameterization.h"
+#include "tools/Tools.h"
 #include "tools/RandomTools.h"
 
 /* Declarations */

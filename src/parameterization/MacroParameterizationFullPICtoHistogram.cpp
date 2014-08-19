@@ -45,7 +45,7 @@ void MacroParameterizationFullPICtoHistogram::Initialize(State & state)
 
 void MacroParameterizationFullPICtoHistogram::ComputeVariables(const State & state)
 {
-	int p = 1;
+	int p = 0;
 	std::vector<double>::iterator 	position 		= state.get_vector_of_position_arrays().at(p)->begin();
 	std::vector<double>::iterator	velocity 		= state.get_vector_of_x_velocity_arrays().at(p)->begin();
 	std::vector<double>::iterator 	weights 		= state.get_vector_of_weight_arrays().at(p)->begin();
@@ -187,7 +187,6 @@ void MacroParameterizationFullPICtoHistogram::SetupDiagnostics(std::vector<std::
 
 void MacroParameterizationFullPICtoHistogram::WriteData(std::fstream & fout)
 {
-	
 	fout << "Histogram: " << _grid_size << " grid cells by " << _number_of_bins << " velocity bins" << std::endl;
     for (auto & hist : _histogram)
     {

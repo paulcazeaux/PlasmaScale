@@ -120,6 +120,7 @@ class State
 		}
 
 		void Step();
+		void GetEField(std::vector<double> & Efield);
 		void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics);
 
 		void ComputeVelocityProfile();

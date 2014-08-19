@@ -111,16 +111,16 @@ void PopulationOfParticles::Accelerate(const PlasmaFields& fields, double factor
    		if (e_to_acc_factor != previous_e_to_acc_factor || (*_iteration) != previous_iteration) /* check if it is necessary to recompute the array */
 		{ 
 			double * e_field_array = fields.get_electrical_field_ptr();
-
-			int i=0;
-		 	for (auto & acc : acceleration)
-		 	{
-		 		assert((i>=0)&&(i<grid_size));
-		 		acc = e_to_acc_factor * e_field_array[i++];  // do full steps
-		 	}
+		 	for (int i=0; i<grid_size; i++)
+		 		acceleration.at(i) = e_to_acc_factor * e_field_array[i];  // do full steps
+		 	
 		 	previous_e_to_acc_factor = e_to_acc_factor;
  			previous_iteration = *_iteration;
 		}
+
+		double x0 = _position[0];
+		int 	xbin = _plasma->find_index_on_grid(x0);
+ 		double	cellpos = _plasma->find_position_in_cell(x0);
 
  		it_vel_x 	= _velocity_x.begin();
  		it_weights	= _weights.begin();
@@ -154,12 +154,9 @@ void PopulationOfParticles::Accelerate(const PlasmaFields& fields, double factor
    		if (e_to_acc_factor != previous_e_to_acc_factor || (*_iteration) != previous_iteration) /* check if it is necessary to recompute the array */
 		{ 
 			double * e_field_array = fields.get_electrical_field_ptr();
-			int i=0;
-		 	for (auto & acc : acceleration)
-		 	{
-		 		assert((i>=0)&&(i<grid_size));
-		 		acc = 0.5 * e_to_acc_factor * e_field_array[i++];  // do half steps
-		 	}
+		 	for (int i=0; i<grid_size; i++)
+		 		acceleration.at(i) = 0.5 * e_to_acc_factor * e_field_array[i];  // do half steps
+
 		 	previous_e_to_acc_factor = e_to_acc_factor;
  			previous_iteration = *_iteration;
 		}

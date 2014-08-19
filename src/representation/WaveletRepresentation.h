@@ -54,8 +54,13 @@ class WaveletRepresentation : public Representation
 		virtual void Weigh(int size,
 				std::vector<double>::iterator 	position,
 				std::vector<double>::iterator  	velocity,
+				std::vector<double>::iterator 	weight);
+		virtual void Weigh(int size,
+				std::vector<double>::iterator 	position,
+				std::vector<double>::iterator  	velocity,
 				std::vector<double>::iterator 	weight,
-				const double delay = 0.);
+				const double delay,
+				const std::vector<double> & accfield);
 		virtual void Load(int size,
 								std::vector<double>::iterator 	position,
 								std::vector<double>::iterator  	velocity,

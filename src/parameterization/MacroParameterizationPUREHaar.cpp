@@ -96,6 +96,9 @@ void MacroParameterizationPUREHaar::Initialize(State & state)
 	{
 		_record_times.clear();
 	}
+	/* Obtain the ion acceleration field for approximation of the characteristics */
+	this->SetAccField(state);
+
     _stack_index = 0;
 	this->RestrictAndPushback(state, ratio);
 	std::swap(_current_step_ion_distribution, _stack_ion_distribution.front());
@@ -167,6 +170,11 @@ void MacroParameterizationPUREHaar::Load(State & state) const
 	}
 }
 
+void MacroParameterizationPUREHaar::SetAccField(State & state)
+{
+	state.GetEField(_accfield);
+}
+
 void MacroParameterizationPUREHaar::RestrictAndPushback(const State & state, const double delay)
 {
 	/***********************************************************************/
@@ -190,7 +198,7 @@ void MacroParameterizationPUREHaar::RestrictAndPushback(const State & state, con
     
     
 	/* Then we weigh the particles and restrict the values to the macroscopic grid using a linear smoothing. */
-	_stack_ion_distribution.at(_stack_index).Weigh(ion_population_size, ion_position, ion_velocity, ion_weight, delay);
+	_stack_ion_distribution.at(_stack_index).Weigh(ion_population_size, ion_position, ion_velocity, ion_weight, delay, _accfield);
     
 	while (size > _macro_grid_size)
 	{
@@ -340,6 +348,9 @@ void MacroParameterizationPUREHaar::Step(State & state)
     double ratio = static_cast<double>(_plasma->get_macro_to_micro_dt_ratio());
 	std::shared_ptr<double> simulation_time = state.get_simulation_time();
 	double current_time = *simulation_time;
+
+	/* Obtain the ion acceleration field for approximation of the characteristics */
+	this->SetAccField(state);
 
 	/* Prepare the next step for leap-frog integration */
 	_current_step_ion_distribution = _prev_step_ion_distribution;

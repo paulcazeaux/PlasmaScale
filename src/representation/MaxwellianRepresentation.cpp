@@ -36,8 +36,7 @@ void MaxwellianRepresentation::InitializeQuietStartArrays(int number_of_bins)
 void MaxwellianRepresentation::Weigh(int size,
 								std::vector<double>::iterator 	position,
 								std::vector<double>::iterator  	velocity,
-								std::vector<double>::iterator 	weights,
-								const double delay)
+								std::vector<double>::iterator 	weights)
 {
 	double dt = _plasma->get_dt();
 	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
@@ -49,9 +48,48 @@ void MaxwellianRepresentation::Weigh(int size,
 
 	for (int i=0; i<size; i++)
 	{
-		int xbin = _plasma->find_index_on_grid(position[i] + delay*velocity[i]);
+		int xbin = _plasma->find_index_on_grid(position[i]);
 		double weight = weights[i];
 		double vel = velocity[i];
+
+		_density.at(xbin) += weight;
+		_velocity.at(xbin) += weight * vel;
+		velocitysq.at(xbin) += weight * vel * vel;
+	}
+	for (int n=0; n<_grid_size; n++)
+	{
+		_velocity.at(n) /= _density.at(n) * dt;
+		_thermal_velocity.at(n) = std::sqrt( (velocitysq.at(n)/(_density.at(n)*dt*dt) - _velocity.at(n)*_velocity.at(n)));
+		_density.at(n) *= population_density;
+	}
+}
+
+void MaxwellianRepresentation::Weigh(int size,
+								std::vector<double>::iterator 	position,
+								std::vector<double>::iterator  	velocity,
+								std::vector<double>::iterator 	weights,
+								const double delay,
+								const std::vector<double> & accfield)
+{
+	double dt = _plasma->get_dt();
+	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
+	this->Reset();
+
+	static std::vector<double> velocitysq;
+	velocitysq.resize(_grid_size);
+	std::fill(velocitysq.begin(), velocitysq.end(), 0.);
+
+	for (int i=0; i<size; i++)
+	{
+		double pos = position[i] + delay*velocity[i];
+		while (pos<0)
+			pos += _plasma->get_length();
+
+		int xbin = _plasma->find_index_on_grid(pos);
+		double cellpos = _plasma->find_position_in_cell(pos);
+		
+		double vel = velocity[i] + delay*Tools::EvaluateP1Function(accfield, xbin, cellpos);
+		double weight = weights[i];
 
 		_density.at(xbin) += weight;
 		_velocity.at(xbin) += weight * vel;

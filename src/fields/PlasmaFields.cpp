@@ -136,6 +136,14 @@ void PlasmaFields::ComputeAndFilter()
 	e_field_array[_grid_size -1] 	= (potential_array[_grid_size - 2]-potential_array[0])/(2.*_dx) + external_e_field;
 }
 
+void PlasmaFields::GetEField(std::vector<double> & Efield)
+{
+	Efield.resize(_grid_size);
+	double * e_field_array = _electrical_field.get_ptr();
+	for (int j=0; j<_grid_size; j++)
+		Efield.at(j) = e_field_array[j];
+}
+
 void PlasmaFields::WeighParticle(double position, double charge)
 {
 	_charge.WeighParticle(position, charge);

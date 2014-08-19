@@ -76,6 +76,8 @@ class MacroParameterizationPUREHaar : public MacroParameterization
 		std::vector<double> 						_ion_velocity;
 		std::vector<double> 						_ion_pressure;
 
+		/* Vector to store an acceleration profile for the approximation of characteristics */
+		std::vector<double> 						_accfield;
 
 	public:
 		/* constructor  ========================================================================= */
@@ -92,6 +94,7 @@ class MacroParameterizationPUREHaar : public MacroParameterization
 
 		virtual void Initialize(State & state);
 		virtual void Load(State & state) const;
+		virtual	void SetAccField(State & state);
 
 		void RestrictAndPushback(const State & state, const double delay);
 		void Extrapolate(const double ratio);

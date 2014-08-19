@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include "plasma/Plasma.h"
+#include "tools/Tools.h"
 #include "tools/RandomTools.h"
 
 class Representation
@@ -28,12 +29,16 @@ class Representation
 		}
 
 		/* methods */
-
+		virtual void Weigh(int size,
+				std::vector<double>::iterator 	position,
+				std::vector<double>::iterator  	velocity,
+				std::vector<double>::iterator 	weight) = 0;
 		virtual void Weigh(int size,
 				std::vector<double>::iterator 	position,
 				std::vector<double>::iterator  	velocity,
 				std::vector<double>::iterator 	weight,
-				const double delay) = 0;
+				const double delay,
+				const std::vector<double> & accfield) = 0;
 		virtual void Reset() = 0;
 
 		virtual void Load(int size,

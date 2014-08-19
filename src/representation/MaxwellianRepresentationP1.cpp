@@ -7,8 +7,56 @@ MaxwellianRepresentation(plasma, grid_size) {}
 void MaxwellianRepresentationP1::Weigh(int size,
 								std::vector<double>::iterator 	position,
 								std::vector<double>::iterator  	velocity,
+								std::vector<double>::iterator 	weights)
+{
+	double dt = _plasma->get_dt();
+	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
+	this->Reset();
+
+	static std::vector<double> velocitysq;
+	velocitysq.resize(_grid_size);
+	std::fill(velocitysq.begin(), velocitysq.end(), 0.);
+
+	for (int i=0; i<size; i++)
+	{		
+		double pos = position[i];
+		double weight = weights[i];
+		double vel = velocity[i];
+
+		int xbin = _plasma->find_index_on_grid(pos);
+		double right_weight =  _plasma->find_position_in_cell(pos) * weight;
+		double left_weight = weight - right_weight;
+
+		_density.at(xbin) += left_weight;
+		_velocity.at(xbin) += left_weight * vel;
+		velocitysq.at(xbin) += left_weight * vel * vel;
+		if (xbin < _grid_size-1)
+		{
+			_density.at(xbin+1) += right_weight;
+			_velocity.at(xbin+1) += right_weight * vel;
+			velocitysq.at(xbin+1) += right_weight * vel * vel;
+		}
+		else
+		{
+			_density.at(0) += right_weight;
+			_velocity.at(0) += right_weight * vel;
+			velocitysq.at(0) += right_weight * vel * vel;
+		}
+	}
+	for (int n=0; n<_grid_size; n++)
+	{
+		_velocity.at(n) /= _density.at(n) * dt;
+		_thermal_velocity.at(n) = std::sqrt( (velocitysq.at(n)/(_density.at(n)*dt*dt) - _velocity.at(n)*_velocity.at(n)));
+		_density.at(n) *= population_density;
+	}
+}
+
+void MaxwellianRepresentationP1::Weigh(int size,
+								std::vector<double>::iterator 	position,
+								std::vector<double>::iterator  	velocity,
 								std::vector<double>::iterator 	weights,
-								const double delay)
+								const double delay,
+								const std::vector<double> & accfield)
 {
 	double dt = _plasma->get_dt();
 	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
@@ -21,11 +69,15 @@ void MaxwellianRepresentationP1::Weigh(int size,
 	for (int i=0; i<size; i++)
 	{		
 		double pos = position[i] + delay*velocity[i];
-		double weight = weights[i];
-		double vel = velocity[i];
+		while (pos<0)
+			pos += _plasma->get_length();
 
 		int xbin = _plasma->find_index_on_grid(pos);
-		double right_weight =  _plasma->find_position_in_cell(pos) * weight;
+		double cellpos = _plasma->find_position_in_cell(pos);
+		
+		double vel = velocity[i] + delay*Tools::EvaluateP1Function(accfield, xbin, cellpos);
+		double weight = weights[i];
+		double right_weight =  cellpos * weight;
 		double left_weight = weight - right_weight;
 
 		_density.at(xbin) += left_weight;

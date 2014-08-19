@@ -11,7 +11,7 @@ State::State(	std::shared_ptr<const Plasma> plasma ) :
 	_fields				= std::unique_ptr<PlasmaFields> (new PlasmaFields(_plasma, _simulation_time, _iteration));
 }
 
-State::State(	const MacroParameterization & parameterization) :
+State::State(const MacroParameterization & parameterization) :
 	_plasma(parameterization.get_plasma()), 
 	_number_of_populations(parameterization.get_number_of_populations())
 {
@@ -77,6 +77,12 @@ void State::Step()
 
 	(*_iteration)++;
 	*_simulation_time += _plasma->get_dt();
+}
+
+void State::GetEField(std::vector<double> & Efield)
+{
+	_fields->ComputeAndFilter();
+	_fields->GetEField(Efield);
 }
 
 void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)

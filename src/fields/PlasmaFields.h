@@ -75,6 +75,7 @@ class PlasmaFields
 		/* methods ======================================================================= */
 		void PushBackElectrostaticEnergy(std::vector<double>& electrostatic_energy, std::vector<std::vector<double>	>& electrostatic_energy_by_mode) const;
 		void ComputeAndFilter();
+		void GetEField(std::vector<double> & Efield);
 		void ResetCharge()
 		{
 			_charge.Reset();
