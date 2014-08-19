@@ -247,7 +247,7 @@ void PUREHaarRepresentation::GetDensityVelocity(std::vector<double> & density, s
 	{
 		double mean = 0.;
 		double dens = 0.;
-		double v = _vmax + 0.5*_dv;
+		double v = -_vmax + 0.5*_dv;
 		for (int i=0; i<_number_of_bins; i++)
 		{
 			dens += _histogram.at(n).at(i);

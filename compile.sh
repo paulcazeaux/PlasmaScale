@@ -27,7 +27,7 @@ make ${TARGET}
 # additional run
 echo "====================================================================================="
 InputFile=/Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/app/cfg/ionwave.inp
-ExportFile=/Users/cazeaux/Dropbox/Postdocs/Plasma/Output/Wavelets/Denoising.dmp
+ExportFile=/Users/cazeaux/Dropbox/Postdocs/Plasma/Output/Binning/t-x64-v512.dmp
 rm ${ExportFile}
 ./app/${TARGET} -i ${InputFile}  -d ${ExportFile} -dp 1
 echo "====================================================================================="

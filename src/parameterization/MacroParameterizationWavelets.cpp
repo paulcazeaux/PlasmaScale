@@ -75,8 +75,8 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 	if (_record_microsteps)
 	{
         _record_ion_distribution.clear();
-		_record_times.reserve(2*number_of_microsteps+4);
-		for (int i = 0; i < 2*number_of_microsteps+4; i++)
+		_record_times.reserve(2*number_of_microsteps+5);
+		for (int i = 0; i < 2*number_of_microsteps+5; i++)
 		{
 			_record_ion_distribution.emplace_back(_plasma, _ion_vmax, _depth, _macro_grid_size);
 		}
@@ -190,7 +190,6 @@ void MacroParameterizationWavelets::RestrictAndPushback(const State & state)
         _stack_ion_distribution.at(_stack_index).set_grid_size(_grid_size);
         size = _grid_size;
     }
-    
     
 	/* Then we weigh the particles and restrict the values to the macroscopic grid using a linear smoothing. */
 	_stack_ion_distribution.at(_stack_index).Weigh(ion_population_size, ion_position, ion_velocity, ion_weight);

@@ -75,8 +75,8 @@ MacroParameterizationPUREHaar::MacroParameterizationPUREHaar(MacroParameterizati
 	if (_record_microsteps)
 	{
         _record_ion_distribution.clear();
-		_record_times.reserve(2*number_of_microsteps+4);
-		for (int i = 0; i < 2*number_of_microsteps+4; i++)
+		_record_times.reserve(2*number_of_microsteps+5);
+		for (int i = 0; i < 2*number_of_microsteps+5; i++)
 		{
 			_record_ion_distribution.emplace_back(_plasma, _ion_vmax, _max_depth, _macro_grid_size, _min_depth);
 		}
