@@ -279,7 +279,7 @@ void MacroParameterizationWavelets::Lift()
 	}
 
 	/* Newton's method loop */
-	double scaling = -0.25 * _debye_scaling/std::pow(_plasma->get_dx(), 2.);
+	double scaling = - 0.25 * _debye_scaling/std::pow(_plasma->get_macro_dx(), 2.);
 	for (int count=0; count<iter_max; count++)
 	{
 		/* Inner solve : CG algorithm */

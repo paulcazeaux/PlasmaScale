@@ -6,7 +6,7 @@ number of populations -- dt ---- ndt ---- ratio --- accum --- depth --- cutoff/l
 		2 				0.0001    17      100          1        9		   9 			     0
 
 l ----- ng ----- Mng ----- mmax ----- a1 ---- a2 ----- history_size ---- fullPIC ---- record_microsteps 
-4.8     512      64         1       0.00    0.00          4096           0                1
+4.8     512      64         1       0.00    0.00          4096           0                0
 
 epsi -- la ----- E0 ----- w0
 1.00    0.       0.       0.
@@ -15,7 +15,7 @@ epsi -- la ----- E0 ----- w0
 SPECIES 1: Warm Ion Plasma
 
 n--------nv2---nlg---mode
-65536    0     1      2
+512236    0     1      2
 wp----wc-----qm-----vt1----vt2---v0
 120  0.00 0.000555592   0.  0.22  0.0
 x1-----v1-------thetax------thetav
@@ -27,7 +27,7 @@ x1-----v1-------thetax------thetav
 SPECIES 2: Warm Electron Plasma
 
 n--------nv2---nlg---mode
-65536     0     1     2
+512236     0     1     2
 wp-------wc-----qm-----vt1----vt2---v0
 5091    0.00    -1   0.00    42.5  0.0
 x1-----v1-----thetax--thetav

@@ -26,8 +26,8 @@ MacroState::MacroState(FILE *& InputDeck)
 	else	
 	{
 		//_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationEFPI(initialization, vte));
-		//_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationWavelets(initialization, vte, 10.*vti));
-		_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationPUREHaar(initialization, vte, 10.*vti));
+		_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationWavelets(initialization, vte, 10.*vti));
+		//_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationPUREHaar(initialization, vte, 10.*vti));
 	}
 	_parameterization->Initialize(*_micro_state);
 }
