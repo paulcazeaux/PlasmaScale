@@ -145,8 +145,8 @@ void MaxwellianRepresentation::Refine()
 
 	for (int n=_grid_size-1; n>=0; n--)
 	{
-		_density.at(2*n+1) 	= _density.at(n);
-		_velocity.at(2*n+1) 	= _velocity.at(n);
+		_density.at(2*n+1) 				= _density.at(n);
+		_velocity.at(2*n+1) 			= _velocity.at(n);
 		_thermal_velocity.at(2*n+1) 	= _thermal_velocity.at(n);
 	}
 	{
@@ -165,6 +165,7 @@ void MaxwellianRepresentation::Refine()
 
 void MaxwellianRepresentation::SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const double & thermal_velocity)
 {
+	_grid_size = density.size();
 	_density = density;
 	_velocity = velocity;
 	std::fill(_thermal_velocity.begin(), _thermal_velocity.end(), thermal_velocity);
@@ -172,6 +173,7 @@ void MaxwellianRepresentation::SetAdiabaticValues(const std::vector<double> & de
 
 void MaxwellianRepresentation::SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const std::vector<double> & thermal_velocity)
 {
+	_grid_size = density.size();
 	_density = density;
 	_velocity = velocity;
 	_thermal_velocity = thermal_velocity;

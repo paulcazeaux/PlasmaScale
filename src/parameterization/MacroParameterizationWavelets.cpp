@@ -249,14 +249,6 @@ void MacroParameterizationWavelets::Lift()
 	int size = _macro_grid_size;
 	*dynamic_cast<WaveletRepresentation*>(_distributions.front().get()) = _stack_ion_distribution.front();
 
-	while (size < _grid_size)
-	{
-		_distributions.front()->Refine();
-		size = _distributions.front()->get_grid_size();
-	}
-	assert(size == _grid_size);
-
-
 	/* Initialize the electron density on the coarse grid */
 
 	static std::vector<double> ion_density = std::vector<double>(size),
@@ -279,7 +271,7 @@ void MacroParameterizationWavelets::Lift()
 	}
 
 	/* Newton's method loop */
-	double scaling = - 0.25 * _debye_scaling/std::pow(_plasma->get_macro_dx(), 2.);
+	double scaling = - _debye_scaling/std::pow(_plasma->get_macro_dx(), 2.);
 	for (int count=0; count<iter_max; count++)
 	{
 		/* Inner solve : CG algorithm */
@@ -356,6 +348,14 @@ void MacroParameterizationWavelets::Lift()
 	
 	/* Deduce the electron density from the Boltzmann distribution */
 	_distributions.at(1)->SetAdiabaticValues(exp_potential, ion_velocity, _electron_thermal_vel);
+
+	while (size < _grid_size)
+	{
+		_distributions.front()->Refine();
+		_distributions.back()->Refine();
+		size = _distributions.front()->get_grid_size();
+	}
+	assert(size == _grid_size);
 }
 
 void MacroParameterizationWavelets::Step(State & state)
