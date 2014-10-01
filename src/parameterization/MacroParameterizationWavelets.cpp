@@ -245,14 +245,14 @@ void MacroParameterizationWavelets::Lift()
 								dir = std::vector<double>(size);
 
 	/* Newton's method solve for the electrostatic potential assuming a Boltzmann distribution for the electrons */
-	double tol2 = 1e-20, iter_max = 10;
+	double tol2 = 1e-20, iter_max = 100;
 	_distributions.front()->GetDensityVelocity(ion_density, ion_velocity);
 
 
 	/* Initialization */
 	for (int i=0; i<size; i++)
 	{
-		potential.at(i) = std::log(ion_density.at(i));
+		potential.at(i) = std::log(ion_density.at(i)+1e-10);
 	}
 
 	/* Newton's method loop */

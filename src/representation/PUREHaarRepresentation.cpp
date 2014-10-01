@@ -295,7 +295,10 @@ void PUREHaarRepresentation::GetDensityVelocity(std::vector<double> & density, s
 			v += _dv;
 		}
 		density.at(n) = dens;
-		velocity.at(n) = mean / dens;
+		if (dens>0)
+			velocity.at(n) = mean / dens;
+		else
+			velocity.at(n) = 0.;
 	}
 }
 
@@ -318,7 +321,10 @@ void PUREHaarRepresentation::GetDensityVelocityPressure(std::vector<double> & de
 			v += _dv;
 		}
 		density.at(n) = dens;
-		velocity.at(n) = mean / dens;
+		if (dens>0)
+			velocity.at(n) = mean / dens;
+		else
+			velocity.at(n) = 0.;
 		pressure.at(n) = sq - mean*velocity.at(n);
 	}
 }

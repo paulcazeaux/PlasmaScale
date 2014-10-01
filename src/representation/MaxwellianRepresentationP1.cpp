@@ -98,9 +98,12 @@ void MaxwellianRepresentationP1::Weigh(int size,
 	}
 	for (int n=0; n<_grid_size; n++)
 	{
-		_velocity.at(n) /= _density.at(n) * dt;
-		_thermal_velocity.at(n) = std::sqrt( (velocitysq.at(n)/(_density.at(n)*dt*dt) - _velocity.at(n)*_velocity.at(n)));
-		_density.at(n) *= population_density;
+		if (_density.at(n)>0)
+		{
+			_velocity.at(n) /= _density.at(n) * dt;
+			_thermal_velocity.at(n) = std::sqrt( (velocitysq.at(n)/(_density.at(n)*dt*dt) - _velocity.at(n)*_velocity.at(n)));
+			_density.at(n) *= population_density;
+		}
 	}
 }
 

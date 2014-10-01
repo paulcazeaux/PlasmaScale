@@ -249,7 +249,10 @@ void WaveletRepresentation::GetDensityVelocity(std::vector<double> & density, st
 			v += _dv;
 		}
 		density.at(n) = dens;
-		velocity.at(n) = mean / dens;
+		if (dens>0)
+			velocity.at(n) = mean / dens;
+		else
+			velocity.at(n) = 0.;
 	}
 }
 
@@ -272,7 +275,10 @@ void WaveletRepresentation::GetDensityVelocityPressure(std::vector<double> & den
 			v += _dv;
 		}
 		density.at(n) = dens;
-		velocity.at(n) = mean / dens;
+		if (dens>0)
+			velocity.at(n) = mean / dens;
+		else
+			velocity.at(n) = 0.;
 		pressure.at(n) = sq - mean*velocity.at(n);
 	}
 }

@@ -145,20 +145,28 @@ void WaveletRepresentationP1::Load(int size,
 		auto it_icdf_left = icdf.at(bin).begin();
 		auto it_icdf_right = icdf.at(bin+1 < _grid_size ? bin+1 : 0).begin();
         double weight = Tools::EvaluateP1Function(density, bin, cellpos);
+        if (weight>0)
+        {
+            int vindex=0;
+            double fvdown = (1.-cellpos)*(*(it_icdf_left)) + cellpos*(*(it_icdf_right));
+            double fvup = (1.-cellpos)*(*(++it_icdf_left)) + cellpos*(*(++it_icdf_right));
+            while (weight*fv >= fvup)
+            {
+                vindex++;
+                fvdown = fvup;
+                fvup = (1.-cellpos)*(*(++it_icdf_left)) + cellpos*(*(++it_icdf_right));
+            }
 
-		int vindex=0;
-		double fvdown = (1.-cellpos)*(*(it_icdf_left)) + cellpos*(*(it_icdf_right));
-		double fvup = (1.-cellpos)*(*(++it_icdf_left)) + cellpos*(*(++it_icdf_right));
-		while (weight*fv >= fvup)
-		{
-			vindex++;
-			fvdown = fvup;
-			fvup = (1.-cellpos)*(*(++it_icdf_left)) + cellpos*(*(++it_icdf_right));
-		}
-
-		position[i] = pos;
-		weights[i]  = weight;
-		velocity[i] = vel.at(vindex) + _dv*(weight*fv - fvdown)/(fvup - fvdown);
+            position[i] = pos;
+            weights[i]  = weight;
+            velocity[i] = vel.at(vindex) + _dv*(weight*fv - fvdown)/(fvup - fvdown);
+        }
+        else
+        {
+        	position[i] = 0;
+            weights[i] = 0;
+            velocity[i] = 0;
+        }
 		fv += dn;
 	}
 }
