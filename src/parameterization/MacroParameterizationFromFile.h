@@ -34,11 +34,8 @@ class MacroParameterizationFromFile : public MacroParameterization
 		std::vector<double>			_random_mean_thermal_vel;
 
 			// Perturbation
-		std::vector<int>			_modes;
-		std::vector<double>			_density_amplitudes;
-		std::vector<double>			_density_phases;
-		std::vector<double>			_velocity_amplitudes;
-		std::vector<double>			_velocity_phases;
+		double						_init_occupation;
+		double 						_debye_scaling;
 
 			// Diagnostics
 		std::vector<int>			_bin_numbers;
