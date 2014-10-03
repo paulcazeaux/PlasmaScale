@@ -119,8 +119,6 @@ void PopulationOfParticles::Accelerate(const PlasmaFields& fields, double factor
 		}
 
 		double x0 = _position[0];
-		int 	xbin = _plasma->find_index_on_grid(x0);
- 		double	cellpos = _plasma->find_position_in_cell(x0);
 
  		it_vel_x 	= _velocity_x.begin();
  		it_weights	= _weights.begin();

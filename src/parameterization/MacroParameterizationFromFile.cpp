@@ -260,7 +260,6 @@ void MacroParameterizationFromFile::Load(State & state) const
 
 	for (int i=0; i<_population_sizes.front(); i++)
 	{
-		static double dx 	= _plasma->get_dx();
 		double x 			= _init_occupation*positions.front()->at(i) + offset;
 		int bin 			= _plasma->find_index_on_grid(x);
 		double cellpos		= _plasma->find_position_in_cell(x);

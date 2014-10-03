@@ -103,7 +103,7 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 				"linlin", "X", "Vx-X Phase Space",
 				 410, 0, 
 				 1.0, 1.0/dt,
-				 false, false, 0.0, length, -3.0, 3.0, std::string("open")));
+				 false, false, 0.0, length, -3.0, 3.0, std::string("closed")));
 	for (int i = 0; i < _number_of_populations; i++)
 	{
 		diagnostics.back()->AddData(positions[i], x_velocities[i], sizes[i], i);
