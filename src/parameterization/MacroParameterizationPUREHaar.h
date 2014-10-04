@@ -82,6 +82,7 @@ class MacroParameterizationPUREHaar : public MacroParameterization
 	public:
 		/* constructor  ========================================================================= */
 		MacroParameterizationPUREHaar() {}
+		MacroParameterizationPUREHaar(MacroParameterization & parameterization, double electron_thermal_vel);
 		MacroParameterizationPUREHaar(MacroParameterization & parameterization, double electron_thermal_vel, double ion_vmax);
 		virtual ~MacroParameterizationPUREHaar() {}
 

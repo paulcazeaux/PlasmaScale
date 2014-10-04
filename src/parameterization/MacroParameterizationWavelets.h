@@ -57,10 +57,7 @@ class MacroParameterizationWavelets : public MacroParameterization
 		std::vector<ActiveWaveletRepresentation> 	_stack_ion_distribution;
 		int 										_stack_index;
 
-		/* Value for the previous step, used for the leapfrog time integration */
-		ActiveWaveletRepresentation					_prev_step_ion_distribution;
-
-		/* Value for the current step, used for the leapfrog time integration */
+		/* Value for the current step */
 		ActiveWaveletRepresentation					_current_step_ion_distribution;
 
 		/* Record arrays for the datapoints from the microsolver */
@@ -82,6 +79,7 @@ class MacroParameterizationWavelets : public MacroParameterization
 	public:
 		/* constructor  ========================================================================= */
 		MacroParameterizationWavelets() {}
+		MacroParameterizationWavelets(MacroParameterization & parameterization, double electron_thermal_vel);
 		MacroParameterizationWavelets(MacroParameterization & parameterization, double electron_thermal_vel, double ion_vmax);
 		virtual ~MacroParameterizationWavelets() {}
 

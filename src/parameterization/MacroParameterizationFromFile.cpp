@@ -412,6 +412,43 @@ double MacroParameterizationFromFile::GetBinStart(int population_index) const
 
 }
 
+double MacroParameterizationFromFile::GetBinEnd(int population_index) const
+{
+	double vupper = _upper_velocities.at(population_index);
+	double vlower = _lower_velocities.at(population_index);
+	double vt1 = _random_mean_thermal_vel.at(population_index);
+	double vt2 = _quiet_mean_thermal_vel.at(population_index);
+	double v0 = _mean_velocities.at(population_index);
+
+	if(vupper - vlower < 0.0)
+	{
+		printf("\nInitialization error: vupper must be > vlower! \n");
+		exit(1);
+	}
+	if(vt1<0 ||vt2<0)
+	{ 
+		printf("\nInitialization error: can't have negative thermal voltages!\n");
+		exit(1);
+	}
+	if(vupper-vlower > 0.0)
+	{
+		return vupper;
+	}
+	else if(vt1 + vt2 > 0.0) 
+	{
+		return v0 + 5.0*(vt1 + vt2);
+	}
+	else if (v0!=0)
+	{
+		return (v0 > 0 ? 2.0*v0 : 0);
+	}
+	else
+	{
+		return 0.0;
+	}
+
+}
+
 double MacroParameterizationFromFile::GetBinWidth(int population_index)	const
 {
 	double vupper = _upper_velocities.at(population_index);

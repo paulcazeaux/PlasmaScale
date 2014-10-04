@@ -79,6 +79,7 @@ class MacroParameterization
 
 		virtual bool HaveVelocityDiagnostics()					const 	{return false;	}
 		virtual double 	GetBinStart(int)						const 	{return 0.;		}
+		virtual double 	GetBinEnd(int)							const 	{return 0.;		}
 		virtual	double	GetBinWidth(int)						const 	{return 0.;		}
 		virtual	int		GetNumberOfBins(int)					const 	{return 0;		}
 

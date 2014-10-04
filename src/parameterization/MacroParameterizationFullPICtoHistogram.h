@@ -48,6 +48,7 @@ class MacroParameterizationFullPICtoHistogram : public MacroParameterization
 	public:
 		/* constructor  ========================================================================= */
 		MacroParameterizationFullPICtoHistogram() {}
+		MacroParameterizationFullPICtoHistogram(MacroParameterization & parameterization);
 		MacroParameterizationFullPICtoHistogram(MacroParameterization & parameterization, double ion_vmax);
 		virtual ~MacroParameterizationFullPICtoHistogram() {}
 

@@ -49,6 +49,46 @@ MacroParameterizationPUREHaar& MacroParameterizationPUREHaar::operator=(MacroPar
 }
 
 MacroParameterizationPUREHaar::MacroParameterizationPUREHaar(MacroParameterization & parameterization,
+				double electron_thermal_vel) :
+	MacroParameterization(std::move(parameterization)), _electron_thermal_vel(electron_thermal_vel)
+{
+	if (_number_of_populations != 2)
+		throw std::runtime_error("There are " + std::to_string(_number_of_populations) + " and not 2 populations as required.\n");
+
+	_ion_vmax = std::max(parameterization.GetBinStart(0), parameterization.GetBinEnd(0));
+
+	_grid_size = _plasma->get_grid_size();
+	_macro_grid_size = _plasma->get_macro_grid_size();
+	_min_depth = _plasma->get_wavelet_cutoff();
+	_max_depth = _plasma->get_wavelet_depth();
+	_record_microsteps = _plasma->get_record_microsteps();
+
+	_prev_step_ion_distribution 	= ActiveHaarRepresentation(_plasma, _ion_vmax, _max_depth, _macro_grid_size, _min_depth);
+	_current_step_ion_distribution	= ActiveHaarRepresentation(_plasma, _ion_vmax, _max_depth, _macro_grid_size, _min_depth);
+
+	_distributions.clear();
+	_distributions.emplace_back(new ActiveHaarRepresentation(_plasma, _ion_vmax, _max_depth, _grid_size, _min_depth));
+	_distributions.emplace_back(new ActiveMaxwellianRepresentation(_plasma, _grid_size));
+
+	int number_of_microsteps = _plasma->get_number_of_microsteps();
+	_stack_ion_distribution.reserve(number_of_microsteps+1);
+    _stack_index = 0;
+
+	if (_record_microsteps)
+	{
+        _record_ion_distribution.clear();
+		_record_times.reserve(2*number_of_microsteps+2);
+		for (int i = 0; i < 2*number_of_microsteps+2; i++)
+		{
+			_record_ion_distribution.emplace_back(_plasma, _ion_vmax, _max_depth, _macro_grid_size, _min_depth);
+		}
+	}
+
+	MaxwellianRepresentation::InitializeQuietStartArrays(std::pow(2, _max_depth));
+	_debye_scaling = std::pow(_electron_thermal_vel/_plasma_pulsations.at(1), 2.);
+}
+
+MacroParameterizationPUREHaar::MacroParameterizationPUREHaar(MacroParameterization & parameterization,
 				double electron_thermal_vel, double ion_vmax) :
 	MacroParameterization(std::move(parameterization)), _ion_vmax(ion_vmax), _electron_thermal_vel(electron_thermal_vel)
 {

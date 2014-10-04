@@ -52,6 +52,7 @@ class MacroParameterizationFromFile : public MacroParameterization
 
 		virtual bool 	HaveVelocityDiagnostics()		const	{return true;	}
 		virtual double 	GetBinStart(int index)			const;
+		virtual double 	GetBinEnd(int index)			const;
 		virtual	double	GetBinWidth(int index)			const;
 		virtual int		GetNumberOfBins(int index)		const;
 };

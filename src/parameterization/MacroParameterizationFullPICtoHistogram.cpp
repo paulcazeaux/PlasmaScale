@@ -27,6 +27,19 @@ MacroParameterizationFullPICtoHistogram& MacroParameterizationFullPICtoHistogram
 	return *this;
 }
 
+MacroParameterizationFullPICtoHistogram::MacroParameterizationFullPICtoHistogram(MacroParameterization & parameterization) :
+	MacroParameterization(std::move(parameterization))
+{
+	_ion_vmax = std::max(parameterization.GetBinStart(0), parameterization.GetBinEnd(0));
+
+	_grid_size = _plasma->get_macro_grid_size();
+	_min_depth = _plasma->get_wavelet_cutoff();
+	_max_depth = _plasma->get_wavelet_depth();
+    _number_of_bins = std::pow(2, _max_depth);
+
+	_histogram = std::vector<std::vector<double> >(_grid_size, std::vector<double>(_number_of_bins));
+}
+
 MacroParameterizationFullPICtoHistogram::MacroParameterizationFullPICtoHistogram(MacroParameterization & parameterization, double ion_vmax) :
 	MacroParameterization(std::move(parameterization)), _ion_vmax(ion_vmax)
 {

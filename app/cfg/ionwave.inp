@@ -3,10 +3,10 @@ PLASMA EXPANSION
 A warm plasma with ions and electrons (mass ratio Mi/Me = 1800) initially occupies only part of the space.
 
 number of populations -- dt ---- ndt ---- ratio --- accum --- depth --- cutoff/lowpass --- intensity
-		2 			0.001167    170       1000          1       10		   8			     0
+		2 			0.001167    170       500          1       8		   6			     0
 
 l ----- ng ----- Mng ----- mmax ----- a1 ---- a2 ----- history_size ---- fullPIC ---- record_microsteps 
-2000     8192     512        1       0.00    0.00          4096            0              0
+1000   4096     1024        1       0.00    0.00          4096            1              0
 
 epsi -- la ----- E0 ----- w0
 1.00    0.       0.       0.
@@ -23,7 +23,7 @@ n--------nv2---nlg
 wp----wc-----qm-----vt1----vt2---v0
 1    0.00   0.000544662   0.  0.031622777  0.
 nbins---vlower---vupper
-1000      -10.0      10.0
+1000      -4.0      4.0
 
 
 SPECIES 2: Warm Electron Plasma

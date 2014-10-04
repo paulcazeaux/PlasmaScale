@@ -12,7 +12,6 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 			_distributions(std::move(parameterization._distributions)),
 			_stack_ion_distribution(std::move(parameterization._stack_ion_distribution)),
             _stack_index(parameterization._stack_index),
-			_prev_step_ion_distribution(std::move(parameterization._prev_step_ion_distribution)),
 			_current_step_ion_distribution(std::move(parameterization._current_step_ion_distribution)),
 			_record_times(std::move(parameterization._record_times)),
 			_record_ion_distribution(std::move(parameterization._record_ion_distribution)),
@@ -36,7 +35,6 @@ MacroParameterizationWavelets& MacroParameterizationWavelets::operator=(MacroPar
 	_distributions = std::move(parameterization._distributions);
 	_stack_ion_distribution = std::move(parameterization._stack_ion_distribution);
     _stack_index = parameterization._stack_index;
-	_prev_step_ion_distribution = std::move(parameterization._prev_step_ion_distribution);
 	_current_step_ion_distribution = std::move(parameterization._current_step_ion_distribution);
 
 	_record_times = std::move(parameterization._record_times);
@@ -46,6 +44,44 @@ MacroParameterizationWavelets& MacroParameterizationWavelets::operator=(MacroPar
 	_electron_thermal_vel = parameterization._electron_thermal_vel;
 	_debye_scaling = parameterization._debye_scaling;
 	return *this;
+}
+
+MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterization & parameterization, double electron_thermal_vel) :
+	MacroParameterization(std::move(parameterization)), _electron_thermal_vel(electron_thermal_vel)
+{
+	if (_number_of_populations != 2)
+		throw std::runtime_error("There are " + std::to_string(_number_of_populations) + " and not 2 populations as required.\n");
+
+	_ion_vmax = std::max(parameterization.GetBinStart(0), parameterization.GetBinEnd(0));
+
+	_grid_size = _plasma->get_grid_size();
+	_macro_grid_size = _plasma->get_macro_grid_size();
+	_depth = _plasma->get_wavelet_depth();
+	_cutoff = _plasma->get_wavelet_cutoff();
+	_record_microsteps = _plasma->get_record_microsteps();
+
+	_current_step_ion_distribution	= ActiveWaveletRepresentation(_plasma, _ion_vmax, _depth, _macro_grid_size);
+
+	_distributions.clear();
+	_distributions.emplace_back(new ActiveWaveletRepresentation(_plasma, _ion_vmax, _depth, _grid_size));
+	_distributions.emplace_back(new ActiveMaxwellianRepresentation(_plasma, _grid_size));
+
+	int number_of_microsteps = _plasma->get_number_of_microsteps();
+	_stack_ion_distribution.reserve(number_of_microsteps+1);
+    _stack_index = 0;
+
+	if (_record_microsteps)
+	{
+        _record_ion_distribution.clear();
+		_record_times.reserve(2*number_of_microsteps+2);
+		for (int i = 0; i < 2*number_of_microsteps+2; i++)
+		{
+			_record_ion_distribution.emplace_back(_plasma, _ion_vmax, _depth, _macro_grid_size);
+		}
+	}
+
+	MaxwellianRepresentation::InitializeQuietStartArrays(std::pow(2, _depth));
+	_debye_scaling = std::pow(_electron_thermal_vel/_plasma_pulsations.back(), 2.);
 }
 
 MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterization & parameterization,
@@ -61,7 +97,6 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 	_cutoff = _plasma->get_wavelet_cutoff();
 	_record_microsteps = _plasma->get_record_microsteps();
 
-	_prev_step_ion_distribution 	= ActiveWaveletRepresentation(_plasma, _ion_vmax, _depth, _macro_grid_size);
 	_current_step_ion_distribution	= ActiveWaveletRepresentation(_plasma, _ion_vmax, _depth, _macro_grid_size);
 
 	_distributions.clear();
@@ -105,22 +140,6 @@ void MacroParameterizationWavelets::Initialize(State & state)
     _stack_index = 0;
 	this->RestrictAndPushback(state, 0.);
     
-    /* Take an Euler step backwards to initialize the distribution at the previous step */
-    
-    int number_of_microsteps = _plasma->get_number_of_microsteps();
-	if (_record_microsteps)
-	{
-		_record_times.clear();
-	}
-	for (int i=0; i<number_of_microsteps; i++)
-	{
-		state.Step();
-		this->RestrictAndPushback(state, ratio-i-1);
-	}
-	/* Compute the derivative by least-squares and step backwards */
-    _prev_step_ion_distribution = _current_step_ion_distribution;
-    _prev_step_ion_distribution -= ratio * Tools::EvaluateSlope<ActiveWaveletRepresentation>(_stack_ion_distribution, _stack_index);
-
 	_stack_index = 1;
 	this->Lift();
 	state.Load(*this);
@@ -352,21 +371,14 @@ void MacroParameterizationWavelets::Step(State & state)
 	/* Obtain the ion acceleration field for approximation of the characteristics */
 	this->SetAccField(state);
 
-	/* Prepare the next step for leap-frog integration */
-	_current_step_ion_distribution = _prev_step_ion_distribution;
 	if (_record_microsteps)
 		_record_times.clear();
-
-    _stack_index = 0;
-	this->RestrictAndPushback(state, 2.*ratio);
-	_prev_step_ion_distribution = _stack_ion_distribution.front();
 
 	/* Leapfrog integration : using two-stage integration */
 		/* Stage 1 */
     _stack_index = 0;
 	this->RestrictAndPushback(state, ratio);
-	_current_step_ion_distribution += _stack_ion_distribution.front();
-	_current_step_ion_distribution *= 0.5;
+	_current_step_ion_distribution = _stack_ion_distribution.front();
 
     if (_record_microsteps)
 	{
@@ -375,9 +387,6 @@ void MacroParameterizationWavelets::Step(State & state)
 		_record_ion_distribution.front() = _current_step_ion_distribution;
 	}
 
-	std::swap(_current_step_ion_distribution, _stack_ion_distribution.front());
-
-	/* Initial value for this half-step in stored in _stack_ion_distribution.front() */
 	for (int i=0; i<number_of_microsteps; i++)
 	{
 		state.Step();
@@ -387,29 +396,7 @@ void MacroParameterizationWavelets::Step(State & state)
 	this->Extrapolate(ratio);
 	this->Lift();
 	state.Load(*this);
-	*simulation_time = current_time + .5*ratio*_plasma->get_dt();
-
-    /* And repeat for stage 2 */
-
-    _stack_index = 1;
-	_stack_ion_distribution.front() = _current_step_ion_distribution;
-
-    if (_record_microsteps)
-	{
-		_record_times.push_back(current_time);
-		int m = _record_times.size()-1;
-		_record_ion_distribution.at(m) = _current_step_ion_distribution;
-	}
-
-    /* Initial value for this half-step in stored in _stack_ion_distribution.front() */
-	for (int i=0; i<number_of_microsteps; i++)
-	{
-		state.Step();
-		this->RestrictAndPushback(state, .5*ratio-i-1);
-	}
-	this->Extrapolate(ratio);
-	this->Lift();
-	state.Load(*this);
+	*simulation_time = current_time + ratio*_plasma->get_dt();
 	_distributions.front()->GetDensityVelocityPressure(_ion_density, _ion_velocity, _ion_pressure);
 }
 
