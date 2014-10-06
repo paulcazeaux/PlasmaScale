@@ -61,10 +61,14 @@ void WaveletRepresentationP1::Weigh(int size,
 
 	for (int i=0; i<size; i++)
 	{
-		double pos = position[i] + delay*velocity[i];
-		double vel = velocity[i] + delay*Tools::EvaluateP1Function(accfield, _plasma->find_index_on_grid(position[i]), _plasma->find_position_in_cell(position[i]));
+		double pos = position[i] + 0.5*delay*velocity[i];
 		while (pos<0)
 			pos += _plasma->get_length();
+		double vel = velocity[i] + delay*Tools::EvaluateP1Function(accfield, _plasma->find_index_on_grid(pos), _plasma->find_position_in_cell(pos));
+		pos += 0.5*delay*vel;
+		while (pos<0)
+			pos += _plasma->get_length();
+
 
 		int xbin = _plasma->find_index_on_grid(pos);
 		double cellpos = _plasma->find_position_in_cell(pos);
@@ -145,7 +149,7 @@ void WaveletRepresentationP1::Load(int size,
 		auto it_icdf_left = icdf.at(bin).begin();
 		auto it_icdf_right = icdf.at(bin+1 < _grid_size ? bin+1 : 0).begin();
         double weight = Tools::EvaluateP1Function(density, bin, cellpos);
-        if (weight>0)
+        if (weight>1e-20)
         {
             int vindex=0;
             double fvdown = (1.-cellpos)*(*(it_icdf_left)) + cellpos*(*(it_icdf_right));

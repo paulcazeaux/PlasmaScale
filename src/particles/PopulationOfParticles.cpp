@@ -118,8 +118,6 @@ void PopulationOfParticles::Accelerate(const PlasmaFields& fields, double factor
  			previous_iteration = *_iteration;
 		}
 
-		double x0 = _position[0];
-
  		it_vel_x 	= _velocity_x.begin();
  		it_weights	= _weights.begin();
  		for (auto & position : _position)
