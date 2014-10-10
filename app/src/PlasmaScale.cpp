@@ -18,8 +18,10 @@ int main(int argc, char **argv)
 	/*	 Read input file, and initialize params and vars. 	 */
 	/*********************************************************/
 	PlasmaDevice.Setup(argc,argv);
-
-	XGInit(argc, argv, PlasmaDevice.get_simulation_time_ptr());
+	if (argv[argc-2][0] == '-' && argv[argc-2][1] == 'n' && argv[argc-2][2] == 'm')
+		XGInit(argc-2, argv, PlasmaDevice.get_simulation_time_ptr());
+	else
+		XGInit(argc, argv, PlasmaDevice.get_simulation_time_ptr());
 	PlasmaDevice.InitWindows();
 
 	XGStart();

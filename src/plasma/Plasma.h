@@ -157,6 +157,7 @@ class Plasma
 		/* setters ============================================================================== */
 		/* Timestep */
 		void			set_dt(	double dt )		{	_dt = dt;	}
+		void			set_number_of_microsteps(	int number_of_microsteps )		{	_number_of_microsteps = number_of_microsteps;	}
 
 		/* Plasma parameters */
 

@@ -56,6 +56,7 @@ class MacroState
 	public:
 		/* constuctor and destructor ============================================================ */
 		MacroState(	FILE *& InputDeck );
+		MacroState(	FILE *& InputDeck, int number_of_microsteps);
 		~MacroState() {}
 
 		/* getter */

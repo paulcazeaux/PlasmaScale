@@ -27,7 +27,10 @@ make ${TARGET}
 # additional run
 echo "====================================================================================="
 InputFile=/Users/cazeaux/Dropbox/Postdocs/Plasma/PlasmaScale/app/cfg/ionwave.inp
-ExportFile=~/Dropbox/Postdocs/Plasma/Output/ExpansionXL2/t-efpit.dmp
-rm ${ExportFile}
-./app/${TARGET} -i ${InputFile} -d ${ExportFile} -dp 1
+for i in {170..170}
+do
+	ExportFile=~/Dropbox/Postdocs/Plasma/Output/TestExpansion/t-$i.dmp
+	rm ${ExportFile}
+	./app/${TARGET} -i ${InputFile} -d ${ExportFile} -dp 1 -nox -s 10 -nm $i
+done
 echo "====================================================================================="

@@ -374,8 +374,6 @@ void MacroParameterizationWavelets::Step(State & state)
 	if (_record_microsteps)
 		_record_times.clear();
 
-	/* Leapfrog integration : using two-stage integration */
-		/* Stage 1 */
     _stack_index = 0;
 	this->RestrictAndPushback(state, ratio);
 	_current_step_ion_distribution = _stack_ion_distribution.front();
@@ -383,7 +381,7 @@ void MacroParameterizationWavelets::Step(State & state)
     if (_record_microsteps)
 	{
 		_record_times.clear();
-		_record_times.push_back(current_time - .5*ratio*_plasma->get_dt());
+		_record_times.push_back(current_time);
 		_record_ion_distribution.front() = _current_step_ion_distribution;
 	}
 

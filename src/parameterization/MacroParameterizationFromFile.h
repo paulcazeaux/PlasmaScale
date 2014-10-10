@@ -45,6 +45,7 @@ class MacroParameterizationFromFile : public MacroParameterization
 	public:
 
 		MacroParameterizationFromFile(FILE *& InputDeck);
+		MacroParameterizationFromFile(FILE *& InputDeck, int number_of_microsteps);
 		
 		virtual void 	Load(State & state) const;
 

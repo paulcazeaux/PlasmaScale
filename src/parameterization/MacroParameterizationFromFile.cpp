@@ -103,6 +103,107 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 
 }
 
+MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck, int number_of_microsteps)
+{
+	/* Parameters for the plasma */
+	double length, dt, epsilon, la, e0, w0;
+	int number_of_populations, grid_size, macro_grid_size, unused_number_of_microsteps, macro_to_micro_dt_ratio, velocity_accumulation_interval, depth, cutoff, max_mode;
+	double filter_parameter_1, filter_parameter_2, intensity;
+
+	int max_size_history, use_full_PIC, record_microsteps;
+	char a_char[80];
+
+	/* read lines until we get to numbers */
+	while (std::fscanf(InputDeck,"%d %lg %d %d %d %d %d %lg", &number_of_populations, &dt, &unused_number_of_microsteps, &macro_to_micro_dt_ratio, &velocity_accumulation_interval, &depth, &cutoff, &intensity) <8)
+	{
+		std::fscanf(InputDeck, "%s", a_char);
+	}
+	while (std::fscanf(InputDeck,"%lg %d %d %d %lg %lg %d %d %d", &length, &grid_size, &macro_grid_size, &max_mode, &filter_parameter_1, &filter_parameter_2, &max_size_history, &use_full_PIC, &record_microsteps) <9)
+	{
+		std::fscanf(InputDeck, "%s", a_char);
+	}
+	while (std::fscanf(InputDeck,"%lg %lg %lg %lg", &epsilon, &la, &e0, &w0) < 4)
+	{
+		std::fscanf(InputDeck, "%s", a_char);
+	}
+		/* note: la is l/a */
+
+	/* Parameters for the initialization */
+	while (std::fscanf(InputDeck,"%lg", &_init_occupation) < 1)
+	{
+		std::fscanf(InputDeck, "%s", a_char);
+	}
+
+
+	if(velocity_accumulation_interval<0) 
+	{ 
+		std::printf("\nError:  accum can't be negative! \n"); exit(1);
+	}
+
+	_plasma = std::make_shared<const Plasma>(length, dt, number_of_microsteps, macro_to_micro_dt_ratio,
+				epsilon, la, 0.0, e0, w0,
+				number_of_populations, grid_size, macro_grid_size, velocity_accumulation_interval, max_mode, depth, cutoff, intensity,
+				filter_parameter_1, filter_parameter_2, max_size_history, static_cast<bool>(use_full_PIC), static_cast<bool>(record_microsteps));
+	std::cout << *_plasma << std::endl;
+	std::cout << "Initialization of a plasma expansion :" << std::endl;
+	std::cout << "Initial size: " << _init_occupation * _plasma->get_length() << " out of a total length: " << _plasma->get_length() << std::endl;
+
+	_number_of_populations = number_of_populations;
+	if (_number_of_populations !=2)
+	{
+		std::cout << "Wrong number of particle populations! We cannot proceed with the test." << std::endl;
+		exit(1);
+	}
+	for (int population_index = 0; population_index < _number_of_populations; population_index++)
+	{
+		int n, nv2, nlg, nbins;
+		double wp, wc, qm, vt1, vt2, v0;
+		double vlower, vupper;
+
+		char a_char[80];
+
+		printf("\n");
+		while (fscanf(InputDeck, "%d %d %d ", &n, &nv2, &nlg) < 3)
+		{
+			fscanf(InputDeck,"%s",a_char);
+		}
+		while (fscanf(InputDeck, "%lg %lg %lg %lg %lg %lg", &wp, &wc, &qm, &vt1, &vt2, &v0) < 6)
+		{
+			fscanf(InputDeck,"%s",a_char);
+		}
+		while(fscanf(InputDeck," %d %lg %lg ",&nbins,&vlower,&vupper) < 3)
+		{
+			fscanf(InputDeck,"%s",a_char);
+		}
+		std::cout << "Parameters for population " << (population_index+1) << std::endl << "---------------------------" << std::endl;
+		std::cout << "Number of particles:\t" << n << "\tNumber of init. groups:\t" << nlg <<  "\tQuiet start exponent:\t" << nv2 << std::endl;
+		std::cout << "Plasma pulsation:\t" << wp << "\tCycl. pulsation:\t" << wc << "\tq/m ratio:\t\t" << qm << std::endl;
+		std::cout << "Random therm. veloc.:\t" << vt1 << "\tQuiet therm. veloc.:\t" << vt2 << "\tMean velocity:\t\t" << v0 << std::endl;
+		std::cout << "Velocity init.:\t# bins:\t" << nbins << "\tLower bound:\t\t" << vlower << "\tUpper bound:\t\t" << vupper << std::endl;
+		std::cout << "---------------------------" << std::endl;
+
+
+		_cyclotronic_rotation_parameters.push_back(std::tan(-0.5*wc*_plasma->get_dt()));
+		_unit_charges.push_back(_plasma->get_length()*wp*wp/(_plasma->get_epsilon()*n*qm));
+		_unit_masses.push_back(_unit_charges.at(population_index)/qm);
+		_plasma_pulsations.push_back(wp);
+		_population_sizes.push_back(n);
+
+		_group_sizes.push_back(n / nlg);
+		_mean_velocities.push_back(v0);
+		_quiet_start_exponents.push_back(nv2);
+		_random_mean_thermal_vel.push_back(vt1);
+		_quiet_mean_thermal_vel.push_back(vt2);
+
+		_bin_numbers.push_back( (nbins>2 ? nbins : 2));
+		_upper_velocities.push_back(vupper);
+		_lower_velocities.push_back(vlower);
+	}
+
+	_debye_scaling = std::pow((_random_mean_thermal_vel.back()+_quiet_mean_thermal_vel.back())/_plasma_pulsations.back(), 2.);
+
+}
+
 void MacroParameterizationFromFile::Load(State & state) const
 /* Fill the particle arrays to initialize the microscopic state */
 {
