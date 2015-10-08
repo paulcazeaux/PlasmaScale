@@ -12,6 +12,7 @@
 #define DEF_PLASMASCALE_SIMULATION
 
 #include <memory>
+#include <chrono>
 
 #include <cstdio>
 #include <cstdlib>

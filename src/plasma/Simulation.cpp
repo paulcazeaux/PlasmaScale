@@ -32,7 +32,11 @@ void Simulation::Setup(int argc, char ** argv)
 
 void Simulation::Step()
 {
+	auto start = std::chrono::system_clock::now();
 	_state->Step();
+	auto end = std::chrono::system_clock::now();
+	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
+	std::cout << "Elapsed time for 1 step: " << elapsed.count() << '\n';
 	_history->Compute(*_state);
 }
 
