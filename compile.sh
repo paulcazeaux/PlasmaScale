@@ -35,11 +35,11 @@ while [  $ndt -lt 11  ]; do
 	w
 	q" | ex ${InputFile}
 
-	ExportFile=/Users/cazeaux/Desktop/Output/NewTest/LongRun/partial_EFPI
+	ExportFile=/Users/cazeaux/Desktop/Output/NewTest/LongRun/test
 	rm ${ExportFile}.dmp ${ExportFile}.out
-	./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 1 -s 300 -nox > ${ExportFile}.out &
+	./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 1 -s 200 -nox > ${ExportFile}.out &
 	let ndt=ndt+1
-	sleep 10
-	open ${ExportFile}.out
+	#sleep 10
+	#open ${ExportFile}.out
 done
 wait

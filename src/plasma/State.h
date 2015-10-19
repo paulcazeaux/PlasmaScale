@@ -61,7 +61,7 @@ class State
 		std::vector<std::vector<double> * >	get_vector_of_x_velocity_arrays() const;
 		std::vector<std::vector<double> * >	get_vector_of_y_velocity_arrays() const;
 		std::vector<std::vector<double> * > get_vector_of_weight_arrays() const;
-		std::vector<int> 					get_vector_of_magnetizations() const;
+		std::vector<bool> 					get_vector_of_magnetizations() const;
 		std::vector<int *>					get_vector_of_sizes() const;
 
 		std::vector<std::vector<double> * > get_vector_of_bin_arrays() const;
@@ -73,6 +73,7 @@ class State
 
 		/* method =============================================================================== */
 		void Load(const MacroParameterization & parameterization);
+		void Load(const MacroParameterization & parameterization, const bool toggle_half_step);
 
 		void Reset()
 		{

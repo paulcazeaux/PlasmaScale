@@ -93,57 +93,51 @@ void WaveletRepresentationP1::Load(int size,
 	{
 		Tools::AssembleICDF(_histogram.at(n), icdf.at(n), density.at(n));
 	}
-	
-	double dx = _plasma->get_length()/static_cast<double>(size);
+	double L = _plasma->get_length();
+	double dn = 1./static_cast<double>(size);
 
-	double fv = 0.;			
-	double pos = 0.5*dx;
+	double xs = 0.;			
+	double fv = 0.5*dn;
+	int index = 0;
 
-	double mean_bin_size = static_cast<double>(size) / static_cast<double>(_grid_size);
-
-	int bin_start_index = 0;
-	for (int bin = 0; bin < _grid_size; bin++)
+	for (int i=0; i<size; i++)
 	{
-		int bin_end_index = std::ceil(static_cast<double>(bin+1)*mean_bin_size-0.5);
+		/* bit-reversed scrambling to reduce the correlation with the positions */
+		double xsi = 0.5;
+		xs -= 0.5;
+		while (xs >= 0.0)
+		{
+			xsi *= 0.5;
+			xs -= xsi;
+		} 
+		xs += 2.0*xsi;
+		double pos = L*xs;
+		int bin = _plasma->find_index_on_grid(pos);
+		double cellpos = _plasma->find_position_in_cell(pos);
+	    double weight = Tools::EvaluateP1Function(density, bin, cellpos);
+
 		auto it_icdf_left = icdf.at(bin).begin();
 		auto it_icdf_right = icdf.at(bin+1 < _grid_size ? bin+1 : 0).begin();
-
-		for (int i=bin_start_index; i<bin_end_index; i++)
-		{
-			/* bit-reversed scrambling to reduce the correlation with the positions */
-			double fvi = 0.5;
-			fv -= 0.5;
-			while (fv >= 0.0)
-			{
-				fvi *= 0.5;
-				fv -= fvi;
-			} 
-			fv += 2.0*fvi;
-
-			double cellpos = _plasma->find_position_in_cell(pos);
-	        double weight = Tools::EvaluateP1Function(density, bin, cellpos);
 	        
-	        	// Binary search
-			int index_down = 0;
-			int index_up = icdf.at(bin).size();
-			while (index_up - index_down > 1)
-			{
-				int index_mid = (index_up + index_down)/2;
-				if (weight*fv < (1.-cellpos)*it_icdf_left[index_mid] + cellpos*it_icdf_right[index_mid])
-					index_up = index_mid;
-				else
-					index_down = index_mid;
-			}
-
-			double fvdown = (1.-cellpos)*it_icdf_left[index_down] + cellpos*it_icdf_right[index_down];
-			double fvup = (1.-cellpos)*it_icdf_left[index_up] + cellpos*it_icdf_right[index_up];
-
-
-			position[i] = pos;
-			weights[i]  = weight;
-			velocity[i] = vel.at(index_down) + _dv*(weight*fv - fvdown)/(fvup - fvdown);
-			pos += dx;
+        	// Binary search
+		int index_down = 0;
+		int index_up = icdf.at(bin).size();
+		while (index_up - index_down > 1)
+		{
+			int index_mid = (index_up + index_down)/2;
+			if (weight*fv < (1.-cellpos)*it_icdf_left[index_mid] + cellpos*it_icdf_right[index_mid])
+				index_up = index_mid;
+			else
+				index_down = index_mid;
 		}
-		bin_start_index = bin_end_index;
+
+		double fvdown = (1.-cellpos)*it_icdf_left[index_down] + cellpos*it_icdf_right[index_down];
+		double fvup = (1.-cellpos)*it_icdf_left[index_up] + cellpos*it_icdf_right[index_up];
+
+
+		position[i] = pos;
+		weights[i]  = weight;
+		velocity[i] = vel.at(index_down) + _dv*(weight*fv - fvdown)/(fvup - fvdown);
+		fv += dn;
 	}
 }

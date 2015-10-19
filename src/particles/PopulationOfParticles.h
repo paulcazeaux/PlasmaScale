@@ -103,6 +103,7 @@ class PopulationOfParticles
 		void	Weigh(PlasmaFields	&fields);
 
 		void	Prepare(const PlasmaFields	&fields);
+		void 	Prepare(const PlasmaFields &fields, const bool toggle_half_step);
 
 		void 	SetupVelocityDiagnostics(int nbins, int velocity_accumulation_interval, double vupper, double vlower, double v0, double vt1, double vt2);
 		void 	SetupVelocityDiagnostics(const MacroParameterization & parameterization, const int index);

@@ -69,6 +69,44 @@ void State::Load(const MacroParameterization & parameterization)
 	_fields->ComputeAndFilter();
 }
 
+void State::Load(const MacroParameterization & parameterization, const bool toggle_half_step)
+{
+	/* First we check that the size and parameters are right */
+	for (int index=0; index<_number_of_populations; index++)
+	{
+		if (!_populations.at(index)->CheckParameters(parameterization, index))
+		{
+            std::cout << "Attention ! Wrong parameters for the population. Creating a new one, this could break diagnostics pointers !!" << std::endl;
+			_populations.at(index).reset(new PopulationOfParticles(parameterization, index, _iteration));
+		}
+	}
+	/* Then we let the parameterization fill the particle arrays */
+	parameterization.Load(*this);
+	this->Weigh();
+	_fields->ComputeAndFilter();
+	for (auto & population : _populations)
+	{
+		population->ComputeAggregateParameters();
+	}
+	if (toggle_half_step)
+	{
+		*_iteration = -1;	// Forcing the recomputation of the acceleration field
+		for (auto & population : _populations)
+		{
+			population->Prepare(*_fields);
+		}
+		*_iteration = 0;
+	}
+	else
+	{
+		_fields->ComputeAndFilter();
+		*_iteration = -1;	// Forcing the recomputation of the acceleration field
+		_populations.front()->Prepare(*_fields, false);
+		_populations.back()->Prepare(*_fields, true);
+		*_iteration = 0;
+	}
+}
+
 void State::Step()
 {
 	this->Accelerate();
@@ -95,7 +133,7 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 	std::vector<std::vector<double> * > positions 		= this->get_vector_of_position_arrays();
 	std::vector<std::vector<double> * > x_velocities 	= this->get_vector_of_x_velocity_arrays();
 	std::vector<std::vector<double> * > y_velocities 	= this->get_vector_of_y_velocity_arrays();
-	std::vector<int> magnetizations					= this->get_vector_of_magnetizations();
+	std::vector<bool> magnetizations					= this->get_vector_of_magnetizations();
 	std::vector<int *> sizes 							= this->get_vector_of_sizes();
 
 	/*  set up  windows for the phase space distribution of particles.  */
@@ -206,9 +244,9 @@ std::vector<std::vector<double> * >	State::get_vector_of_weight_arrays() const
 	return weights;
 }
 
-std::vector<int> State::get_vector_of_magnetizations() const
+std::vector<bool> State::get_vector_of_magnetizations() const
 {
-	std::vector<int> magnetizations = std::vector<int>(_populations.size());
+	std::vector<bool> magnetizations = std::vector<bool>(_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
 	{
 		magnetizations.at(i) = _populations.at(i)->_magnetized;

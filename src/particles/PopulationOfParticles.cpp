@@ -233,6 +233,37 @@ void PopulationOfParticles::Prepare(const PlasmaFields &fields)
 	this->ComputeVelocityProfile();
 }
 
+void PopulationOfParticles::Prepare(const PlasmaFields &fields, const bool toggle_half_step)
+{
+	static double dt = _plasma->get_dt();
+ 
+ 	/* Rescaling */
+	if (!_magnetized)
+	{
+		for (auto & it : _velocity_x) 
+	  		it *= dt;
+	}
+	else
+	{
+		double cos_cyclotron = 1.0 /std::sqrt(1.0 + std::pow(_cyclotronic_rotation_parameter, 2.0));
+		double sin_cyclotron = cos_cyclotron * _cyclotronic_rotation_parameter;
+
+		std::vector<double>::iterator it_vel_x = _velocity_x.begin();
+		std::vector<double>::iterator it_vel_y = _velocity_y.begin();
+		for (; it_vel_x!= _velocity_x.end(); it_vel_x++, it_vel_y++) 
+		{
+			double vx = *it_vel_x, vy = *it_vel_y;
+			*it_vel_x =  dt * ( sin_cyclotron * vy + cos_cyclotron * vx);
+			*it_vel_y =  dt * ( cos_cyclotron * vy - sin_cyclotron * vx);
+		}
+	}
+	/* Prepare the particles velocities by taking one-half step back with the acceleration induced by the fields */
+	if (toggle_half_step)
+		this->Accelerate(fields, -0.5);
+
+	this->ComputeVelocityProfile();
+}
+
 
 void PopulationOfParticles::SetupVelocityDiagnostics(int nbins, int velocity_accumulation_interval, double vupper, double vlower, double v0, double vt1, double vt2)
 {
