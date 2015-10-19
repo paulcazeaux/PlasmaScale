@@ -17,7 +17,8 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 			_record_times(std::move(parameterization._record_times)),
 			_record_ion_distribution(std::move(parameterization._record_ion_distribution)),
 			_electron_thermal_vel(parameterization._electron_thermal_vel),
-			_debye_scaling(parameterization._debye_scaling)
+			_debye_scaling(parameterization._debye_scaling),
+			_total_moment(parameterization._total_moment)
 		{}
 
 MacroParameterizationWavelets& MacroParameterizationWavelets::operator=(MacroParameterizationWavelets &&parameterization)
@@ -45,6 +46,7 @@ MacroParameterizationWavelets& MacroParameterizationWavelets::operator=(MacroPar
 
 	_electron_thermal_vel = parameterization._electron_thermal_vel;
 	_debye_scaling = parameterization._debye_scaling;
+	_total_moment = parameterization._total_moment;
 	return *this;
 }
 
@@ -75,8 +77,8 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 	if (_record_microsteps)
 	{
         _record_ion_distribution.clear();
-		_record_times.reserve(2*number_of_microsteps+2);
-		for (int i = 0; i < 2*number_of_microsteps+2; i++)
+		_record_times.reserve(2*number_of_microsteps+3);
+		for (int i = 0; i < 2*number_of_microsteps+3; i++)
 		{
 			_record_ion_distribution.emplace_back(_plasma, _ion_vmax, _depth, _macro_grid_size);
 		}
@@ -84,6 +86,7 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 
 	MaxwellianRepresentation::InitializeQuietStartArrays(std::pow(2, _depth));
 	_debye_scaling = std::pow(_electron_thermal_vel/_plasma_pulsations.back(), 2.);
+	_total_moment = 0;
 }
 
 void MacroParameterizationWavelets::Initialize(State & state)
@@ -91,6 +94,7 @@ void MacroParameterizationWavelets::Initialize(State & state)
     double ratio = static_cast<double>(_plasma->get_macro_to_micro_dt_ratio());
 	std::shared_ptr<double> simulation_time = state.get_simulation_time();
 	double current_time = *simulation_time;
+	this->CalculateTotalMoment(state);
     
 	if (_record_microsteps)
 	{
@@ -100,7 +104,7 @@ void MacroParameterizationWavelets::Initialize(State & state)
 	this->SetAccField(state);
 
     _stack_index = 0;
-	this->RestrictAndPushback(state, ratio);
+	this->RestrictAndPushback(state, -ratio);
 	std::swap(_current_step_ion_distribution, _stack_ion_distribution.front());
     _stack_index = 0;
 	this->RestrictAndPushback(state, 0.);
@@ -115,13 +119,14 @@ void MacroParameterizationWavelets::Initialize(State & state)
 	for (int i=0; i<number_of_microsteps; i++)
 	{
 		state.Step();
-		this->RestrictAndPushback(state, ratio-i-1);
+		this->RestrictAndPushback(state, -ratio-i-1);
 	}
 	/* Compute the derivative by least-squares and step backwards */
     _prev_step_ion_distribution = _current_step_ion_distribution;
     _prev_step_ion_distribution -= ratio * Tools::EvaluateSlope<ActiveWaveletRepresentation>(_stack_ion_distribution, _stack_index);
 
 	_stack_index = 1;
+	_current_step_ion_distribution = _stack_ion_distribution.front();
 	this->Lift();
 	state.Load(*this);
     _distributions.front()->GetDensityVelocityPressure(_ion_density, _ion_velocity, _ion_pressure);
@@ -132,10 +137,12 @@ void MacroParameterizationWavelets::Initialize(State & state)
 	}
 }
 
+
 void MacroParameterizationWavelets::Load(State & state) const
 /* Fill the particle arrays to initialize the microscopic state */
 {	
 	/* Initialize the particle arrays */
+	std::chrono::high_resolution_clock::time_point start, stop;
 
 	std::vector<std::vector<double> * > positions 		= state.get_vector_of_position_arrays();
 	std::vector<std::vector<double> * > x_velocities 	= state.get_vector_of_x_velocity_arrays();
@@ -154,7 +161,6 @@ void MacroParameterizationWavelets::Load(State & state) const
 		std::vector<double>::iterator velocity_y 	= y_velocities.at(population_index)->begin();
 		std::vector<double>::iterator weight 		= weights.at(population_index)->begin();
 		int population_size = positions.at(population_index)->size();
-
 		_distributions.at(population_index)->Load(population_size, position, velocity_x, weight);
 
 		if (_cyclotronic_rotation_parameters.at(population_index) != 0.) 
@@ -177,6 +183,33 @@ void MacroParameterizationWavelets::SetAccField(State & state)
 	for (auto & val : _accfield)
 	{
 		val *= e_to_acc_factor;
+	}
+}
+
+void MacroParameterizationWavelets::CalculateTotalMoment(const State & state)
+{
+	_total_moment = 0;
+	double dt = _plasma->get_dt();
+	std::vector<std::vector<double> * > x_velocities 	= state.get_vector_of_x_velocity_arrays();
+	std::vector<std::vector<double> * > weights 		= state.get_vector_of_weight_arrays();
+
+	assert(x_velocities.size() == 2);
+	assert(weights.size() == 2);
+
+	for (int population_index=0; population_index < 2; population_index++)
+	{
+		std::vector<double>::iterator velocity_x 	= x_velocities.at(population_index)->begin();
+		std::vector<double>::iterator weight 		= weights.at(population_index)->begin();
+		int population_size = weights.at(population_index)->size();
+		double m = this->get_unit_mass(population_index)/(dt*population_size);
+
+		for (int i=0; i < population_size; i++) 
+			{
+				double v = *(velocity_x+i);
+				double w = *(weight+i);
+				_total_moment += m*w*v;
+			}
+
 	}
 }
 
@@ -203,13 +236,15 @@ void MacroParameterizationWavelets::RestrictAndPushback(const State & state, con
     
 	/* Then we weigh the particles and restrict the values to the macroscopic grid using a linear smoothing. */
 	_stack_ion_distribution.at(_stack_index).Weigh(ion_population_size, ion_position, ion_velocity, ion_weight, delay, _accfield);
-    
+
 	while (size > _macro_grid_size)
 	{
 		_stack_ion_distribution.at(_stack_index).Coarsen();
 		size = _stack_ion_distribution.at(_stack_index).get_grid_size();
 	}
 	assert(size == _macro_grid_size);
+	//_stack_ion_distribution.at(_stack_index).Cutoff(_cutoff);
+
 
 	if (_record_microsteps)
 	{
@@ -247,7 +282,6 @@ void MacroParameterizationWavelets::Lift()
 	/* Newton's method solve for the electrostatic potential assuming a Boltzmann distribution for the electrons */
 	double tol2 = 1e-20, iter_max = 10;
 	_distributions.front()->GetDensityVelocity(ion_density, ion_velocity);
-
 
 	/* Initialization */
 	for (int i=0; i<size; i++)
@@ -329,7 +363,19 @@ void MacroParameterizationWavelets::Lift()
 	{
 		exp_potential.at(i) = std::exp(potential.at(i));
 	}
-	
+	/* Momentum correction */
+	double ion_moment = 0;
+	for (int i=0; i<size; i++)
+	{
+		ion_moment += (this->get_unit_mass(0)*ion_density.at(i)+this->get_unit_mass(1)*exp_potential.at(i))*ion_velocity.at(i);
+	}
+	ion_moment /= size;
+	double electron_velocity_correction = (_total_moment - ion_moment)/this->get_unit_mass(1);
+	for (int i=0; i<size; i++)
+	{
+		ion_velocity.at(i) += electron_velocity_correction;
+	}
+
 	/* Deduce the electron density from the Boltzmann distribution */
 	_distributions.at(1)->SetAdiabaticValues(exp_potential, ion_velocity, _electron_thermal_vel);
 
@@ -343,74 +389,169 @@ void MacroParameterizationWavelets::Lift()
 }
 
 void MacroParameterizationWavelets::Step(State & state)
-{	
+{
+	static int count_steps = 0;
+	static bool switched = false;
+	std::shared_ptr<double> simulation_time = state.get_simulation_time();
+	timeunit field_time(0), PIC_time(0), algebra_time(0), load_time(0), lift_time(0), pushback_time(0), extrapolation_time(0);
+	std::chrono::high_resolution_clock::time_point start, stop;
+
+	if (!switched && *simulation_time >= 4.)
+	{
+		std::cout << "switching to full PIC, t = " << *simulation_time << std::endl;
+		switched = true;
+	}
+	if (switched)
+	{
+			start = std::chrono::high_resolution_clock::now();
+		for (int i=0; i<_plasma->get_macro_to_micro_dt_ratio(); i++)
+		{
+			state.Step();
+		}
+			stop = std::chrono::high_resolution_clock::now();
+    		PIC_time += std::chrono::duration_cast<timeunit>(stop - start);
+			start = std::chrono::high_resolution_clock::now();
+    	_stack_index = 0;
+		this->RestrictAndPushback(state, 0.);
+		_stack_ion_distribution.front().Cutoff(_cutoff);
+		_stack_ion_distribution.front().GetDensityVelocityPressure(_ion_density, _ion_velocity, _ion_pressure);
+			stop = std::chrono::high_resolution_clock::now();
+    		pushback_time += std::chrono::duration_cast<timeunit>(stop - start);
+	}
+	else
+	{
+	double current_time = *simulation_time;
 	int number_of_microsteps = _plasma->get_number_of_microsteps();
     double ratio = static_cast<double>(_plasma->get_macro_to_micro_dt_ratio());
-	std::shared_ptr<double> simulation_time = state.get_simulation_time();
-	double current_time = *simulation_time;
 
 	/* Obtain the ion acceleration field for approximation of the characteristics */
+		start = std::chrono::high_resolution_clock::now();
 	this->SetAccField(state);
+		stop = std::chrono::high_resolution_clock::now();
+		field_time += std::chrono::duration_cast<timeunit>(stop - start);
 
 	/* Prepare the next step for leap-frog integration */
-	_current_step_ion_distribution = _prev_step_ion_distribution;
+		start = std::chrono::high_resolution_clock::now();
+	std::swap(_current_step_ion_distribution, _prev_step_ion_distribution);
+		stop = std::chrono::high_resolution_clock::now();
+		algebra_time += std::chrono::duration_cast<timeunit>(stop - start);
+
+		start = std::chrono::high_resolution_clock::now();
 	if (_record_microsteps)
 		_record_times.clear();
-
     _stack_index = 0;
 	this->RestrictAndPushback(state, 2.*ratio);
-	_prev_step_ion_distribution = _stack_ion_distribution.front();
+		stop = std::chrono::high_resolution_clock::now();
+		pushback_time += std::chrono::duration_cast<timeunit>(stop - start);
+		start = std::chrono::high_resolution_clock::now();
+	std::swap(_prev_step_ion_distribution, _stack_ion_distribution.front());
+		stop = std::chrono::high_resolution_clock::now();
+		algebra_time += std::chrono::duration_cast<timeunit>(stop - start);
 
 	/* Leapfrog integration : using two-stage integration */
 		/* Stage 1 */
+		start = std::chrono::high_resolution_clock::now();
     _stack_index = 0;
 	this->RestrictAndPushback(state, ratio);
-	_current_step_ion_distribution += _stack_ion_distribution.front();
-	_current_step_ion_distribution *= 0.5;
+	std::swap(_current_step_ion_distribution, _stack_ion_distribution.front());
+		stop = std::chrono::high_resolution_clock::now();
+		pushback_time += std::chrono::duration_cast<timeunit>(stop - start);
+		start = std::chrono::high_resolution_clock::now();
+	_stack_ion_distribution.front() += _current_step_ion_distribution;
+	_stack_ion_distribution.front() *= 0.5;
+		stop = std::chrono::high_resolution_clock::now();
+    	algebra_time += std::chrono::duration_cast<timeunit>(stop - start);
 
     if (_record_microsteps)
 	{
 		_record_times.clear();
 		_record_times.push_back(current_time - .5*ratio*_plasma->get_dt());
-		_record_ion_distribution.front() = _current_step_ion_distribution;
+		_record_ion_distribution.front() = _stack_ion_distribution.front();
 	}
-
-	std::swap(_current_step_ion_distribution, _stack_ion_distribution.front());
 
 	/* Initial value for this half-step in stored in _stack_ion_distribution.front() */
 	for (int i=0; i<number_of_microsteps; i++)
 	{
+			start = std::chrono::high_resolution_clock::now();
 		state.Step();
+			stop = std::chrono::high_resolution_clock::now();
+    		PIC_time += std::chrono::duration_cast<timeunit>(stop - start);
+			start = std::chrono::high_resolution_clock::now();
 		this->RestrictAndPushback(state, ratio-i-1);
+			stop = std::chrono::high_resolution_clock::now();
+    		pushback_time += std::chrono::duration_cast<timeunit>(stop - start);
 	}
+
 			// Step 2: Extrapolate using EFPI
+		start = std::chrono::high_resolution_clock::now();
 	this->Extrapolate(ratio);
+		stop = std::chrono::high_resolution_clock::now();
+		extrapolation_time += std::chrono::duration_cast<timeunit>(stop - start);
+		start = std::chrono::high_resolution_clock::now();
 	this->Lift();
+		stop = std::chrono::high_resolution_clock::now();
+		lift_time += std::chrono::duration_cast<timeunit>(stop - start);
+		start = std::chrono::high_resolution_clock::now();
 	state.Load(*this);
 	*simulation_time = current_time + .5*ratio*_plasma->get_dt();
+		stop = std::chrono::high_resolution_clock::now();
+		load_time += std::chrono::duration_cast<timeunit>(stop - start);
 
     /* And repeat for stage 2 */
 
+		start = std::chrono::high_resolution_clock::now();
     _stack_index = 1;
-	_stack_ion_distribution.front() = _current_step_ion_distribution;
+	std::swap(_stack_ion_distribution.front(), _current_step_ion_distribution);
+    /* Initial value for this half-step in now stored in _stack_ion_distribution.front() */
+		stop = std::chrono::high_resolution_clock::now();
+		algebra_time += std::chrono::duration_cast<timeunit>(stop - start);
 
     if (_record_microsteps)
 	{
 		_record_times.push_back(current_time);
 		int m = _record_times.size()-1;
-		_record_ion_distribution.at(m) = _current_step_ion_distribution;
+		_record_ion_distribution.at(m) = _stack_ion_distribution.front();
 	}
 
-    /* Initial value for this half-step in stored in _stack_ion_distribution.front() */
 	for (int i=0; i<number_of_microsteps; i++)
 	{
+			start = std::chrono::high_resolution_clock::now();
 		state.Step();
-		this->RestrictAndPushback(state, .5*ratio-i-1);
+			stop = std::chrono::high_resolution_clock::now();
+    		PIC_time += std::chrono::duration_cast<timeunit>(stop - start);
+			start = std::chrono::high_resolution_clock::now();
+		this->RestrictAndPushback(state, ratio-i-1);
+			stop = std::chrono::high_resolution_clock::now();
+    		pushback_time += std::chrono::duration_cast<timeunit>(stop - start);
 	}
+
+		start = std::chrono::high_resolution_clock::now();
 	this->Extrapolate(ratio);
+		stop = std::chrono::high_resolution_clock::now();
+    	extrapolation_time += std::chrono::duration_cast<timeunit>(stop - start);
+
+	if (_record_microsteps)
+	{
+		_record_times.push_back(current_time+ratio*_plasma->get_dt());
+		int m = _record_times.size()-1;
+		_record_ion_distribution.at(m) = _stack_ion_distribution.front();
+	}
+
+		start = std::chrono::high_resolution_clock::now();
 	this->Lift();
+		stop = std::chrono::high_resolution_clock::now();
+    	lift_time += std::chrono::duration_cast<timeunit>(stop - start);
+		start = std::chrono::high_resolution_clock::now();
 	state.Load(*this);
+		stop = std::chrono::high_resolution_clock::now();
+    	load_time += std::chrono::duration_cast<timeunit>(stop - start);
+		start = std::chrono::high_resolution_clock::now();
 	_distributions.front()->GetDensityVelocityPressure(_ion_density, _ion_velocity, _ion_pressure);
+		stop = std::chrono::high_resolution_clock::now();
+    	algebra_time += std::chrono::duration_cast<timeunit>(stop - start);
+	}
+	std::swap(_current_step_ion_distribution, _stack_ion_distribution.front());
+	std::cout << ++count_steps <<  " | Field time: " << field_time.count() << ", Pushback time: " << pushback_time.count() << ", Lift time: " << lift_time.count() << ", Load time: " << load_time.count() << ", Algebra time: " << algebra_time.count() << ", Extrapolation time: " << extrapolation_time.count() << ", and PIC time: " << PIC_time.count() << std::endl;
 }
 
 void MacroParameterizationWavelets::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
@@ -439,7 +580,7 @@ void MacroParameterizationWavelets::WriteData(std::fstream & fout)
 	}
 	else
 	{
-		if (_record_times.size()!=_plasma->get_number_of_microsteps()*2+2)
+		if (_record_times.size()!=_plasma->get_number_of_microsteps()*2+3)
 			return;
 
 		for (int i=0; i<_record_times.size(); i++)
@@ -450,8 +591,3 @@ void MacroParameterizationWavelets::WriteData(std::fstream & fout)
 
 	}
 }
-
-
-
-
-

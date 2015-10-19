@@ -27,6 +27,10 @@ Plasma::Plasma( double length, double dt, int number_of_microsteps, int macro_to
 					_max_mode(max_mode),
 					_velocity_accumulation_interval(velocity_accumulation_interval)
 {
+	if ((grid_size & (grid_size - 1)))
+	{
+		std::cout << "     =================     " << std::endl << "ALERT! ALERT! GRID SIZE SHOULD BE A POWER OF TWO FOR MODULO IMPLEMENTATION TO WORK" << std::endl << "     =================     " << std::endl;
+	}
 	_grid_size = std::unique_ptr<int>(new int(grid_size));
 	_macro_grid_size = std::unique_ptr<int>(new int(macro_grid_size));
 	_dx = _length / static_cast<double>(*_grid_size);

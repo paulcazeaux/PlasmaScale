@@ -1318,7 +1318,7 @@ double convfft(vector<double> &a, vector<double> &b, vector<double> &c) {
     //fftw_plan plan_forward_inp,plan_forward_filt, plan_backward;
     
     /* Static variables initialization */
-    static unsigned int sz = a.size() + b.size() - 1;
+    static unsigned int sz = 540;//a.size() + b.size() - 1;
     static fftw_complex *inp_data = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
     static fftw_complex *filt_data = ( fftw_complex* ) fftw_malloc( sizeof( fftw_complex ) * sz );
 
@@ -1376,8 +1376,6 @@ double convfft(vector<double> &a, vector<double> &b, vector<double> &c) {
         filt_data[i][1] = 0.0;
 
     }
-
-
 
     fftw_execute(plan_forward_inp);
 
@@ -1607,7 +1605,6 @@ void* dwt(vector<double> &sig, int J, string nm, vector<double> &dwt_output
                       J = Max_Iter;
 
                     }
-
     vector<double> original_copy,orig, appx_sig, det_sig;
     original_copy = sig;
 
@@ -1648,8 +1645,7 @@ void* dwt(vector<double> &sig, int J, string nm, vector<double> &dwt_output
 
         orig = appx_sig;
         appx_sig.clear();
-        det_sig.clear();
-
+        det_sig.clear();            
     }
 
      sig = original_copy;
@@ -1722,7 +1718,6 @@ void downsamp(vector<double> &sig, int M, vector<double> &sig_d){
 
 
 void* dwt1(string wname, vector<double> &signal, vector<double> &cA, vector<double> &cD) {
-
         vector<double> lpd, hpd, lpr, hpr;
 
                 filtcoef(wname,lpd,hpd,lpr,hpr);
@@ -1741,6 +1736,7 @@ void* dwt1(string wname, vector<double> &signal, vector<double> &cA, vector<doub
                 vector<double> cA_undec;
                 // convolving signal with lpd, Low Pass Filter, and O/P is stored in cA_undec
                 convfft(signal,lpd,cA_undec);
+
                 int D = 2; // Downsampling Factor is 2
                 cA_undec.erase(cA_undec.begin(),cA_undec.begin()+len_avg-1);
                 cA_undec.erase(cA_undec.end()-len_avg+1,cA_undec.end());

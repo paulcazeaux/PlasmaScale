@@ -6,7 +6,7 @@ _plasma(plasma), _vmax(vmax), _depth(depth), _grid_size(grid_size)
 {
 	_number_of_bins = std::pow(2, depth);
 	_dv = (2.*vmax)/static_cast<double>(_number_of_bins);
-	_filter = "db6";
+	_filter = "coif2";
 
 	_is_transformed = false;
 	_histogram = std::vector<std::vector<double> >(_grid_size, std::vector<double>(_number_of_bins));
@@ -111,18 +111,7 @@ void WaveletRepresentation::Load(int size,
 
 	for (int n=0; n<_grid_size; n++)
 	{
-		icdf.at(n).resize(_number_of_bins+1);
-		icdf.at(n).front() = 0.;
-        //for (int i=0; i<_number_of_bins; i++)
-        //    icdf.at(n).at(i+1) = icdf.at(n).at(i) + std::max(_histogram.at(n).at(i), 0.);
-		std::partial_sum(_histogram.at(n).begin(), _histogram.at(n).end(), icdf.at(n).begin()+1);
-
-		density.at(n) = icdf.at(n).back();
-		double norm = 1./density.at(n);
-		for (int i=1; i<=_number_of_bins; i++)
-		{
-			icdf.at(n).at(i) *= norm;
-		}
+		Tools::AssembleICDF(_histogram.at(n), icdf.at(n), density.at(n));
 	}
 	
 	double mean_bin_size = static_cast<double>(size) / static_cast<double>(_grid_size);
@@ -136,12 +125,14 @@ void WaveletRepresentation::Load(int size,
 		auto it_vel = vel.begin();
 		auto it_icdf = icdf.at(bin).begin();
 		double dn = 1./static_cast<double>(bin_size);
+		double weight = density.at(bin);
 		
 		double xs = 0.;
 		for (int i=0; i<bin_size; i++)
 		{
 			double fv = (static_cast<double>(i) + 0.5)*dn;
-			while (fv >= *(it_icdf+1)) 
+
+			while (weight*fv >= *(it_icdf+1)) 
 			{
 				it_vel++;
 				it_icdf++;
@@ -159,8 +150,8 @@ void WaveletRepresentation::Load(int size,
 			double cellpos = xs + 0.5/static_cast<double>(bin_size);
 
 			position[bin_start_index+i] = (static_cast<double>(bin)+cellpos) * dx;
-			velocity[bin_start_index+i] = (*it_vel + _dv*(fv - *it_icdf)/(*(it_icdf+1) - *it_icdf));
-			weights[bin_start_index+i]   = density.at(bin);
+			velocity[bin_start_index+i] = (*it_vel + _dv*(weight*fv - *it_icdf)/(*(it_icdf+1) - *it_icdf));
+			weights[bin_start_index+i]   = weight;
 		}
 		bin_start_index = bin_end_index;
 	}
@@ -379,7 +370,7 @@ void WaveletRepresentation::Denoise(double thresh)
 
 
 void WaveletRepresentation::Cutoff(int depth)
-{
+{	
     int cutoff = std::pow(2, depth);
     if (cutoff<_number_of_bins)
     {
@@ -403,13 +394,11 @@ void WaveletRepresentation::Cutoff(int depth)
 				assert(_length.at(n).at(1) == cutoff );
 			}
             for (int n=0; n<_grid_size; n++)
-            {
-                std::fill(_coefficients.at(n).begin()+_length.at(n).at(1), _coefficients.at(n).end(), 0.);
-            }
-
+                std::fill(_coefficients.at(n).begin()+cutoff , _coefficients.at(n).end(), 0.);
             /* iDWT */
 			for (int n=0; n<_grid_size; n++)
 				idwt(_coefficients.at(n), _flag.at(n), _filter, _histogram.at(n), _length.at(n));
+
         }
     }
 }
@@ -418,27 +407,14 @@ void WaveletRepresentation::DiscardNegativeValues()
 {
 	for (auto & hist : _histogram)
 	{
-		//double corr = 0;
 		for (auto & value : hist)
-		{
-			if (value < 0)
-			{
-				//corr -= value;
-				value=0;
-			}
-		}
-//		if (corr >0)
-//		{
-//			corr /= _number_of_bins;
-//			for (auto & value : hist)
-//				value += corr;
-//		}
+			if (value < 0) value=0;
 	}
 }
 
 void WaveletRepresentation::Reset()
 {
-	for (auto & hist : _histogram)
+	for (auto & hist : _histogram) 
 		std::fill(hist.begin(), hist.end(), 0.);
 	_is_transformed = false;
 }
@@ -450,7 +426,7 @@ void WaveletRepresentation::print(std::ostream& os) const
     {
         for (auto & value : hist)
         {
-            os << value << "\t";
+            os << std::scientific << value << "\t";
         }
         os << std::endl;
     }

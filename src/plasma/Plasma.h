@@ -167,7 +167,7 @@ class Plasma
 		void 	set_macro_grid_size( int macro_grid_size)	{ *_macro_grid_size = macro_grid_size;	}
 		
 		/* methods ============================================================================== */
-		int 			find_index_on_grid( double x)		const {return static_cast<int>(std::floor(x/_dx)) %  *_grid_size;	}
+		int 			find_index_on_grid( double x)		const {return static_cast<int>(std::floor(x/_dx)) &  (*_grid_size-1);	}
 		double 			find_position_in_cell(double x) 	const {double xg = x/_dx; return xg - std::floor(xg);	}
 };
 

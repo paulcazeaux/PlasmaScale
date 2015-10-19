@@ -22,6 +22,12 @@
 #include "plasma/Plasma.h"
 #include "representation/Representation.h"
 
+#include <chrono>
+
+/* Declarations */
+
+typedef std::chrono::microseconds timeunit;
+
 class WaveletRepresentation : public Representation
 {
 	protected:

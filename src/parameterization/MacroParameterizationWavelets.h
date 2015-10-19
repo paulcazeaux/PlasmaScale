@@ -31,9 +31,11 @@
 #include <cmath>
 
 #include <ctime>
+#include <chrono>
 
 /* Declarations */
 
+typedef std::chrono::microseconds timeunit;
 typedef WaveletRepresentationP1 ActiveWaveletRepresentation;
 typedef MaxwellianRepresentationP1 ActiveMaxwellianRepresentation;
 
@@ -70,6 +72,7 @@ class MacroParameterizationWavelets : public MacroParameterization
 		/* Parameters for the determination of the passive variables */
 		double										_electron_thermal_vel;
 		double 										_debye_scaling;
+		double										_total_moment;
 
 		/* Arrays for the diagnostics */
 		std::vector<double> 						_ion_density;
@@ -96,6 +99,7 @@ class MacroParameterizationWavelets : public MacroParameterization
 		virtual void Load(State & state) const;
 		virtual void SetAccField(State & state);
 
+		void CalculateTotalMoment(const State & state);
 		void RestrictAndPushback(const State & state, const double delay);
 		void Extrapolate(const double ratio);
 		void Lift();
@@ -104,7 +108,6 @@ class MacroParameterizationWavelets : public MacroParameterization
 		
 		virtual void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics);
 		virtual void WriteData(std::fstream & fout);
-		
 };
 
 #endif

@@ -85,7 +85,7 @@ class PopulationOfParticles
 		/* getters */
 		double	get_unit_charge()							const { return _unit_charge;}
 		double	get_unit_mass()								const { return _unit_mass;	}
-		double	get_size()									const { return *_population_size;	}
+		int 	get_size()									const { return *_population_size;	}
 		double	get_cyclotronic_parameter()					const { return _cyclotronic_rotation_parameter;	}
 
 		double	get_kinetic_energy()						const { return _kinetic_energy;	}

@@ -112,10 +112,12 @@ void MaxwellianRepresentationP1::Load(int size,
 	assert(size > 1);
 	double L = _plasma->get_length();
 	double dn = 1./static_cast<double>(size);
+	double dv = _quiet_start_vel.at(1) - _quiet_start_vel.at(0);
 
 	double xs = 0.;			
 	double fv = 0.5*dn;
-	
+	int index = 0;
+
 	for (int i=0; i<size; i++)
 	{
 		/* bit-reversed scrambling to reduce the correlation with the positions */
@@ -132,18 +134,14 @@ void MaxwellianRepresentationP1::Load(int size,
 		int bin = _plasma->find_index_on_grid(pos);
 		double cellpos = _plasma->find_position_in_cell(pos);
 
-		auto it_vel = _quiet_start_vel.begin();
-		auto it_icdf = _quiet_start_icdf.begin();
 
-		while (fv >= *(it_icdf+1))
-		{
-			it_vel++;
-			it_icdf++;
-		}
+		int index_up = _quiet_start_icdf.size();
+
+		while (fv > _quiet_start_icdf.at(index+1)) ++index;
 
 		position[i] = pos;
 		weights[i]  = Tools::EvaluateP1Function(_density, bin, cellpos);
-		velocity[i] = Tools::EvaluateP1Function(_velocity, bin, cellpos) + Tools::EvaluateP1Function(_thermal_velocity, bin, cellpos) * (*it_vel + (*(it_vel+1) - *it_vel)*(fv - *it_icdf)/(*(it_icdf+1) - *it_icdf));
+		velocity[i] = Tools::EvaluateP1Function(_velocity, bin, cellpos) + Tools::EvaluateP1Function(_thermal_velocity, bin, cellpos) * (_quiet_start_vel.at(index) + dv*(fv - _quiet_start_icdf.at(index))/(_quiet_start_icdf.at(index+1) - _quiet_start_icdf.at(index)));
 		fv += dn;
 	}
 }

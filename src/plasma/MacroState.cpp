@@ -21,7 +21,7 @@ MacroState::MacroState(FILE *& InputDeck)
 	if (_plasma->uses_full_PIC())
 	{
 		//_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationFullPICtoMaxwell(initialization));
-		_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationFullPICtoHistogram(initialization, 10.*vti));
+		_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationFullPICtoHistogram(initialization, vte, 10.*vti));
 	}
 	else	
 	{

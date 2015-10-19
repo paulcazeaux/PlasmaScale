@@ -9,36 +9,20 @@ void WaveletRepresentationP1::Weigh(int size,
 								std::vector<double>::iterator 	weights)
 {
 	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
-    double dt = _plasma->get_dt();
+    double idv = 1/(_dv*_plasma->get_dt());
+    double vmin = static_cast<double>(_number_of_bins)/(2.*idv);
 	this->Reset();
 
 	for (int i=0; i<size; i++)
 	{
 		double pos = position[i];
-		while (pos<0)
-			pos += _plasma->get_length();
-		double weight = weights[i];
-
 		int xbin = _plasma->find_index_on_grid(pos);
-		double vel = velocity[i];
-		double right_weight =  _plasma->find_position_in_cell(pos) * weight;
-		double left_weight = weight - right_weight;
+		double cellpos = _plasma->find_position_in_cell(pos);
 
-		int vbin = static_cast<int>(vel/(dt*_dv) + static_cast<double>(_number_of_bins/2));
-		if (vbin < 0)
-			vbin = 0;
-		if (vbin > _number_of_bins-1)
-			vbin = _number_of_bins-1;
+		int vbin = static_cast<int>((vmin+velocity[i])*idv)&(_number_of_bins-1); // Periodization in v
 
-		_histogram.at(xbin).at(vbin) += left_weight;
-		if (xbin < _grid_size-1)
-		{
-			_histogram.at(xbin+1).at(vbin) += right_weight;
-		}
-		else
-		{
-			_histogram.at(0).at(vbin) += right_weight;
-		}
+		_histogram.at(xbin).at(vbin) += (1.-cellpos)*weights[i];
+		_histogram.at((xbin+1)&(_grid_size-1)).at(vbin) += cellpos*weights[i];
 	}
     
     for (auto & cell : _histogram)
@@ -56,37 +40,27 @@ void WaveletRepresentationP1::Weigh(int size,
 								const std::vector<double> & accfield)
 {
 	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
-    double dt = _plasma->get_dt();
+    double idv = 1/(_dv*_plasma->get_dt());
+    double vmin = static_cast<double>(_number_of_bins)/(2.*idv);
 	this->Reset();
+
+	static std::vector<std::vector<double>::iterator> periodic_helper = std::vector<std::vector<double>::iterator>(_grid_size+1);
+	for (int bin = 0; bin<_grid_size; bin++)
+		periodic_helper.at(bin) = _histogram.at(bin).begin();
+	periodic_helper.at(_grid_size) = _histogram.at(0).begin();
 
 	for (int i=0; i<size; i++)
 	{
-		double pos = position[i] + delay*velocity[i];
-		double vel = velocity[i] + delay*Tools::EvaluateP1Function(accfield, _plasma->find_index_on_grid(position[i]), _plasma->find_position_in_cell(position[i]));
-		while (pos<0)
-			pos += _plasma->get_length();
-
+		double vel = velocity[i];
+		double pos = position[i] + delay*vel;
 		int xbin = _plasma->find_index_on_grid(pos);
 		double cellpos = _plasma->find_position_in_cell(pos);
-		double weight = weights[i];
-		double right_weight =  cellpos * weight;
-		double left_weight = weight - right_weight;
+ 		vel += delay*Tools::EvaluateP1Function(accfield, xbin, cellpos);
 
-		int vbin = static_cast<int>(vel/(dt*_dv) + static_cast<double>(_number_of_bins/2));
-		if (vbin < 0)
-			vbin = 0;
-		if (vbin > _number_of_bins-1)
-			vbin = _number_of_bins-1;
+		int vbin = static_cast<int>((vmin+vel)*idv)&(_number_of_bins-1); // Periodization in v
 
-		_histogram.at(xbin).at(vbin) += left_weight;
-		if (xbin < _grid_size-1)
-		{
-			_histogram.at(xbin+1).at(vbin) += right_weight;
-		}
-		else
-		{
-			_histogram.at(0).at(vbin) += right_weight;
-		}
+		periodic_helper.at(xbin)[vbin] += (1.-cellpos)*weights[i];
+		periodic_helper.at(xbin+1)[vbin] += cellpos*weights[i];
 	}
     
     for (auto & cell : _histogram)
@@ -120,45 +94,56 @@ void WaveletRepresentationP1::Load(int size,
 		Tools::AssembleICDF(_histogram.at(n), icdf.at(n), density.at(n));
 	}
 	
-	double L = _plasma->get_length();
-	double dn = 1./static_cast<double>(size);
+	double dx = _plasma->get_length()/static_cast<double>(size);
 
-	double xs = 0.;			
-	double fv = 0.5*dn;
-	
-	for (int i=0; i<size; i++)
+	double fv = 0.;			
+	double pos = 0.5*dx;
+
+	double mean_bin_size = static_cast<double>(size) / static_cast<double>(_grid_size);
+
+	int bin_start_index = 0;
+	for (int bin = 0; bin < _grid_size; bin++)
 	{
-		/* bit-reversed scrambling to reduce the correlation with the positions */
-		double xsi = 0.5;
-		xs -= 0.5;
-		while (xs >= 0.0)
-		{
-			xsi *= 0.5;
-			xs -= xsi;
-		} 
-		xs += 2.0*xsi;
-		//double pos = RandomTools::Generate_randomly_uniform(0., L);
-		double pos = L*xs;
-		int bin = _plasma->find_index_on_grid(pos);
-		double cellpos = _plasma->find_position_in_cell(pos);
-
+		int bin_end_index = std::ceil(static_cast<double>(bin+1)*mean_bin_size-0.5);
 		auto it_icdf_left = icdf.at(bin).begin();
 		auto it_icdf_right = icdf.at(bin+1 < _grid_size ? bin+1 : 0).begin();
-        double weight = Tools::EvaluateP1Function(density, bin, cellpos);
 
-		int vindex=0;
-		double fvdown = (1.-cellpos)*(*(it_icdf_left)) + cellpos*(*(it_icdf_right));
-		double fvup = (1.-cellpos)*(*(++it_icdf_left)) + cellpos*(*(++it_icdf_right));
-		while (weight*fv >= fvup)
+		for (int i=bin_start_index; i<bin_end_index; i++)
 		{
-			vindex++;
-			fvdown = fvup;
-			fvup = (1.-cellpos)*(*(++it_icdf_left)) + cellpos*(*(++it_icdf_right));
-		}
+			/* bit-reversed scrambling to reduce the correlation with the positions */
+			double fvi = 0.5;
+			fv -= 0.5;
+			while (fv >= 0.0)
+			{
+				fvi *= 0.5;
+				fv -= fvi;
+			} 
+			fv += 2.0*fvi;
 
-		position[i] = pos;
-		weights[i]  = weight;
-		velocity[i] = vel.at(vindex) + _dv*(weight*fv - fvdown)/(fvup - fvdown);
-		fv += dn;
+			double cellpos = _plasma->find_position_in_cell(pos);
+	        double weight = Tools::EvaluateP1Function(density, bin, cellpos);
+	        
+	        	// Binary search
+			int index_down = 0;
+			int index_up = icdf.at(bin).size();
+			while (index_up - index_down > 1)
+			{
+				int index_mid = (index_up + index_down)/2;
+				if (weight*fv < (1.-cellpos)*it_icdf_left[index_mid] + cellpos*it_icdf_right[index_mid])
+					index_up = index_mid;
+				else
+					index_down = index_mid;
+			}
+
+			double fvdown = (1.-cellpos)*it_icdf_left[index_down] + cellpos*it_icdf_right[index_down];
+			double fvup = (1.-cellpos)*it_icdf_left[index_up] + cellpos*it_icdf_right[index_up];
+
+
+			position[i] = pos;
+			weights[i]  = weight;
+			velocity[i] = vel.at(index_down) + _dv*(weight*fv - fvdown)/(fvup - fvdown);
+			pos += dx;
+		}
+		bin_start_index = bin_end_index;
 	}
 }
