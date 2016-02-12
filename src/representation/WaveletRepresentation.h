@@ -18,7 +18,6 @@
 #include <algorithm>
 #include <numeric>
 #include <cassert>
-#include "wavelets/wavelet2s.h"
 #include "plasma/Plasma.h"
 #include "representation/Representation.h"
 
@@ -41,15 +40,16 @@ class WaveletRepresentation : public Representation
 		int 								_number_of_bins;
 		int 								_grid_size;
 		double 								_dv;
-		string 								_filter;
+		std::vector<double> 				_low_pass;
+		std::vector<double> 				_high_pass;
+		int 								_filter_length;
 
 		bool 								_is_transformed;
 
 		/* grid */
 		std::vector<std::vector<double> >	_histogram;
 		std::vector<std::vector<double> > 	_coefficients;
-		std::vector<std::vector<double> > 	_flag;
-		std::vector<std::vector<int> >		_length;
+		std::vector<int>					_length;
 
 	public:
 		/* constructor  ========================================================================= */
@@ -78,12 +78,13 @@ class WaveletRepresentation : public Representation
 		virtual void SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const std::vector<double> & thermal_velocity);
 		virtual void GetDensityVelocity(std::vector<double> & density, std::vector<double> & velocity) const;
 		virtual void GetDensityVelocityPressure(std::vector<double> & density, std::vector<double> & velocity, std::vector<double> & pressure) const;
+		virtual void GetVelocityMoment(double& moment);
 
-		void DWT();
+		void DWT(const int J);
 		void iDWT();
-		void Denoise(int n_coef);
-		void Denoise(double thresh);
-		void Cutoff(int depth);
+		void Denoise(const int n_coef);
+		void Denoise(const double thresh, const int J);
+		void Cutoff(const int depth);
 		void DiscardNegativeValues();
 
 		virtual void Reset();
@@ -96,8 +97,6 @@ class WaveletRepresentation : public Representation
 				_histogram.at(n).resize(_number_of_bins);
 
 			_coefficients.resize(new_grid_size);
-			_flag.resize(new_grid_size);
-			_length.resize(new_grid_size);
 			_grid_size = new_grid_size;
 		}
 
@@ -110,19 +109,18 @@ class WaveletRepresentation : public Representation
 			_number_of_bins = rhs._number_of_bins;
 			_grid_size = rhs._grid_size;
 			_dv = rhs._dv;
-			_filter = rhs._filter;
+			_low_pass = rhs._low_pass;
+			_high_pass = rhs._high_pass;
+			_filter_length = rhs._filter_length;
 
 			_is_transformed = rhs._is_transformed;
 
 			_histogram.resize(_grid_size);
 			_coefficients.resize(_grid_size);
-			_flag.resize(_grid_size);
-			_length.resize(_grid_size);
 
             if (_is_transformed)
             {
                 std::copy(rhs._coefficients.begin(), rhs._coefficients.end(), _coefficients.begin());
-                std::copy(rhs._flag.begin(), rhs._flag.end(), _flag.begin());
                 std::copy(rhs._length.begin(), rhs._length.end(), _length.begin());
             }
             else

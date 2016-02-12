@@ -18,85 +18,139 @@ void Tools::AssembleICDF(const std::vector<double>& histogram, std::vector<doubl
 	icdf.front() = 0.;
 	std::partial_sum(histogram.begin(), histogram.end(), icdf.begin()+1);
 	density = icdf.back();
-	for (auto & val : icdf)
+
+	/* First, we take care of negative values and overshots */
+	int i0 = 0, i1 = nbins, imax = 0;
+	for (int i=1; i<nbins; i++)
 	{
-		if (val < 0) val = 0;
-		if (val > density) val = density;
+		if (icdf.at(i) < 0) i0 = i;
+		if (icdf.at(i) > density && i1 > i) i1 = i;
+		if (icdf.at(i) > .5*density && icdf.at(i-1) < .5*density) imax = i;
 	}
-
-	/* Ensure symmetry of the operation */
-	icdf_reverse.resize(nbins+1);
-	std::copy(icdf.rbegin(), icdf.rend(), icdf_reverse.begin());
-
+	if (i0 > 0)
+	{
+		int ind1 = i0 - 1;
+		int ind2 = i0 + 1;
+		double S = 0;
+		for (int j = 1; j < ind2; j++) 
+			S += icdf.at(j);
+		double df = 2.*S/static_cast<double>((ind2-ind1)*(ind2-ind1-1));
+		while (df<0 || (ind2-1-ind1)*df > icdf.at(ind2))
+		{
+			if (ind1 > 1)
+				ind1--;
+			else
+			{
+				S += icdf.at(ind2);
+				ind2++;
+				ind1 = i0-1;
+			}
+			df = 2.*S/static_cast<double>((ind2-ind1)*(ind2-ind1-1));
+		}
+		for (int j=0; j<ind1+1; j++)
+			icdf.at(j) = 0;
+		for (int j = ind1+1; j<ind2; j++)
+			icdf.at(j) = (j-ind1)*df;
+	}
+	if (i1 < nbins)
+	{
+		int ind1 = i1 - 1;
+		int ind2 = i1 + 1;
+		double S = 0;
+		for (int j = ind1+1; j < nbins; j++) 
+			S += icdf.at(j);
+		double df = 2.*((nbins-ind1-1)*density-S)/static_cast<double>((ind2-ind1)*(ind2-ind1-1));
+		while (df<0 || (ind2-1-ind1)*df > density - icdf.at(ind1))
+		{
+			if (ind2 < nbins+1)
+				ind2++;
+			else
+			{
+				S += icdf.at(ind1);
+				ind1--;
+				ind2 = i1+1;
+			}
+			df = 2.*((nbins-ind1-1)*density-S)/static_cast<double>((ind2-ind1)*(ind2-ind1-1));
+		}
+		for (int j = ind1+1; j<ind2; j++)
+			icdf.at(j) = density + (j-ind2)*df;
+		for (int j=ind2; j<nbins; j++)
+			icdf.at(j) = density;
+	}
 
 	/* Ensure that the ICDF is a monotonic function */
-	double oldval=0.;
-	for (int i=1; i<=nbins; i++)
+	double lowval=0.;
+	int i = 1;
+	while (i < imax)
 	{
-		if (icdf.at(i) < oldval)
+		if (lowval > icdf.at(i))
 		{
-			int ind1 = i-1, ind2 = i;
-			double high = oldval, low = icdf.at(i);
-
 			/* The vector icdf is monotonic up to index i-1 */
-            while (ind2<nbins && icdf.at(++ind2) < high)
+			int ind1 = i-1, ind2 = i+1;
+			double minval = icdf.at(i);
+
+            while (lowval > icdf.at(ind2))
             {
-                if (icdf.at(ind2) < low) low = icdf.at(ind2);
+            	ind2++;
+                if (minval > icdf.at(ind2)) 
+               	{
+               		minval = icdf.at(ind2);
+               		i = ind2;
+               	}
             }
-            while (ind1>0 && icdf.at(--ind1) > low) {}
-			double val1 = icdf.at(ind1);
-			double dn = (icdf.at(ind2)-val1)/static_cast<double>(ind2-ind1);
-			for (int j=1; j<ind2-ind1; j++)
-			{
-				icdf.at(ind1+j) = val1 + static_cast<double>(j)*dn;
-			}
-            //for (int j=ind1+1; j<i; j++)
-            //    icdf.at(j) = low;
-		}
-		oldval = icdf.at(i);
-	}
-
-	/* Same operation in reverse for the reverse ICDF */
-
-				/* Ensure that the ICDF is a monotonic function */
-	oldval=density;
-	for (int i=1; i<=nbins; i++)
-	{
-		if (icdf_reverse.at(i)>density) 
-		{
-			icdf_reverse.at(i)=density;
-		}
-		if (icdf_reverse.at(i) > oldval)
-		{
-			int ind1 = i-1, ind2 = i;
-			double low = oldval, high = icdf_reverse.at(i);
-			/* The vector icdf_reverse is monotonic up to index i-1 */
-            while (ind2<nbins && icdf_reverse.at(++ind2) > low)
+            while (minval < icdf.at(ind1)) ind1--;
+            double S = 0;
+            for (int j = ind1+1; j<i; j++)
+            	S += icdf.at(j);
+            double df = 2.*(S - (i - ind1 - 1)*icdf.at(ind1))/static_cast<double>((i-ind1)*(i-ind1-1));
+            while (df<0 || df*(i-1-ind1) > icdf.at(i) - icdf.at(ind1))
             {
-                if (icdf_reverse.at(ind2) > high)
-                    high = icdf_reverse.at(ind2);
+            	S += icdf.at(i);
+            	i++;
+           		df = 2.*(S - (i - ind1 - 1)*icdf.at(ind1))/static_cast<double>((i-ind1)*(i-ind1-1));
+
             }
-            while (ind1>0 && icdf_reverse.at(--ind1) < high) {}
-			double val1 = icdf_reverse.at(ind1);
-			double dn = (icdf_reverse.at(ind2)-val1)/static_cast<double>(ind2-ind1);
-			for (int j=1; j<ind2-ind1; j++)
-			{
-				icdf_reverse.at(ind1+j) = val1 + static_cast<double>(j)*dn;
-			}
-            // for (int j=ind1+1; j<i; j++)
-            //     icdf_reverse.at(j) = high;
+            for (int j=ind1+1; j<i; j++)
+               icdf.at(j) = icdf.at(ind1) + df*(j-ind1);
 		}
-		oldval = icdf_reverse.at(i);
+		lowval = icdf.at(i);
+		i++;
 	}
 
-	/* Finish by averaging the two results */
-	auto it_icdf_reverse = icdf_reverse.rbegin();
-	for (auto & val : icdf)
+	double highval = density;
+	i=nbins-1;
+	while (i>imax)
 	{
-		val = .5 * (val + *it_icdf_reverse++);
+		if (highval < icdf.at(i))
+		{        
+			int ind1 = i+1, ind2 = i-1;
+			double maxval = icdf.at(i); 
+			while (highval < icdf.at(ind2))
+			{
+				ind2--;
+				if (maxval < icdf.at(ind2))
+				{
+					maxval = icdf.at(ind2);
+					i = ind2;
+				}
+			}
+			while (maxval > icdf.at(ind1)) ind1++;  
+
+			double S = 0;
+			for (int j=i+1; j<ind1-1; j++)
+				S += icdf.at(j);
+			double df = 2/((ind1-i)*(ind1-i-1))*((ind1 - i -1) * icdf.at(ind1) - S);
+			while (df < 0 || df*(ind1-i-1) > icdf.at(ind1) - icdf.at(i))
+			{
+				S += icdf.at(i);
+				i--;
+				df = 2/((ind1-i)*(ind1-i-1))*((ind1 - i -1) * icdf.at(ind1) - S);
+			}
+		}
+
+		highval = icdf.at(i);
+		i--;
 	}
-
-
 }
 
 

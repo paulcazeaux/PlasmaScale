@@ -11,6 +11,7 @@ void WaveletRepresentationP1::Weigh(int size,
 	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
     double idv = 1/(_dv*_plasma->get_dt());
     double vmin = static_cast<double>(_number_of_bins)/(2.*idv);
+
 	this->Reset();
 
 	for (int i=0; i<size; i++)
@@ -23,6 +24,7 @@ void WaveletRepresentationP1::Weigh(int size,
 
 		_histogram.at(xbin).at(vbin) += (1.-cellpos)*weights[i];
 		_histogram.at((xbin+1)&(_grid_size-1)).at(vbin) += cellpos*weights[i];
+
 	}
     
     for (auto & cell : _histogram)
@@ -55,7 +57,7 @@ void WaveletRepresentationP1::Weigh(int size,
 		double pos = position[i] + delay*vel;
 		int xbin = _plasma->find_index_on_grid(pos);
 		double cellpos = _plasma->find_position_in_cell(pos);
- 		vel += delay*Tools::EvaluateP1Function(accfield, xbin, cellpos);
+ 		vel += (delay+.5)*Tools::EvaluateP1Function(accfield, xbin, cellpos);
 
 		int vbin = static_cast<int>((vmin+vel)*idv)&(_number_of_bins-1); // Periodization in v
 

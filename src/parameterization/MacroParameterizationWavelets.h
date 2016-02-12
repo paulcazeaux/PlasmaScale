@@ -59,10 +59,7 @@ class MacroParameterizationWavelets : public MacroParameterization
 		std::vector<ActiveWaveletRepresentation> 	_stack_ion_distribution;
 		int 										_stack_index;
 
-		/* Value for the previous step, used for the leapfrog time integration */
-		ActiveWaveletRepresentation					_prev_step_ion_distribution;
-
-		/* Value for the current step, used for the leapfrog time integration */
+		/* Initial value for the current step, used for the Runge-Kutta integration */
 		ActiveWaveletRepresentation					_current_step_ion_distribution;
 
 		/* Record arrays for the datapoints from the microsolver */
@@ -100,8 +97,8 @@ class MacroParameterizationWavelets : public MacroParameterization
 		virtual void SetAccField(State & state);
 
 		void CalculateTotalMoment(const State & state);
+		void CalculateIonMoment(const State & state, double & ion_particle_moment, double & ion_distr_moment);
 		void RestrictAndPushback(const State & state, const double delay);
-		void Extrapolate(const double ratio);
 		void Lift();
 
 		virtual void Step(State & state);
