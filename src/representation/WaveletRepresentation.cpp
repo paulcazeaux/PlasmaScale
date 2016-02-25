@@ -456,6 +456,7 @@ void WaveletRepresentation::Denoise(const int n_coef)
 
 void WaveletRepresentation::Denoise(const double thresh, const int J)
 {
+    int L = std::pow(2, J);
 	if (_is_transformed)
 	{
 		for (int n=0; n<_grid_size; n++)
@@ -471,17 +472,21 @@ void WaveletRepresentation::Denoise(const double thresh, const int J)
 	}
 	else
 	{
-		this->DWT(J);
-		for (int n=0; n<_grid_size; n++)
-		{
-			for (int i = std::pow(2,J); i < _number_of_bins; i++)
-			{
-				if (std::abs(_coefficients.at(n).at(i)) < thresh)
+		this->DWT(_depth - J);
+		if (thresh == 0.)
+			for (int n=0; n<_grid_size; n++)
+                std::fill(_coefficients.at(n).begin()+L, _coefficients.at(n).end(), 0.);
+        else
+			for (int n=0; n<_grid_size; n++)
 				{
-					_coefficients.at(n).at(i) = 0.;
+					for (int i = L; i < _number_of_bins; i++)
+					{
+						if (std::abs(_coefficients.at(n).at(i)) < thresh)
+						{
+							_coefficients.at(n).at(i) = 0.;
+						}
+					}
 				}
-			}
-		}
 		this->iDWT();
 	}
 }
@@ -505,8 +510,10 @@ void WaveletRepresentation::Cutoff(int cutoff)
         {
         	/* DWT */
             this->DWT(_depth - cutoff);
+
             for (int n=0; n<_grid_size; n++)
                 std::fill(_coefficients.at(n).begin()+L , _coefficients.at(n).end(), 0.);
+            
             /* iDWT */
 			this->iDWT();
         }
