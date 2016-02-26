@@ -61,11 +61,11 @@ void WaveletRepresentationP1::Weigh(int size,
 
 	for (int i=0; i<size; i++)
 	{
-		double pos = position[i] + 0.5*delay*velocity[i];
+		double pos = position[i] + delay*velocity[i];
 		while (pos<0)
 			pos += _plasma->get_length();
 		double vel = velocity[i] + delay*Tools::EvaluateP1Function(accfield, _plasma->find_index_on_grid(pos), _plasma->find_position_in_cell(pos));
-		pos += 0.5*delay*vel;
+//		pos += 0.5*delay*vel;
 		while (pos<0)
 			pos += _plasma->get_length();
 
