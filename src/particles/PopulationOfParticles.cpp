@@ -56,11 +56,7 @@ void PopulationOfParticles::Reset()
 
 bool PopulationOfParticles::CheckParameters(const MacroParameterization & parameterization, const int index)
 {
-<<<<<<< HEAD
-	return ((parameterization.get_population_size(index)==*_population_size) 
-=======
 	return ((parameterization.get_population_size(index)==*_population_size)
->>>>>>> partial-efpi
 			&& (parameterization.get_unit_charge(index)==_unit_charge)
 			&& (parameterization.get_unit_mass(index)==_unit_mass) 
 			&& (parameterization.get_cyclotronic_rotation_parameter(index)==_cyclotronic_rotation_parameter));
