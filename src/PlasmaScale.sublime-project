@@ -1,2 +1,32 @@
 {
+	"folders":
+	[
+		{
+			"path": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg"
+		},
+		{
+			"path": "fields"
+		},
+		{
+			"path": "particles"
+		},
+		{
+			"path": "parameterization"
+		},
+		{
+			"path": "plasma"
+		},
+		{
+			"path": "representation"
+		},
+		{
+			"path": "tools"
+		},
+		{
+			"path": "wavelets"
+		},
+		{
+			"path": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/src"
+		}
+	]
 }

@@ -12,6 +12,7 @@
 #define DEF_PLASMASCALE_SIMULATION
 
 #include <memory>
+#include <limits>
 
 #include <cstdio>
 #include <cstdlib>
@@ -52,6 +53,7 @@ class Simulation
 		void InitWindows();
 		void WriteData(std::fstream & fout)
 		{
+			fout.precision(std::numeric_limits<double>::max_digits10 + 2);
 			_state->WriteData(fout);
 		}
 		double * get_simulation_time_ptr()		const { return _state->get_simulation_time().get();	}

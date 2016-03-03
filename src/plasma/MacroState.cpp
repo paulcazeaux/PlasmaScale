@@ -15,15 +15,19 @@ MacroState::MacroState(FILE *& InputDeck)
 	}
 
 	_macro_dt = _plasma->get_dt() * _plasma->get_macro_to_micro_dt_ratio();
+	double vti = initialization.get_initial_thermal_vel(0); // Recover the ion thermal velocity
+	double vte = initialization.get_initial_thermal_vel(1); // Recover the electron thermal velocity
 
 	if (_plasma->uses_full_PIC())
 	{
-		_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationFullPIC(initialization));
+		//_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationFullPICtoMaxwell(initialization));
+		_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationFullPICtoHistogram(initialization, vte, 10.*vti));
 	}
 	else	
 	{
-		double vte = initialization.get_initial_thermal_vel(1); // Recover the electron thermal velocity
-		_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationEFPI(initialization, vte));
+		//_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationEFPI(initialization, vte));
+		_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationWavelets(initialization, vte, 10.*vti));
+		//_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationPUREHaar(initialization, vte, 10.*vti));
 	}
 	_parameterization->Initialize(*_micro_state);
 }
@@ -45,6 +49,12 @@ void MacroState::Step()
 
 	(*_macro_iteration)++;
 	*_simulation_time = *_macro_iteration * _macro_dt;
+}
+
+void MacroState::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
+{
+	_micro_state->SetupDiagnostics(diagnostics);
+	_parameterization->SetupDiagnostics(diagnostics);
 }
 
 void MacroState::WriteData(std::fstream & fout)

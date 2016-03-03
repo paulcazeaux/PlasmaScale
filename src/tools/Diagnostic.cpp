@@ -1,15 +1,13 @@
 #include "Diagnostic.h"
 
 Diagnostic::Diagnostic(std::string type, std::string x_label, std::string y_label, int ul_x, int ul_y, double x_scaling, double y_scaling, 
-				bool auto_rescale_x, bool auto_rescale_y, double x_min, double x_max, double y_min, double y_max):
+				bool auto_rescale_x, bool auto_rescale_y, double x_min, double x_max, double y_min, double y_max, std::string state):
 				_type(type), _x_label(x_label), _y_label(y_label),
 				_ul_x(ul_x), _ul_y(ul_y),
 				_x_scaling(x_scaling), _y_scaling(y_scaling),
 				_auto_rescale_x(auto_rescale_x), _auto_rescale_y(auto_rescale_y),
-				_x_min(x_min), _x_max(x_max), _y_min(y_min), _y_max(y_max)
-			{
-				_state = std::string("closed");
-			}
+				_x_min(x_min), _x_max(x_max), _y_min(y_min), _y_max(y_max),
+				_state(state) {}
 
 void Diagnostic::AddData(std::vector<double> * x_data, std::vector<double> * y_data, int * length, int color)
 {

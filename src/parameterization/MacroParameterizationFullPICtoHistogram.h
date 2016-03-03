@@ -1,5 +1,5 @@
 
-/* HEADER MacroParameterization ===============================================================
+/* HEADER MacroParameterizationFullPICtoHistogram ===============================================================
  * author: Paul Cazeaux
  * date: 2014-01-27
  *
@@ -9,8 +9,8 @@
  *  
  * ============================================================================= */
 
-#ifndef DEF_PLASMASCALE_MACROPARAMETERIZATIONFULLPIC
-#define DEF_PLASMASCALE_MACROPARAMETERIZATIONFULLPIC
+#ifndef DEF_PLASMASCALE_MACROPARAMETERIZATIONFULLPICTOHISTOGRAM
+#define DEF_PLASMASCALE_MACROPARAMETERIZATIONFULLPICTOHISTOGRAM
 
 #include "parameterization/MacroParameterization.h"
 #include "plasma/State.h"
@@ -30,41 +30,46 @@
 
 /* Declarations */
 
-class MacroParameterizationFullPIC : public MacroParameterization
+class MacroParameterizationFullPICtoHistogram : public MacroParameterization
 {
 	private:
 		/* class members ======================================================================== */
 
-		int 						_grid_size;
+		int 										_grid_size;
+		int 										_number_of_bins;
+		int 										_min_depth;
+		int 										_max_depth;
+		double 										_ion_vmax;
+		double										_electron_thermal_vel;
 
 		/* Spatial quantities */
 
-		std::vector<double>			_ion_density;
-		std::vector<double> 		_ion_pressure;
-		std::vector<double> 		_ion_thermal_velocity;
-		std::vector<double> 		_ion_velocity;
+		std::vector<std::vector<double>	>			_histogram;
 
 	public:
 		/* constructor  ========================================================================= */
-		MacroParameterizationFullPIC() {}
-		MacroParameterizationFullPIC(MacroParameterization & parameterization);
-		virtual ~MacroParameterizationFullPIC() {}
+		MacroParameterizationFullPICtoHistogram() {}
+		MacroParameterizationFullPICtoHistogram(MacroParameterization & parameterization, double electron_thermal_vel, double ion_vmax);
+		virtual ~MacroParameterizationFullPICtoHistogram() {}
 
 		/* move constuctor and assignment ======================================================= */
 
-		MacroParameterizationFullPIC(MacroParameterizationFullPIC &&parameterization);
-		MacroParameterizationFullPIC& operator=(MacroParameterizationFullPIC &&parameterization);
+		MacroParameterizationFullPICtoHistogram(MacroParameterizationFullPICtoHistogram &&parameterization);
+		MacroParameterizationFullPICtoHistogram& operator=(MacroParameterizationFullPICtoHistogram &&parameterization);
 
 		/* methods ============================================================================== */
 
-		virtual void Initialize(const State & state);
+		virtual void Initialize(State & state);
 		virtual void Load(State & state) const {}
 
 		void ComputeVariables(const State & state);
+		void Coarsen();
 		virtual void Step(State & state);
 
 		virtual void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics);
 		virtual void WriteData(std::fstream & fout);
+
+		virtual void ResetElectrons(State & state);
 };
 
 #endif

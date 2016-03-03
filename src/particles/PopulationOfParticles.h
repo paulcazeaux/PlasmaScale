@@ -20,6 +20,7 @@
 #include "fields/PlasmaFields.h"
 #include "plasma/Plasma.h"
 #include "parameterization/MacroParameterization.h"
+#include "tools/Tools.h"
 #include "tools/RandomTools.h"
 
 /* Declarations */
@@ -50,7 +51,7 @@ class PopulationOfParticles
 		std::vector<double>						_velocity_x;
 		std::vector<double>						_velocity_y;
 		std::vector<double>						_weights;
-
+		
 		/* Energy */
 		double 									_moment;
 		double 									_kinetic_energy;
@@ -62,11 +63,6 @@ class PopulationOfParticles
 		double									_bin_width;
 		double									_bin_start;
 		std::unique_ptr<std::vector<double> >	_mid_bin_array;
-
-		/* Density profiles  ==================================================================== */
-
-		std::unique_ptr<std::vector<double> >	_conditional_velocity_density_function;
-
 
 		/* velocity profiles ==================================================================== */
 		bool									_profiling_active;
@@ -89,7 +85,7 @@ class PopulationOfParticles
 		/* getters */
 		double	get_unit_charge()							const { return _unit_charge;}
 		double	get_unit_mass()								const { return _unit_mass;	}
-		double	get_size()									const { return *_population_size;	}
+		int 	get_size()									const { return *_population_size;	}
 		double	get_cyclotronic_parameter()					const { return _cyclotronic_rotation_parameter;	}
 
 		double	get_kinetic_energy()						const { return _kinetic_energy;	}
@@ -107,10 +103,12 @@ class PopulationOfParticles
 		void	Weigh(PlasmaFields	&fields);
 
 		void	Prepare(const PlasmaFields	&fields);
+		void 	Prepare(const PlasmaFields &fields, const bool toggle_half_step);
 
 		void 	SetupVelocityDiagnostics(int nbins, int velocity_accumulation_interval, double vupper, double vlower, double v0, double vt1, double vt2);
 		void 	SetupVelocityDiagnostics(const MacroParameterization & parameterization, const int index);
 		void	ComputeVelocityProfile();
+		void 	ComputeVelocityProfile(std::vector<double> & velocity_profile);
 };
 
 #endif

@@ -73,6 +73,8 @@ class State
 
 		/* method =============================================================================== */
 		void Load(const MacroParameterization & parameterization);
+		void Prepare(const bool toggle_half_step);
+		void Prepare(const int population_index, const bool toggle_half_step);
 
 		void Reset()
 		{
@@ -120,58 +122,15 @@ class State
 		}
 
 		void Step();
+		void GetEField(std::vector<double> & Efield);
 		void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics);
 
 		void ComputeVelocityProfile();
+		void ComputeVelocityProfile(std::vector<std::vector<double> >& profile_by_population);
 
 		void PushBackElectrostaticEnergy(std::vector<double>& electrostatic_energy, std::vector<std::vector<double>	>& electrostatic_energy_by_mode) const;
-		void PushBackKineticEnergy(std::vector<double> &kinetic_energy, std::vector<std::vector<double> >	&kinetic_energy_by_population) const;
-		void PushBackMoment(std::vector<double> &moment, std::vector<std::vector<double> >	&moment_by_population) const;
-
-		void DisplayIonDensity() // Testing purposes
-		{
-			Field IonDensity = Field(_plasma);
-			IonDensity.Reset();
-			auto it_weights = _populations.front()->_weights.begin();
-			double unit_charge = _populations.front()->_unit_charge;
-			std::cout << "unit charge : " << unit_charge << std::endl;
-
-			for (auto & position : _populations.front()->_position)
-			{
-				IonDensity.WeighParticle(position, unit_charge * (*it_weights++));
-			}
-
-			double * values = IonDensity.get_ptr();
-			int size = IonDensity.get_size();
-			for (int i=0; i<size; i++)
-			{
-				std::cout << values[i] << " ";
-			}
-			std::cout << std::endl << "=======================" << std::endl;
-		}
-
-		void DisplayElectronDensity() // Testing purposes
-		{
-			Field ElectronDensity = Field(_plasma);
-			ElectronDensity.Reset();
-			auto it_weights = _populations.back()->_weights.begin();
-			double unit_charge = _populations.back()->_unit_charge;
-			std::cout << "unit charge : " << unit_charge << std::endl;
-
-			for (auto & position : _populations.back()->_position)
-			{
-				ElectronDensity.WeighParticle(position, unit_charge * (*it_weights++));
-			}
-
-			double * values = ElectronDensity.get_ptr();
-			int size = ElectronDensity.get_size();
-			for (int i=0; i<size; i++)
-			{
-				std::cout << values[i] << " ";
-			}
-			std::cout << std::endl << "=======================" << std::endl;
-		}
-
+		void PushBackKineticEnergy(std::vector<double> &kinetic_energy, std::vector<std::vector<double> >& kinetic_energy_by_population) const;
+		void PushBackMoment(std::vector<double> &moment, std::vector<std::vector<double> >& moment_by_population) const;
 };
 
 

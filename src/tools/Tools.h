@@ -3,7 +3,10 @@
  * date: 2013-11-28
  * 
  * description:
- *  -> FFT routines
+ *  -> P1 interpolation
+ *  -> Slope fitting by mean-squares
+ *  -> ICDF computation with possibly negative histogram values
+ *  -> Computation of an empirical scaling for Poisson distribution fitting
  * 
  * ============================================================================================== */
 
@@ -12,18 +15,74 @@
 
 /* includes ===================================================================================== */
 #include <iostream>
+#include <cmath>
 #include <vector>
+#include <numeric>
 #include <cassert>
+#include <utility>
 
 class Tools
 {
 
 	public:
-		/* constructor and destructor =========================================================== */
 		static void DisplayTitle();
 
-		static double EvaluateP1Function(const std::vector<double> & values, const int number, const double cellpos);
-		static double EvaluateSlope(const std::vector<double> & values );
+		template<typename T>
+		static T EvaluateP1Function(const std::vector<T> & values, const int bin, const double cellpos)
+		{
+			assert((cellpos>=0) && (cellpos<=1));
+			if (bin+1 < values.size())
+				return (1-cellpos)*values.at(bin) + cellpos*values.at(bin+1);
+			else
+				return (1-cellpos)*values.at(bin) + cellpos*values.front();
+		}
+
+		template<typename T>
+		static T EvaluateSlope(const std::vector<T> & values )
+		// We do not take into accout the first element of the vector
+		{
+			int size = values.size()-1;
+			assert(size>0);
+			T sum = values.at(1), first_moment = 0 * sum;
+			for (int n=1; n<size; n++)
+			{
+				sum				+= values.at(n+1);
+				first_moment 	+= static_cast<double>(n)*values.at(n+1);
+			}
+			return 6./static_cast<double>(size*(size+1)) * (2./static_cast<double>(size-1)*first_moment - sum);
+		}
+
+		template<typename T>
+		static T EvaluateSlope(const std::vector<T> & values, const int size)
+		// We do not take into accout the first element of the vector
+		{
+			assert(size>0);
+			T sum = values.at(1), first_moment = 0 * sum;
+			for (int n=1; n<size-1; n++)
+			{
+				sum				+= values.at(n+1);
+				first_moment 	+= static_cast<double>(n)*values.at(n+1);
+			}
+			return 6./static_cast<double>(size*(size-1)) * (2./static_cast<double>(size-2)*first_moment - sum);
+		}
+
+		template<typename T>
+		static T EvaluateSlope(const std::vector<T> & points, const std::vector<T> & values)
+		{
+			assert(points.size()==values.size());
+			int size = values.size();
+			assert(size>0);
+			T covar = points.at(0)*values.at(0), var = points.at(0)*points.at(0);
+			for (int n=1; n<size; n++)
+			{
+				covar	+= points.at(n)*values.at(n);
+				var		+= points.at(n)*points.at(n);
+			}
+			return covar/var;
+		}
+
+		static void AssembleICDF(const std::vector<double>& histogram, std::vector<double>& icdf, double& density);
+		static double ComputePoissonEmpiricalScaling(const std::vector<std::vector<double> >& histogram, const int& patch_size = 8);
 };
 
 

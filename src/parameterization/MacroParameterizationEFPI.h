@@ -1,5 +1,5 @@
 
-/* HEADER MacroParameterization ===============================================================
+/* HEADER MacroParameterizationEFPI ===============================================================
  * author: Paul Cazeaux
  * date: 2014-01-27
  *
@@ -9,8 +9,8 @@
  *  
  * ============================================================================= */
 
-#ifndef DEF_PLASMASCALE_MACROPARAMETERIZATIONSHAY
-#define DEF_PLASMASCALE_MACROPARAMETERIZATIONSHAY
+#ifndef DEF_PLASMASCALE_MACROPARAMETERIZATIONEFPI
+#define DEF_PLASMASCALE_MACROPARAMETERIZATIONEFPI
 
 #include "parameterization/MacroParameterization.h"
 #include "plasma/State.h"
@@ -91,7 +91,7 @@ class MacroParameterizationEFPI : public MacroParameterization
 
 		/* methods ============================================================================== */
 
-		virtual void Initialize(const State & state);
+		virtual void Initialize(State & state);
 		virtual void Load(State & state) const;
 
 		void RestrictAndPushback(const State & state);

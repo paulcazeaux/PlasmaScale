@@ -50,6 +50,9 @@ class Plasma
 		std::unique_ptr<std::vector<double> >		_macro_x_grid;
 		std::unique_ptr<std::vector<double> >		_k_grid;
 		int 										_highest_mode;
+		int 										_depth;
+		int 										_cutoff;
+		double 										_intensity;
 
 		/* Plasma parameters */
 		const double								_epsilon;
@@ -90,6 +93,9 @@ class Plasma
 				int macro_grid_size 				= 32,
 				int velocity_accumulation_interval 	= 1,
 				int max_mode 						= 1,
+				int depth 							= 5,
+				int cutoff 							= 5,
+				double intensity 					= 1.,
 				double filter_parameter_1			= 0.,
 				double filter_parameter_2 			= 0.,
 				int max_size_history 				= 4096,
@@ -125,6 +131,9 @@ class Plasma
 		double *		get_x_grid_ptr()		const {	return _x_grid->data();	}
 		double *		get_macro_x_grid_ptr()	const {	return _macro_x_grid->data();	}
 		double *		get_k_grid_ptr()		const {	return _k_grid->data();	}
+		const int 		get_wavelet_depth()		const {return _depth; 	}
+		const int 		get_wavelet_cutoff() 	const {return _cutoff;	}
+		const double 	get_intensity() 		const {return _intensity;	}
 
 		/* Plasma parameters */
 		const double 	get_inverse_of_particle_radius()	const {	return _inverse_of_particle_radius;	}
@@ -158,7 +167,7 @@ class Plasma
 		void 	set_macro_grid_size( int macro_grid_size)	{ *_macro_grid_size = macro_grid_size;	}
 		
 		/* methods ============================================================================== */
-		int 			find_index_on_grid( double x)		const {return static_cast<int>(std::floor(x/_dx)) %  *_grid_size;	}
+		int 			find_index_on_grid( double x)		const {return static_cast<int>(std::floor(x/_dx)) &  (*_grid_size-1);	}
 		double 			find_position_in_cell(double x) 	const {double xg = x/_dx; return xg - std::floor(xg);	}
 };
 

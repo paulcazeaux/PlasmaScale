@@ -1,7 +1,7 @@
-#include "parameterization/MacroParameterizationFullPIC.h"
+#include "parameterization/MacroParameterizationFullPICtoMaxwell.h"
 
 
-MacroParameterizationFullPIC::MacroParameterizationFullPIC(MacroParameterizationFullPIC &&parameterization) :
+MacroParameterizationFullPICtoMaxwell::MacroParameterizationFullPICtoMaxwell(MacroParameterizationFullPICtoMaxwell &&parameterization) :
 			MacroParameterization(std::move(parameterization)),
 			_grid_size(parameterization._grid_size),
 			_ion_density(std::move(parameterization._ion_density)),
@@ -9,7 +9,7 @@ MacroParameterizationFullPIC::MacroParameterizationFullPIC(MacroParameterization
 			_ion_velocity(std::move(parameterization._ion_velocity))
 		{}
 
-MacroParameterizationFullPIC& MacroParameterizationFullPIC::operator=(MacroParameterizationFullPIC &&parameterization)
+MacroParameterizationFullPICtoMaxwell& MacroParameterizationFullPICtoMaxwell::operator=(MacroParameterizationFullPICtoMaxwell &&parameterization)
 {
 	if (this == &parameterization)
 		return *this;
@@ -25,7 +25,7 @@ MacroParameterizationFullPIC& MacroParameterizationFullPIC::operator=(MacroParam
 	return *this;
 }
 
-MacroParameterizationFullPIC::MacroParameterizationFullPIC(MacroParameterization & parameterization) :
+MacroParameterizationFullPICtoMaxwell::MacroParameterizationFullPICtoMaxwell(MacroParameterization & parameterization) :
 	MacroParameterization(std::move(parameterization))
 {
 	_grid_size = _plasma->get_grid_size();
@@ -36,12 +36,12 @@ MacroParameterizationFullPIC::MacroParameterizationFullPIC(MacroParameterization
 	_ion_velocity 			= std::vector<double>(_grid_size);
 }
 
-void MacroParameterizationFullPIC::Initialize(const State & state)
+void MacroParameterizationFullPICtoMaxwell::Initialize(State & state)
 {
 	this->ComputeVariables(state);
 }
 
-void MacroParameterizationFullPIC::ComputeVariables(const State & state)
+void MacroParameterizationFullPICtoMaxwell::ComputeVariables(const State & state)
 {
 	std::vector<double> * ion_position 		= state.get_vector_of_position_arrays().front();
 	std::vector<double> * ion_velocity 		= state.get_vector_of_x_velocity_arrays().front();
@@ -129,7 +129,7 @@ void MacroParameterizationFullPIC::ComputeVariables(const State & state)
 }
 
 
-void MacroParameterizationFullPIC::Step(State & state)
+void MacroParameterizationFullPICtoMaxwell::Step(State & state)
 {	
 	for (int i=0; i< _plasma->get_macro_to_micro_dt_ratio(); i++)
 	{
@@ -138,7 +138,7 @@ void MacroParameterizationFullPIC::Step(State & state)
 	this->ComputeVariables(state);
 }
 
-void MacroParameterizationFullPIC::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
+void MacroParameterizationFullPICtoMaxwell::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
 {
 	double * x_array 	= _plasma->get_x_grid_ptr();
 	int * grid_size 	= _plasma->get_grid_size_ptr(); 
@@ -157,7 +157,7 @@ void MacroParameterizationFullPIC::SetupDiagnostics(std::vector<std::unique_ptr<
 }
 
 
-void MacroParameterizationFullPIC::WriteData(std::fstream & fout)
+void MacroParameterizationFullPICtoMaxwell::WriteData(std::fstream & fout)
 {
 	fout << "Density:" << std::endl;
 	for (double & density : _ion_density)

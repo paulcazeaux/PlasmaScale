@@ -4,7 +4,7 @@
 
 Plasma::Plasma( double length, double dt, int number_of_microsteps, int macro_to_micro_dt_ratio,
 				double epsilon, double la, double rho0, double E0, double w0, 
-				int number_of_populations, int grid_size, int macro_grid_size, int velocity_accumulation_interval, int max_mode,
+				int number_of_populations, int grid_size, int macro_grid_size, int velocity_accumulation_interval, int max_mode, int depth, int cutoff, double intensity,
 				double filter_parameter_1, double filter_parameter_2, int max_size_history, bool use_full_PIC, bool record_microsteps)
 				: 
 					_dt(dt),
@@ -12,7 +12,10 @@ Plasma::Plasma( double length, double dt, int number_of_microsteps, int macro_to
 					_macro_to_micro_dt_ratio(macro_to_micro_dt_ratio),
 					_record_microsteps(record_microsteps),
 					_use_full_PIC(use_full_PIC),
-					_length(length),
+                    _length(length),
+                    _depth(depth),
+                    _cutoff(cutoff),
+                    _intensity(intensity),
 					_epsilon(epsilon),
 					_rho0(rho0),
 					_E0(E0), 
@@ -24,6 +27,10 @@ Plasma::Plasma( double length, double dt, int number_of_microsteps, int macro_to
 					_max_mode(max_mode),
 					_velocity_accumulation_interval(velocity_accumulation_interval)
 {
+	if ((grid_size & (grid_size - 1)))
+	{
+		std::cout << "     =================     " << std::endl << "ALERT! ALERT! GRID SIZE SHOULD BE A POWER OF TWO FOR MODULO IMPLEMENTATION TO WORK" << std::endl << "     =================     " << std::endl;
+	}
 	_grid_size = std::unique_ptr<int>(new int(grid_size));
 	_macro_grid_size = std::unique_ptr<int>(new int(macro_grid_size));
 	_dx = _length / static_cast<double>(*_grid_size);
@@ -83,7 +90,10 @@ std::ostream& operator<<( std::ostream& os, const Plasma& plasma)
 	os << "---------------	"	<< std::endl;
 	os << "\t Grid size: \t"	<< *(plasma._grid_size);
 	os << "\t\t Grid length: \t"	<< plasma._x_grid->back();
-	os << "\t\t Highest mode: \t"	<< plasma._highest_mode 			<< std::endl;
+	os << "\t\t Highest mode: \t"	<< plasma._highest_mode;
+	os << "\t\t Wavelet tree depth: \t" << plasma._depth 			<< std::endl;
+    os << "\t\t Wavelet tree cutoff: \t" << plasma._cutoff 			<< std::endl;
+    os << "\t\t PURE denoising intensity: \t" << plasma._intensity  << std::endl;
 
 	os << std::endl;
 	os << "Plasma parameters:	"	<< std::endl;

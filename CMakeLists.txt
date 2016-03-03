@@ -17,7 +17,7 @@ enable_language(C)
 
 # Add first is for debugging second is for performance
 #SET(GCC_COMPILE_FLAGS "-std=c++11")
-SET(GCC_COMPILE_FLAGS "-std=c++11 -DNDEBUG -O3")
+SET(GCC_COMPILE_FLAGS "-std=c++11 -DNDEBUG -O3 -funroll-loops")
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS}")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/module")
@@ -34,7 +34,12 @@ find_package(XGRAFIX)
 include_directories(${FFTW_INCLUDES} ${XGRAFIX_INCLUDES})
 include(CMakeBackwardCompatibilityCXX)
 include(CheckLibraryExists)
-              
+           
+######################################################################################
+### activate test mode
+######################################################################################
+
+ENABLE_TESTING()   
 
 #####################################################################################
 ### Manage the build type
@@ -61,6 +66,8 @@ add_definitions(-DDEPRECATED_MESSAGES)
 ######################################################################################
 
 add_subdirectory(src)
+add_subdirectory(test)
+add_subdirectory(app)
 
 ######################################################################################
 

@@ -3,22 +3,22 @@ cmake_minimum_required(VERSION 2.6) # Pour éviter un warning au lancement de CM
 ### 1) Include the sources
 ######################################################################################
 
-
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src/)
-######################################################################################
-### 2) Define your target(s)
-######################################################################################
-
-SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/app)
-
-FILE( GLOB_RECURSE sourcefiles *.cpp )
-
-ADD_EXECUTABLE(PlasmaScale  ${sourcefiles})
-
 
 ######################################################################################
-### 3) Link the librairies for your executable
+### 3) Define your target(s): just the flow-shop lib here
 ######################################################################################
-TARGET_LINK_LIBRARIES( PlasmaScale ${XGRAFIX_LIBRARIES} ${FFTW_LIBRARIES})
+
+SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
+
+FILE( GLOB_RECURSE source_files *.cpp )
+
+ADD_LIBRARY(PSCALE STATIC ${source_files})
+
+
+######################################################################################
+### 3) Link the librairies for your library
+######################################################################################
+TARGET_LINK_LIBRARIES( PSCALE ${XGRAFIX_LIBRARIES} ${FFTW_LIBRARIES})
 
 ######################################################################################

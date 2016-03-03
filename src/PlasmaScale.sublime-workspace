@@ -268,42 +268,23 @@
 	"buffers":
 	[
 		{
-			"file": "tools/XGrafixInterface.h",
+			"file": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/ionwave.inp",
 			"settings":
 			{
-				"buffer_size": 639,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "PlasmaScale.h",
-			"settings":
-			{
-				"buffer_size": 651,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "tools/XGrafixInterface.cpp",
-			"settings":
-			{
-				"buffer_size": 799,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "PlasmaScale.cpp",
-			"settings":
-			{
-				"buffer_size": 506,
+				"buffer_size": 1088,
 				"line_ending": "Unix"
 			}
 		}
 	],
 	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
 	"command_palette":
 	{
 		"height": 67.0,
+		"last_filter": "",
 		"selected_items":
 		[
 			[
@@ -334,8 +315,15 @@
 		"side_bar_visible": false,
 		"status_bar_visible": false
 	},
+	"expanded_folders":
+	[
+	],
 	"file_history":
 	[
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/PlasmaScale.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/PlasmaScale.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/tools/XGrafixInterface.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/tools/XGrafixInterface.cpp",
 		"/Users/cazeaux/Dropbox/Postdocs/Plasma/xes1/src/plasma/Simulation.h",
 		"/Users/cazeaux/Dropbox/Postdocs/Plasma/xes1/src/plasma/Simulation.cpp",
 		"/Users/cazeaux/Dropbox/Postdocs/Plasma/xes1/src/fields/PlasmaFields.cpp",
@@ -459,15 +447,11 @@
 		"/pool/bempp/test_blas/build/CMakeFiles/test_sdot_returns_double.dir/CXX.includecache",
 		"/pool/bempp/test_blas/build/CMakeFiles/test_sdot_returns_float.dir/depend.internal",
 		"/pool/bempp/test_blas/build/CMakeFiles/test_zdotc.dir/depend.internal",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_zdotc_g77.dir/depend.internal",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_sdot_returns_double.dir/depend.internal",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_blas.dir/depend.internal",
-		"/pool/bempp/test_lapack/build/CMakeFiles/test_lapack.dir/depend.internal",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_zdotc_g77.dir/DependInfo.cmake"
+		"/pool/bempp/test_blas/build/CMakeFiles/test_zdotc_g77.dir/depend.internal"
 	],
 	"find":
 	{
-		"height": 35.0
+		"height": 23.0
 	},
 	"find_in_files":
 	{
@@ -660,97 +644,29 @@
 	"groups":
 	[
 		{
-			"selected": 1,
-			"sheets":
-			[
-				{
-					"buffer": 0,
-					"file": "tools/XGrafixInterface.h",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 639,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								529,
-								529
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C++/C++.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 3,
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "PlasmaScale.h",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 651,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								629,
-								629
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C++/C++.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
-				}
-			]
-		},
-		{
-			"sheets":
-			[
-			]
-		},
-		{
 			"selected": 0,
 			"sheets":
 			[
 				{
-					"buffer": 2,
-					"file": "tools/XGrafixInterface.cpp",
+					"buffer": 0,
+					"file": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/ionwave.inp",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 799,
+						"buffer_size": 1088,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								122,
-								122
+								685,
+								685
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/C++/C++.tmLanguage"
+							"syntax": "Packages/Text/Plain text.tmLanguage"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -758,41 +674,7 @@
 					},
 					"stack_index": 0,
 					"type": "text"
-				},
-				{
-					"buffer": 3,
-					"file": "PlasmaScale.cpp",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 506,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								151,
-								151
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C++/C++.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
 				}
-			]
-		},
-		{
-			"sheets":
-			[
 			]
 		}
 	],
@@ -813,36 +695,16 @@
 				0,
 				1,
 				1
-			],
-			[
-				1,
-				0,
-				2,
-				1
-			],
-			[
-				0,
-				1,
-				1,
-				2
-			],
-			[
-				1,
-				1,
-				2,
-				2
 			]
 		],
 		"cols":
 		[
 			0.0,
-			0.940089233981,
 			1.0
 		],
 		"rows":
 		[
 			0.0,
-			0.464431426107,
 			1.0
 		]
 	},
@@ -855,15 +717,17 @@
 	{
 		"height": 0.0
 	},
+	"pinned_build_system": "Packages/LaTeXTools/LaTeX.sublime-build",
 	"project": "PlasmaScale.sublime-project",
 	"replace":
 	{
-		"height": 64.0
+		"height": 42.0
 	},
 	"save_all_on_build": true,
 	"select_file":
 	{
 		"height": 0.0,
+		"last_filter": "",
 		"selected_items":
 		[
 			[
@@ -876,6 +740,7 @@
 	"select_project":
 	{
 		"height": 0.0,
+		"last_filter": "",
 		"selected_items":
 		[
 		],
@@ -884,11 +749,13 @@
 	"select_symbol":
 	{
 		"height": 0.0,
+		"last_filter": "",
 		"selected_items":
 		[
 		],
 		"width": 0.0
 	},
+	"selected_group": 0,
 	"settings":
 	{
 	},
@@ -896,7 +763,7 @@
 	"show_open_files": true,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 62.0,
+	"side_bar_width": 303.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

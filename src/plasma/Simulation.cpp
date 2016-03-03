@@ -45,6 +45,4 @@ void Simulation::InitWindows()
 	/*********************************************/
 	for (auto & it : _diagnostics)
 		it->InitWindow();
-
-	XGStart();
 }
