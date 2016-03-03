@@ -60,51 +60,33 @@ void State::Load(const MacroParameterization & parameterization)
 	}
 	/* Then we let the parameterization fill the particle arrays */
 	parameterization.Load(*this);
+	this->Weigh();
+	_fields->ComputeAndFilter();
 	for (auto & population : _populations)
 	{
 		population->ComputeAggregateParameters();
+		population->Prepare(*_fields);
 	}
-	this->Prepare();
-	this->Weigh();
-	_fields->ComputeAndFilter();
 }
 
-void State::Load(const MacroParameterization & parameterization, const bool toggle_half_step)
+void State::Prepare(const bool toggle_half_step)
 {
-	/* First we check that the size and parameters are right */
-	for (int index=0; index<_number_of_populations; index++)
-	{
-		if (!_populations.at(index)->CheckParameters(parameterization, index))
-		{
-            std::cout << "Attention ! Wrong parameters for the population. Creating a new one, this could break diagnostics pointers !!" << std::endl;
-			_populations.at(index).reset(new PopulationOfParticles(parameterization, index, _iteration));
-		}
-	}
-	/* Then we let the parameterization fill the particle arrays */
-	parameterization.Load(*this);
 	this->Weigh();
 	_fields->ComputeAndFilter();
 	for (auto & population : _populations)
 	{
 		population->ComputeAggregateParameters();
+		population->Prepare(*_fields, toggle_half_step);
 	}
-	if (toggle_half_step)
-	{
-		*_iteration = -1;	// Forcing the recomputation of the acceleration field
-		for (auto & population : _populations)
-		{
-			population->Prepare(*_fields);
-		}
-		*_iteration = 0;
-	}
-	else
-	{
-		_fields->ComputeAndFilter();
-		*_iteration = -1;	// Forcing the recomputation of the acceleration field
-		_populations.front()->Prepare(*_fields, false);
-		_populations.back()->Prepare(*_fields, true);
-		*_iteration = 0;
-	}
+}
+
+void State::Prepare(const int population_index, const bool toggle_half_step)
+{
+	this->Weigh();
+	_fields->ComputeAndFilter();
+	for (auto & population : _populations)
+		population->ComputeAggregateParameters();
+	_populations.at(population_index)->Prepare(*_fields, toggle_half_step);
 }
 
 void State::Step()
@@ -302,6 +284,15 @@ void 	State::ComputeVelocityProfile()
 	for (auto & population : _populations)
 	{
 		population->ComputeVelocityProfile();
+	}
+}
+
+void 	State::ComputeVelocityProfile(std::vector<std::vector<double> >& profile_by_population)
+{
+	profile_by_population.resize(_number_of_populations);
+	for (int i=0; i<_number_of_populations; i++)
+	{
+		_populations.at(i)->ComputeVelocityProfile(profile_by_population.at(i));
 	}
 }
 

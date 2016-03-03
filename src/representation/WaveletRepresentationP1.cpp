@@ -54,11 +54,13 @@ void WaveletRepresentationP1::Weigh(int size,
 	for (int i=0; i<size; i++)
 	{
 		double vel = velocity[i];
-		double pos = position[i] + delay*vel;
+		double pos = position[i] +  delay*vel;
 
 		int xbin = _plasma->find_index_on_grid(pos);
 		double cellpos = _plasma->find_position_in_cell(pos);
-		vel += (delay+.5)*Tools::EvaluateP1Function(accfield, xbin, cellpos);
+
+		vel += delay*Tools::EvaluateP1Function(accfield, xbin, cellpos);
+
 
 		int vbin = static_cast<int>((vmin+vel)*idv)&(_number_of_bins-1); // Periodization in v
 

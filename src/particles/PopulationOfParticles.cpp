@@ -142,7 +142,7 @@ void PopulationOfParticles::Accelerate(const PlasmaFields& fields, double factor
 			}
 
 			sum_v 			+= (*it_weights) * vnew;
-			sum_v_square 	+= std::pow(*it_weights, 2.0)*vold*vnew;
+			sum_v_square 	+= (*it_weights)*vold*vnew;
 			*(it_vel_x++) = vnew;
 			it_weights++;
 		}
@@ -399,5 +399,19 @@ void PopulationOfParticles::ComputeVelocityProfile()
 	/* Reset the accumulation counter */
 		_count = 1;
 	}
+}
 
+void PopulationOfParticles::ComputeVelocityProfile(std::vector<double> & velocity_profile)
+{
+	velocity_profile.resize(*_number_of_bins);
+	std::fill(velocity_profile.begin(), velocity_profile.end(), 0.);
+	auto it_weights = _weights.begin();
+	for (auto & v : _velocity_x)
+	{
+		int v_index = static_cast<int>(std::floor((v-_bin_start)/_bin_width));
+		if(v_index>=0 && v_index<*_number_of_bins)
+		{
+			velocity_profile.at(v_index) += _unit_mass * (*it_weights++);
+		}
+	}
 }

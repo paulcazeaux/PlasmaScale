@@ -98,6 +98,7 @@ class MacroParameterizationWavelets : public MacroParameterization
 
 		void CalculateTotalMoment(const State & state);
 		void CalculateIonMoment(const State & state, double & ion_particle_moment, double & ion_distr_moment);
+		void CalculateElectronMoment(const State & state, double & electron_particle_moment);
 		void RestrictAndPushback(const State & state, const double delay);
 		void Lift();
 
