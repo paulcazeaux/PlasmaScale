@@ -10,7 +10,7 @@ void Tools::DisplayTitle()
 	//printf("University of California - Berkeley\n");
 }//
 
-void Tools::AssembleICDF(const std::vector<double>& histogram, std::vector<double>& icdf, double& density)
+void Tools::AssembleICDF(std::vector<double>& histogram, std::vector<double>& icdf, double& density)
 {
 	int nbins = histogram.size();
 	static std::vector<double> icdf_reverse;
@@ -18,6 +18,14 @@ void Tools::AssembleICDF(const std::vector<double>& histogram, std::vector<doubl
 	icdf.front() = 0.;
 	std::partial_sum(histogram.begin(), histogram.end(), icdf.begin()+1);
 	density = icdf.back();
+
+	if (density <= 0)
+	{
+		/* Give up reconstruction */
+		std::fill(icdf.begin(), icdf.end(), 0.);
+		density = 0;
+		return;
+	}
 
 	/* First, we take care of negative values and overshots */
 	int i0 = 0, i1 = nbins, imax = 0;
@@ -39,12 +47,20 @@ void Tools::AssembleICDF(const std::vector<double>& histogram, std::vector<doubl
 		{
 			if (ind1 > 1)
 				ind1--;
-			else
+			else if (ind2 < imax)
 			{
 				S += icdf.at(ind2);
 				ind2++;
 				ind1 = i0-1;
 			}
+			else // There is something wrong with the distribution. Give up momentum conservation
+       		{
+				ind1 = i0-1;
+       			ind2 = i0+1;
+       			df = (icdf.at(ind2) - icdf.at(ind1))/(ind2-1-ind1);
+       			break;
+       		}
+
 			df = 2.*S/static_cast<double>((ind2-ind1)*(ind2-ind1-1));
 		}
 		for (int j=0; j<ind1+1; j++)
@@ -52,6 +68,7 @@ void Tools::AssembleICDF(const std::vector<double>& histogram, std::vector<doubl
 		for (int j = ind1+1; j<ind2; j++)
 			icdf.at(j) = (j-ind1)*df;
 	}
+
 	if (i1 < nbins)
 	{
 		int ind1 = i1 - 1;
@@ -64,11 +81,18 @@ void Tools::AssembleICDF(const std::vector<double>& histogram, std::vector<doubl
 		{
 			if (ind2 < nbins+1)
 				ind2++;
-			else
+			else if (ind1 > imax)
 			{
 				S += icdf.at(ind1);
 				ind1--;
 				ind2 = i1+1;
+			}
+			else
+			{
+				ind1 = i1-1;
+				ind2 = i1+1;
+				df = (icdf.at(ind2) - icdf.at(ind1))/(ind2-1-ind1);
+				break;
 			}
 			df = 2.*((nbins-ind1-1)*density-S)/static_cast<double>((ind2-ind1)*(ind2-ind1-1));
 		}
@@ -77,6 +101,7 @@ void Tools::AssembleICDF(const std::vector<double>& histogram, std::vector<doubl
 		for (int j=ind2; j<nbins; j++)
 			icdf.at(j) = density;
 	}
+
 
 	/* Ensure that the ICDF is a monotonic function */
 	double lowval=0.;
@@ -105,9 +130,18 @@ void Tools::AssembleICDF(const std::vector<double>& histogram, std::vector<doubl
             double df = 2.*(S - (i - ind1 - 1)*icdf.at(ind1))/static_cast<double>((i-ind1)*(i-ind1-1));
             while (df<0 || df*(i-1-ind1) > icdf.at(i) - icdf.at(ind1))
             {
-            	S += icdf.at(i);
-            	i++;
-           		df = 2.*(S - (i - ind1 - 1)*icdf.at(ind1))/static_cast<double>((i-ind1)*(i-ind1-1));
+           		if (i<imax)
+           		{
+	            	S += icdf.at(i);
+            		i++;
+           			df = 2.*(S - (i - ind1 - 1)*icdf.at(ind1))/static_cast<double>((i-ind1)*(i-ind1-1));
+           		}
+           		else // There is something wrong with the distribution. Give up momentum conservation
+           		{
+           			i = ind2;
+           			df = (icdf.at(i) - icdf.at(ind1))/(i-1-ind1);
+           			break;
+           		}
 
             }
             for (int j=ind1+1; j<i; j++)
@@ -142,15 +176,28 @@ void Tools::AssembleICDF(const std::vector<double>& histogram, std::vector<doubl
 			double df = 2/((ind1-i)*(ind1-i-1))*((ind1 - i -1) * icdf.at(ind1) - S);
 			while (df < 0 || df*(ind1-i-1) > icdf.at(ind1) - icdf.at(i))
 			{
-				S += icdf.at(i);
-				i--;
-				df = 2/((ind1-i)*(ind1-i-1))*((ind1 - i -1) * icdf.at(ind1) - S);
+				if (i>imax)
+				{
+					S += icdf.at(i);
+					i--;
+					df = 2/((ind1-i)*(ind1-i-1))*((ind1 - i -1) * icdf.at(ind1) - S);
+				}
+				else // There is something wrong with the distribution. Give up momentum conservation
+				{
+           			i = ind2;
+           			df = (icdf.at(ind1) - icdf.at(i))/(ind1-i-1);
+           			break;
+				}
 			}
+            for (int j=ind1-1; j>i; j--)
+               icdf.at(j) = icdf.at(ind1) + df*(j-ind1);
 		}
 
 		highval = icdf.at(i);
 		i--;
 	}
+	for (int i=0; i<nbins; i++)
+		histogram.at(i) = icdf.at(i+1) - icdf.at(i);
 }
 
 

@@ -115,13 +115,13 @@ void MacroParameterizationWavelets::Load(State & state) const
 	{
 		std::vector<double>::iterator position 		= positions.at(population_index)->begin();
 		std::vector<double>::iterator velocity_x 	= x_velocities.at(population_index)->begin();
-		std::vector<double>::iterator velocity_y 	= y_velocities.at(population_index)->begin();
 		std::vector<double>::iterator weight 		= weights.at(population_index)->begin();
 		int population_size = this->get_population_size(population_index);
 		_distributions.at(population_index)->Load(population_size, position, velocity_x, weight);
 
 		if (_cyclotronic_rotation_parameters.at(population_index) != 0.) 
 		{
+			std::vector<double>::iterator velocity_y 	= y_velocities.at(population_index)->begin();
 			for (int i=0; i < population_size; i++) 
 			{
 				double v = *(velocity_x+i);
@@ -458,6 +458,7 @@ void MacroParameterizationWavelets::Lift()
 
 void MacroParameterizationWavelets::Step(State & state)
 {
+
 	static int count_steps = 0;
 	timeunit field_time(0), PIC_time(0), algebra_time(0), load_time(0), lift_time(0), pushback_time(0), cutoff_time(0);
 	std::chrono::high_resolution_clock::time_point start, stop;
