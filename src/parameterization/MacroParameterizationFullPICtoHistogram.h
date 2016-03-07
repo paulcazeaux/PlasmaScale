@@ -68,8 +68,6 @@ class MacroParameterizationFullPICtoHistogram : public MacroParameterization
 
 		virtual void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics);
 		virtual void WriteData(std::fstream & fout);
-
-		virtual void ResetElectrons(State & state);
 };
 
 #endif
