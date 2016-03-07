@@ -29,7 +29,7 @@ echo "==========================================================================
 echo "                                     EXECUTION                                       "
 echo "====================================================================================="
 
-InputFile=/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/ionwave.inp
+InputFile=/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/plasmaexpansion.inp
 
 ExportFile=/Users/cazeaux/Desktop/Output/NewTest/Size_4/EFPI_Coframe_x512_150
 rm ${ExportFile}.dmp ${ExportFile}.out
