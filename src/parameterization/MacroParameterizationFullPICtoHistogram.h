@@ -40,6 +40,7 @@ class MacroParameterizationFullPICtoHistogram : public MacroParameterization
 		int 										_min_depth;
 		int 										_max_depth;
 		double 										_ion_vmax;
+		double										_electron_thermal_vel;
 
 		/* Spatial quantities */
 
@@ -48,8 +49,8 @@ class MacroParameterizationFullPICtoHistogram : public MacroParameterization
 	public:
 		/* constructor  ========================================================================= */
 		MacroParameterizationFullPICtoHistogram() {}
-		MacroParameterizationFullPICtoHistogram(MacroParameterization & parameterization);
-		MacroParameterizationFullPICtoHistogram(MacroParameterization & parameterization, double ion_vmax);
+
+		MacroParameterizationFullPICtoHistogram(MacroParameterization & parameterization, double electron_thermal_vel, double ion_vmax);
 		virtual ~MacroParameterizationFullPICtoHistogram() {}
 
 		/* move constuctor and assignment ======================================================= */

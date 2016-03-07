@@ -60,13 +60,33 @@ void State::Load(const MacroParameterization & parameterization)
 	}
 	/* Then we let the parameterization fill the particle arrays */
 	parameterization.Load(*this);
+	this->Weigh();
+	_fields->ComputeAndFilter();
 	for (auto & population : _populations)
 	{
 		population->ComputeAggregateParameters();
+		population->Prepare(*_fields);
 	}
-	this->Prepare();
+}
+
+void State::Prepare(const bool toggle_half_step)
+{
 	this->Weigh();
 	_fields->ComputeAndFilter();
+	for (auto & population : _populations)
+	{
+		population->ComputeAggregateParameters();
+		population->Prepare(*_fields, toggle_half_step);
+	}
+}
+
+void State::Prepare(const int population_index, const bool toggle_half_step)
+{
+	this->Weigh();
+	_fields->ComputeAndFilter();
+	for (auto & population : _populations)
+		population->ComputeAggregateParameters();
+	_populations.at(population_index)->Prepare(*_fields, toggle_half_step);
 }
 
 void State::Step()
@@ -95,7 +115,7 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 	std::vector<std::vector<double> * > positions 		= this->get_vector_of_position_arrays();
 	std::vector<std::vector<double> * > x_velocities 	= this->get_vector_of_x_velocity_arrays();
 	std::vector<std::vector<double> * > y_velocities 	= this->get_vector_of_y_velocity_arrays();
-	std::vector<int> magnetizations					= this->get_vector_of_magnetizations();
+	std::vector<bool> magnetizations					= this->get_vector_of_magnetizations();
 	std::vector<int *> sizes 							= this->get_vector_of_sizes();
 
 	/*  set up  windows for the phase space distribution of particles.  */
@@ -106,7 +126,7 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 				 false, false, 0.0, length, -3.0, 3.0, std::string("closed")));
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		diagnostics.back()->AddData(positions[i], x_velocities[i], sizes[i], i);
+		diagnostics.back()->AddData(positions.at(i), x_velocities.at(i), sizes.at(i), i);
 	}
 
 
@@ -114,11 +134,11 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 
 	for (int i = 0; i<_number_of_populations; i++)
 	{
-		if (magnetizations[i])
+		if (magnetizations.at(i))
 		{
 			std::sprintf(buffer, "Vy vs Vx species %d", i+1);
 			diagnostics.emplace_back(new ScatterDiagnostic("linlin", "Velocity", buffer, 410, 335));
-			diagnostics.back()->AddData(x_velocities[i], y_velocities[i], sizes[i], i);
+			diagnostics.back()->AddData(x_velocities.at(i), y_velocities.at(i), sizes.at(i), i);
 		}
 	}
 
@@ -133,7 +153,7 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 		{
 			std::sprintf(buffer, "Species %d f(Vx)", i+1);
 			diagnostics.emplace_back(new CurveDiagnostic("linlin", "Velocity", buffer, 820, 0));
-			diagnostics.back()->AddData(mid_bin_arrays[i], velocity_profiles[i], number_of_bins[i], i);
+			diagnostics.back()->AddData(mid_bin_arrays.at(i), velocity_profiles.at(i), number_of_bins.at(i), i);
 		}
 
 		/********************************************/
@@ -141,7 +161,7 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 		diagnostics.emplace_back(new CurveDiagnostic("linlin","Velocity","f(v) ALL", 820, 0));
 		for (int i = 0; i<_number_of_populations; i++)
 		{
-			diagnostics.back()->AddData(mid_bin_arrays[i], velocity_profiles[i], number_of_bins[i], i);
+			diagnostics.back()->AddData(mid_bin_arrays.at(i), velocity_profiles.at(i), number_of_bins.at(i), i);
 		}
 	}
 
@@ -171,7 +191,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_position_arrays() const
 	std::vector<std::vector<double> * > positions = std::vector<std::vector<double> * > (_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		positions[i] = & (_populations.at(i)->_position);
+		positions.at(i) = & (_populations.at(i)->_position);
 	}
 	return positions;
 }
@@ -181,7 +201,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_x_velocity_arrays() con
 	std::vector<std::vector<double> * > velocities = std::vector<std::vector<double> * > (_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		velocities[i] = & (_populations.at(i)->_velocity_x);
+		velocities.at(i) = & (_populations.at(i)->_velocity_x);
 	}
 	return velocities;
 }
@@ -191,7 +211,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_y_velocity_arrays() con
 	std::vector<std::vector<double> * > velocities = std::vector<std::vector<double> * > (_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		velocities[i] = & (_populations.at(i)->_velocity_y);
+		velocities.at(i) = & (_populations.at(i)->_velocity_y);
 	}
 	return velocities;
 }
@@ -201,27 +221,27 @@ std::vector<std::vector<double> * >	State::get_vector_of_weight_arrays() const
 	std::vector<std::vector<double> * > weights = std::vector<std::vector<double> * > (_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		weights[i] = & (_populations.at(i)->_weights);
+		weights.at(i) = & (_populations.at(i)->_weights);
 	}
 	return weights;
 }
 
-std::vector<int> State::get_vector_of_magnetizations() const
+std::vector<bool> State::get_vector_of_magnetizations() const
 {
-	std::vector<int> magnetizations = std::vector<int>(_populations.size());
+	std::vector<bool> magnetizations = std::vector<bool>(_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		magnetizations[i] = _populations.at(i)->_magnetized;
+		magnetizations.at(i) = _populations.at(i)->_magnetized;
 	}
 	return magnetizations;
 }
 
 std::vector<int *>	State::get_vector_of_sizes() const
 {
-	std::vector<int *> sizes = std::vector<int*>(_number_of_populations);
+	std::vector<int *> sizes = std::vector<int *>(_number_of_populations);
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		sizes[i] = _populations.at(i)->_population_size.get();
+		sizes.at(i) = (_populations.at(i)->_population_size).get();
 	}
 	return sizes;
 }
@@ -231,7 +251,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_bin_arrays() const
 	std::vector<std::vector<double> * > bin_arrays = std::vector<std::vector<double> * > (_number_of_populations);
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		bin_arrays[i] = (_populations.at(i)->_mid_bin_array).get();
+		bin_arrays.at(i) = (_populations.at(i)->_mid_bin_array).get();
 	}
 	return bin_arrays;
 }
@@ -241,7 +261,7 @@ std::vector<std::vector<double> * >	State::get_vector_of_velocity_profiles() con
 	std::vector<std::vector<double> * > velocity_profiles = std::vector<std::vector<double> * > (_number_of_populations);
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		velocity_profiles[i] = (_populations.at(i)->_accumulated_velocity_profile).get();
+		velocity_profiles.at(i) = (_populations.at(i)->_accumulated_velocity_profile).get();
 	}
 	return velocity_profiles;
 }
@@ -251,7 +271,7 @@ std::vector<int *>	State::get_vector_of_number_of_bins() const
 	std::vector<int *> number_of_bins = std::vector<int *>(_number_of_populations);
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		number_of_bins[i] = _populations.at(i)->_number_of_bins.get();
+		number_of_bins.at(i) = (_populations.at(i)->_number_of_bins).get();
 	}
 	return number_of_bins;
 }
@@ -264,6 +284,15 @@ void 	State::ComputeVelocityProfile()
 	for (auto & population : _populations)
 	{
 		population->ComputeVelocityProfile();
+	}
+}
+
+void 	State::ComputeVelocityProfile(std::vector<std::vector<double> >& profile_by_population)
+{
+	profile_by_population.resize(_number_of_populations);
+	for (int i=0; i<_number_of_populations; i++)
+	{
+		_populations.at(i)->ComputeVelocityProfile(profile_by_population.at(i));
 	}
 }
 

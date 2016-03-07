@@ -10,7 +10,7 @@ void Tools::DisplayTitle()
 	//printf("University of California - Berkeley\n");
 }//
 
-void Tools::AssembleICDF(const std::vector<double>& histogram, std::vector<double>& icdf, double& density)
+void Tools::AssembleICDF(std::vector<double>& histogram, std::vector<double>& icdf, double& density)
 {
 	int nbins = histogram.size();
 	static std::vector<double> icdf_reverse;
@@ -19,83 +19,185 @@ void Tools::AssembleICDF(const std::vector<double>& histogram, std::vector<doubl
 	std::partial_sum(histogram.begin(), histogram.end(), icdf.begin()+1);
 	density = icdf.back();
 
-	/* Ensure symmetry of the operation */
-	icdf_reverse.resize(nbins+1);
-	std::copy(icdf.rbegin(), icdf.rend(), icdf_reverse.begin());
+	if (density <= 0)
+	{
+		/* Give up reconstruction */
+		std::fill(icdf.begin(), icdf.end(), 0.);
+		density = 0;
+		return;
+	}
+
+	/* First, we take care of negative values and overshots */
+	int i0 = 0, i1 = nbins, imax = 0;
+	for (int i=1; i<nbins; i++)
+	{
+		if (icdf.at(i) < 0) i0 = i;
+		if (icdf.at(i) > density && i1 > i) i1 = i;
+		if (icdf.at(i) > .5*density && icdf.at(i-1) < .5*density) imax = i;
+	}
+	if (i0 > 0)
+	{
+		int ind1 = i0 - 1;
+		int ind2 = i0 + 1;
+		double S = 0;
+		for (int j = 1; j < ind2; j++) 
+			S += icdf.at(j);
+		double df = 2.*S/static_cast<double>((ind2-ind1)*(ind2-ind1-1));
+		while (df<0 || (ind2-1-ind1)*df > icdf.at(ind2))
+		{
+			if (ind1 > 1)
+				ind1--;
+			else if (ind2 < imax)
+			{
+				S += icdf.at(ind2);
+				ind2++;
+				ind1 = i0-1;
+			}
+			else // There is something wrong with the distribution. Give up momentum conservation
+       		{
+				ind1 = i0-1;
+       			ind2 = i0+1;
+       			df = (icdf.at(ind2) - icdf.at(ind1))/(ind2-1-ind1);
+       			break;
+       		}
+
+			df = 2.*S/static_cast<double>((ind2-ind1)*(ind2-ind1-1));
+		}
+		for (int j=0; j<ind1+1; j++)
+			icdf.at(j) = 0;
+		for (int j = ind1+1; j<ind2; j++)
+			icdf.at(j) = (j-ind1)*df;
+	}
+
+	if (i1 < nbins)
+	{
+		int ind1 = i1 - 1;
+		int ind2 = i1 + 1;
+		double S = 0;
+		for (int j = ind1+1; j < nbins; j++) 
+			S += icdf.at(j);
+		double df = 2.*((nbins-ind1-1)*density-S)/static_cast<double>((ind2-ind1)*(ind2-ind1-1));
+		while (df<0 || (ind2-1-ind1)*df > density - icdf.at(ind1))
+		{
+			if (ind2 < nbins+1)
+				ind2++;
+			else if (ind1 > imax)
+			{
+				S += icdf.at(ind1);
+				ind1--;
+				ind2 = i1+1;
+			}
+			else
+			{
+				ind1 = i1-1;
+				ind2 = i1+1;
+				df = (icdf.at(ind2) - icdf.at(ind1))/(ind2-1-ind1);
+				break;
+			}
+			df = 2.*((nbins-ind1-1)*density-S)/static_cast<double>((ind2-ind1)*(ind2-ind1-1));
+		}
+		for (int j = ind1+1; j<ind2; j++)
+			icdf.at(j) = density + (j-ind2)*df;
+		for (int j=ind2; j<nbins; j++)
+			icdf.at(j) = density;
+	}
 
 
 	/* Ensure that the ICDF is a monotonic function */
-	double oldval=0.;
-	for (int i=1; i<=nbins; i++)
+	double lowval=0.;
+	int i = 1;
+	while (i < imax)
 	{
-		if (icdf.at(i) < oldval)
+		if (lowval > icdf.at(i))
 		{
-			int ind1 = i-1, ind2 = i;
-			double high = oldval, low = icdf.at(i);
-			if (high>density) high=density;
-
 			/* The vector icdf is monotonic up to index i-1 */
-            if (ind2<nbins)
-                while (icdf.at(++ind2) < high)
-                {
-                    if (icdf.at(ind2) < low)
-                        low = icdf.at(ind2);
-                }
-			if (low<0.) low=0.;
-            if (ind1>0)
-                while (icdf.at(--ind1) > low) {}
-			/* double val1 = icdf.at(ind1), dn = (icdf.at(ind2)-val1)/static_cast<double>(ind2-ind1);
-			for (int j=1; j<=ind2-ind1; j++)
-			{
-				icdf.at(ind1+j) = val1 + static_cast<double>(j)*dn;
-			}*/
+			int ind1 = i-1, ind2 = i+1;
+			double minval = icdf.at(i);
+
+            while (lowval > icdf.at(ind2))
+            {
+            	ind2++;
+                if (minval > icdf.at(ind2)) 
+               	{
+               		minval = icdf.at(ind2);
+               		i = ind2;
+               	}
+            }
+            while (minval < icdf.at(ind1)) ind1--;
+            double S = 0;
+            for (int j = ind1+1; j<i; j++)
+            	S += icdf.at(j);
+            double df = 2.*(S - (i - ind1 - 1)*icdf.at(ind1))/static_cast<double>((i-ind1)*(i-ind1-1));
+            while (df<0 || df*(i-1-ind1) > icdf.at(i) - icdf.at(ind1))
+            {
+           		if (i<imax)
+           		{
+	            	S += icdf.at(i);
+            		i++;
+           			df = 2.*(S - (i - ind1 - 1)*icdf.at(ind1))/static_cast<double>((i-ind1)*(i-ind1-1));
+           		}
+           		else // There is something wrong with the distribution. Give up momentum conservation
+           		{
+           			i = ind2;
+           			df = (icdf.at(i) - icdf.at(ind1))/(i-1-ind1);
+           			break;
+           		}
+
+            }
             for (int j=ind1+1; j<i; j++)
-                icdf.at(j) = low;
+               icdf.at(j) = icdf.at(ind1) + df*(j-ind1);
 		}
-		oldval = icdf.at(i);
+		lowval = icdf.at(i);
+		i++;
 	}
 
-	/* Same operation in reverse for the reverse ICDF */
-
-				/* Ensure that the ICDF is a monotonic function */
-	oldval=0.;
-	for (int i=1; i<=nbins; i++)
+	double highval = density;
+	i=nbins-1;
+	while (i>imax)
 	{
-		if (icdf_reverse.at(i) > oldval)
-		{
-			int ind1 = i-1, ind2 = i;
-			double low = oldval, high = icdf_reverse.at(i);
-			if (low<0.) low=0.;
-
-			/* The vector icdf_reverse is monotonic up to index i-1 */
-            if (ind2<nbins)
-                while (icdf_reverse.at(++ind2) > low)
-                {
-                    if (icdf_reverse.at(ind2) > high)
-                        high = icdf_reverse.at(ind2);
-                }
-			if (high>density) high=density;
-            if (ind1>0)
-                while (icdf_reverse.at(--ind1) < high) {}
-			/* double val1 = icdf_reverse.at(ind1), dn = (icdf_reverse.at(ind2)-val1)/static_cast<double>(ind2-ind1);
-			for (int j=1; j<=ind2-ind1; j++)
+		if (highval < icdf.at(i))
+		{        
+			int ind1 = i+1, ind2 = i-1;
+			double maxval = icdf.at(i); 
+			while (highval < icdf.at(ind2))
 			{
-				icdf_reverse.at(ind1+j) = val1 + static_cast<double>(j)*dn;
-			}*/
-            for (int j=ind1+1; j<i; j++)
-                icdf_reverse.at(j) = high;
+				ind2--;
+				if (maxval < icdf.at(ind2))
+				{
+					maxval = icdf.at(ind2);
+					i = ind2;
+				}
+			}
+			while (maxval > icdf.at(ind1)) ind1++;  
+
+			double S = 0;
+			for (int j=i+1; j<ind1-1; j++)
+				S += icdf.at(j);
+			double df = 2/((ind1-i)*(ind1-i-1))*((ind1 - i -1) * icdf.at(ind1) - S);
+			while (df < 0 || df*(ind1-i-1) > icdf.at(ind1) - icdf.at(i))
+			{
+				if (i>imax)
+				{
+					S += icdf.at(i);
+					i--;
+					df = 2/((ind1-i)*(ind1-i-1))*((ind1 - i -1) * icdf.at(ind1) - S);
+				}
+				else // There is something wrong with the distribution. Give up momentum conservation
+				{
+           			i = ind2;
+           			df = (icdf.at(ind1) - icdf.at(i))/(ind1-i-1);
+           			break;
+				}
+			}
+            for (int j=ind1-1; j>i; j--)
+               icdf.at(j) = icdf.at(ind1) + df*(j-ind1);
 		}
-		oldval = icdf_reverse.at(i);
+
+		highval = icdf.at(i);
+		i--;
 	}
-
-	/* Finish by averaging the two results */
-	auto it_icdf_reverse = icdf_reverse.rbegin();
-	for (auto & val : icdf)
-	{
-		val = .5 * (val + *it_icdf_reverse++);
-	}
-
-
+	for (int i=0; i<nbins; i++)
+		histogram.at(i) = icdf.at(i+1) - icdf.at(i);
 }
 
 

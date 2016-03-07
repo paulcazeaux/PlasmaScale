@@ -2,8 +2,12 @@
 #define WAVELET2S_H
 #include <vector>
 #include <complex>
+#include <chrono>
 using namespace std;
 
+/* Declarations */
+
+typedef chrono::microseconds timeunit;
 
 
 // 1D Functions

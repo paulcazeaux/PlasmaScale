@@ -81,7 +81,7 @@ class Tools
 			return covar/var;
 		}
 
-		static void AssembleICDF(const std::vector<double>& histogram, std::vector<double>& icdf, double& density);
+		static void AssembleICDF(std::vector<double>& histogram, std::vector<double>& icdf, double& density);
 		static double ComputePoissonEmpiricalScaling(const std::vector<std::vector<double> >& histogram, const int& patch_size = 8);
 };
 

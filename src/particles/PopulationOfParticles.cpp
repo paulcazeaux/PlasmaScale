@@ -138,7 +138,7 @@ void PopulationOfParticles::Accelerate(const PlasmaFields& fields, double factor
 			}
 
 			sum_v 			+= (*it_weights) * vnew;
-			sum_v_square 	+= std::pow(*it_weights, 2.0)*vold*vnew;
+			sum_v_square 	+= (*it_weights)*vold*vnew;
 			*(it_vel_x++) = vnew;
 			it_weights++;
 		}
@@ -226,6 +226,37 @@ void PopulationOfParticles::Prepare(const PlasmaFields &fields)
 
 	/* Prepare the particles velocities by taking one-half step back with the acceleration induced by the fields */
 	this->Accelerate(fields, -0.5);
+	this->ComputeVelocityProfile();
+}
+
+void PopulationOfParticles::Prepare(const PlasmaFields &fields, const bool toggle_half_step)
+{
+	static double dt = _plasma->get_dt();
+ 
+ 	/* Rescaling */
+	if (!_magnetized)
+	{
+		for (auto & it : _velocity_x) 
+	  		it *= dt;
+	}
+	else
+	{
+		double cos_cyclotron = 1.0 /std::sqrt(1.0 + std::pow(_cyclotronic_rotation_parameter, 2.0));
+		double sin_cyclotron = cos_cyclotron * _cyclotronic_rotation_parameter;
+
+		std::vector<double>::iterator it_vel_x = _velocity_x.begin();
+		std::vector<double>::iterator it_vel_y = _velocity_y.begin();
+		for (; it_vel_x!= _velocity_x.end(); it_vel_x++, it_vel_y++) 
+		{
+			double vx = *it_vel_x, vy = *it_vel_y;
+			*it_vel_x =  dt * ( sin_cyclotron * vy + cos_cyclotron * vx);
+			*it_vel_y =  dt * ( cos_cyclotron * vy - sin_cyclotron * vx);
+		}
+	}
+	/* Prepare the particles velocities by taking one-half step back with the acceleration induced by the fields */
+	if (toggle_half_step)
+		this->Accelerate(fields, -0.5);
+
 	this->ComputeVelocityProfile();
 }
 
@@ -364,5 +395,19 @@ void PopulationOfParticles::ComputeVelocityProfile()
 	/* Reset the accumulation counter */
 		_count = 1;
 	}
+}
 
+void PopulationOfParticles::ComputeVelocityProfile(std::vector<double> & velocity_profile)
+{
+	velocity_profile.resize(*_number_of_bins);
+	std::fill(velocity_profile.begin(), velocity_profile.end(), 0.);
+	auto it_weights = _weights.begin();
+	for (auto & v : _velocity_x)
+	{
+		int v_index = static_cast<int>(std::floor((v-_bin_start)/_bin_width));
+		if(v_index>=0 && v_index<*_number_of_bins)
+		{
+			velocity_profile.at(v_index) += _unit_mass * (*it_weights++);
+		}
+	}
 }

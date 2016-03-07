@@ -21,7 +21,6 @@ int main(int argc, char **argv)
 
 	XGInit(argc, argv, PlasmaDevice.get_simulation_time_ptr());
 	PlasmaDevice.InitWindows();
-
 	XGStart();
 	return 0;
 }

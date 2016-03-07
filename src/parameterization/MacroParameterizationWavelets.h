@@ -31,9 +31,11 @@
 #include <cmath>
 
 #include <ctime>
+#include <chrono>
 
 /* Declarations */
 
+typedef std::chrono::microseconds timeunit;
 typedef WaveletRepresentationP1 ActiveWaveletRepresentation;
 typedef MaxwellianRepresentationP1 ActiveMaxwellianRepresentation;
 
@@ -57,7 +59,7 @@ class MacroParameterizationWavelets : public MacroParameterization
 		std::vector<ActiveWaveletRepresentation> 	_stack_ion_distribution;
 		int 										_stack_index;
 
-		/* Value for the current step */
+		/* Initial value for the current step, used for the Runge-Kutta integration */
 		ActiveWaveletRepresentation					_current_step_ion_distribution;
 
 		/* Record arrays for the datapoints from the microsolver */
@@ -67,6 +69,7 @@ class MacroParameterizationWavelets : public MacroParameterization
 		/* Parameters for the determination of the passive variables */
 		double										_electron_thermal_vel;
 		double 										_debye_scaling;
+		double										_total_moment;
 
 		/* Arrays for the diagnostics */
 		std::vector<double> 						_ion_density;
@@ -79,7 +82,6 @@ class MacroParameterizationWavelets : public MacroParameterization
 	public:
 		/* constructor  ========================================================================= */
 		MacroParameterizationWavelets() {}
-		MacroParameterizationWavelets(MacroParameterization & parameterization, double electron_thermal_vel);
 		MacroParameterizationWavelets(MacroParameterization & parameterization, double electron_thermal_vel, double ion_vmax);
 		virtual ~MacroParameterizationWavelets() {}
 
@@ -94,15 +96,16 @@ class MacroParameterizationWavelets : public MacroParameterization
 		virtual void Load(State & state) const;
 		virtual void SetAccField(State & state);
 
+		void CalculateTotalMoment(const State & state);
+		void CalculateIonMoment(const State & state, double & ion_particle_moment, double & ion_distr_moment);
+		void CalculateElectronMoment(const State & state, double & electron_particle_moment);
 		void RestrictAndPushback(const State & state, const double delay);
-		void Extrapolate(const double ratio);
 		void Lift();
 
 		virtual void Step(State & state);
 		
 		virtual void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics);
 		virtual void WriteData(std::fstream & fout);
-		
 };
 
 #endif

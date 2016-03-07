@@ -6,13 +6,76 @@ _plasma(plasma), _vmax(vmax), _depth(depth), _grid_size(grid_size)
 {
 	_number_of_bins = std::pow(2, depth);
 	_dv = (2.*vmax)/static_cast<double>(_number_of_bins);
-	_filter = "db6";
+	/* R-Coiflet 6 
+	_low_pass = std::vector<double> { -.000152916987, .000315249697, .001443474332,
+									-.001358589300, -.007915890196, .006194347829,
+									.025745731466, -.039961569717, -.049807716931,
+    								.269094527854, .558133106629, .322997271647, 
+    								-.040303265359, -.069655118535, .015323777973, 
+    								.013570199856, -.002466300927, -.001196319329 };
+	_high_pass =  std::vector<double> { -.001196319329, .002466300927,  .013570199856,
+									-.015323777973, -.069655118535, .040303265359, 
+    								.322997271647, -.558133106629,  .269094527854, 
+									.049807716931, -.039961569717, -.025745731466, 
+    								 .006194347829, .007915890196, -.001358589300,
+    								 -.001443474332, .000315249697,  .000152916987};
+
+	for (auto & v : _low_pass)
+		v *= std::pow(2, 0.5);
+	for (auto & v : _high_pass)
+		v *= std::pow(2, 0.5);
+
+	_filter_length = 18;
+    */
+    /* R-Coiflet 2 
+    _low_pass = std::vector<double> {0.038580777747887, 
+									-0.12696912539621, 
+									-0.077161555495774, 
+									0.60749164138568, 
+									0.74568755893443, 
+									0.22658426519707};
+	_high_pass =  std::vector<double> {0.22658426519707,
+									-0.74568755893443,
+									0.60749164138568,
+									0.077161555495774,
+									-0.12696912539621,
+									-0.038580777747887};
+	_filter_length = 6;
+	   */
+
+	/* R-Coiflet 4 */
+	_low_pass = std::vector<double> {0.0011945726958388,
+									 -0.012845579755324,
+									  0.024804330519353,
+									  0.050023519962135,
+									 -0.15535722285996,
+									 -0.071638282295294,
+									  0.57046500145033,
+									  0.75033630585287,
+									  0.28061165190244,
+									 -0.0074103835186718,
+									 -0.014611552521451,
+									 -0.0013587990591632};
+	_high_pass = std::vector<double> {-0.0013587990591632,
+									  0.014611552521451,
+									 -0.0074103835186718,
+									 -0.28061165190244,
+									  0.75033630585287,
+									 -0.57046500145033,
+									 -0.071638282295294,
+									  0.15535722285996,
+									  0.050023519962135,
+									 -0.024804330519353,
+									 -0.012845579755324,
+									 -0.0011945726958388};
+	_filter_length = 12;
+	/*  */
+
 
 	_is_transformed = false;
 	_histogram = std::vector<std::vector<double> >(_grid_size, std::vector<double>(_number_of_bins));
 	_coefficients = std::vector<std::vector<double> >(_grid_size);
-	_flag = std::vector<std::vector<double> >(_grid_size);
-	_length = std::vector<std::vector<int> >(_grid_size);
+	_length = std::vector<int>(_number_of_bins);
 }
 
 void WaveletRepresentation::Weigh(int size,
@@ -111,18 +174,7 @@ void WaveletRepresentation::Load(int size,
 
 	for (int n=0; n<_grid_size; n++)
 	{
-		icdf.at(n).resize(_number_of_bins+1);
-		icdf.at(n).front() = 0.;
-        //for (int i=0; i<_number_of_bins; i++)
-        //    icdf.at(n).at(i+1) = icdf.at(n).at(i) + std::max(_histogram.at(n).at(i), 0.);
-		std::partial_sum(_histogram.at(n).begin(), _histogram.at(n).end(), icdf.at(n).begin()+1);
-
-		density.at(n) = icdf.at(n).back();
-		double norm = 1./density.at(n);
-		for (int i=1; i<=_number_of_bins; i++)
-		{
-			icdf.at(n).at(i) *= norm;
-		}
+		Tools::AssembleICDF(_histogram.at(n), icdf.at(n), density.at(n));
 	}
 	
 	double mean_bin_size = static_cast<double>(size) / static_cast<double>(_grid_size);
@@ -136,12 +188,14 @@ void WaveletRepresentation::Load(int size,
 		auto it_vel = vel.begin();
 		auto it_icdf = icdf.at(bin).begin();
 		double dn = 1./static_cast<double>(bin_size);
+		double weight = density.at(bin);
 		
 		double xs = 0.;
 		for (int i=0; i<bin_size; i++)
 		{
 			double fv = (static_cast<double>(i) + 0.5)*dn;
-			while (fv >= *(it_icdf+1)) 
+
+			while (weight*fv >= *(it_icdf+1)) 
 			{
 				it_vel++;
 				it_icdf++;
@@ -159,8 +213,8 @@ void WaveletRepresentation::Load(int size,
 			double cellpos = xs + 0.5/static_cast<double>(bin_size);
 
 			position[bin_start_index+i] = (static_cast<double>(bin)+cellpos) * dx;
-			velocity[bin_start_index+i] = (*it_vel + _dv*(fv - *it_icdf)/(*(it_icdf+1) - *it_icdf));
-			weights[bin_start_index+i]   = density.at(bin);
+			velocity[bin_start_index+i] = (*it_vel + _dv*(weight*fv - *it_icdf)/(*(it_icdf+1) - *it_icdf));
+			weights[bin_start_index+i]   = weight;
 		}
 		bin_start_index = bin_end_index;
 	}
@@ -185,8 +239,6 @@ void WaveletRepresentation::Coarsen()
 
 	_histogram.resize(_grid_size);
 	_coefficients.resize(_grid_size);
-	_flag.resize(_grid_size);
-	_length.resize(_grid_size);
 }
 
 
@@ -200,8 +252,6 @@ void WaveletRepresentation::Refine()
 		_histogram.at(n).resize(_number_of_bins);
 
 	_coefficients.resize(2*_grid_size);
-	_flag.resize(2*_grid_size);
-	_length.resize(2*_grid_size);
 
 	for (int n=_grid_size-1; n>=0; n--)
 	{
@@ -283,15 +333,56 @@ void WaveletRepresentation::GetDensityVelocityPressure(std::vector<double> & den
 	}
 }
 
-
-void WaveletRepresentation::DWT()
+void WaveletRepresentation::GetVelocityMoment(double& moment)
 {
+	assert(!_is_transformed);
+	moment = 0;
 	for (int n=0; n<_grid_size; n++)
 	{
-		_coefficients.at(n).clear();
-		_length.at(n).clear();
-		_flag.at(n).clear();
-		dwt(_histogram.at(n), _depth, _filter, _coefficients.at(n), _flag.at(n), _length.at(n));
+		double v = -_vmax + 0.5*_dv;
+		for (int i=0; i<_number_of_bins; i++)
+		{
+			moment += v*_histogram.at(n).at(i);
+			v += _dv;
+		}
+	}
+	moment /= _grid_size;
+}
+
+
+void WaveletRepresentation::DWT(const int J)
+{
+	static std::vector<double> tmp = std::vector<double>(_number_of_bins);
+	_coefficients = _histogram;
+
+	if (_length.size() < _number_of_bins)
+		_length = std::vector<int>(_number_of_bins);
+	int size = _number_of_bins;
+	for (int j = 0 ; j<std::min(J, _depth); j++)
+	{
+		size /= 2;
+		std::fill_n(_length.begin()+size, size, size);
+	}
+	std::fill_n(_length.begin(), size, size);
+
+	for (int n=0; n<_grid_size; n++)
+	{
+		size = _number_of_bins;
+		for (int j = 0 ; j<std::min(J, _depth); j++)
+		{
+			size = size/2;
+			std::fill_n(tmp.begin(), 2*size, 0.);
+			for (int i=0; i<size; i++)
+			{
+				for (int m= 0; m<_filter_length; m++)
+				{
+					int r = (2*i+m)&(2*size-1);
+					tmp.at(i) += _low_pass.at(m)*_coefficients.at(n).at(r);
+					tmp.at(size+i) += _high_pass.at(m)*_coefficients.at(n).at(r);
+				}
+			}
+			std::copy(tmp.begin(), tmp.begin()+2*size, _coefficients.at(n).begin());
+		}
 	}
 	_is_transformed = true;
 }
@@ -299,12 +390,33 @@ void WaveletRepresentation::DWT()
 
 void WaveletRepresentation::iDWT()
 {
+	static std::vector<double> tmp = std::vector<double>(_number_of_bins);
+	_histogram = _coefficients;
+
 	for (int n=0; n<_grid_size; n++)
-		idwt(_coefficients.at(n), _flag.at(n), _filter, _histogram.at(n), _length.at(n));
+	{	
+		int size = _length.at(0);
+		while (size < _number_of_bins)
+		{
+			std::fill_n(tmp.begin(), 2*size, 0.);
+			for (int i=0; i<size; i++)
+			{
+				for (int m=0; 2*m+1<_filter_length; m++)
+				{
+					int r = (i-m)&(size-1);
+					tmp.at(2*i) += _low_pass.at(2*m)*_histogram.at(n).at(r) + _high_pass.at(2*m)*_histogram.at(n).at(size+r);
+					tmp.at(2*i+1) += _low_pass.at(2*m+1)*_histogram.at(n).at(r) + _high_pass.at(2*m+1)*_histogram.at(n).at(size+r);
+				}
+			}
+			std::copy(tmp.begin(), tmp.begin()+2*size, _histogram.at(n).begin());
+			size *= 2;
+		}
+	}	
+	std::fill_n(_length.begin(), _number_of_bins, _number_of_bins);
 	_is_transformed = false;
 }
 
-void WaveletRepresentation::Denoise(int n_coef)
+void WaveletRepresentation::Denoise(const int n_coef)
 {
 	if (_is_transformed)
 	{
@@ -313,12 +425,12 @@ void WaveletRepresentation::Denoise(int n_coef)
 		{
 			/* Find the correct threshold */
 			help = _coefficients.at(n);
-			std::sort(help.begin(), help.end(), greater<double>());
+			std::sort(help.begin(), help.end(), std::greater<double>());
 			double thresh = help.at(n_coef-1);
 
 			for (auto & coeff : _coefficients.at(n))
 			{
-				if (abs(coeff) < thresh)
+				if (std::abs(coeff) < thresh)
 				{
 					coeff = 0.;
 				}
@@ -327,18 +439,18 @@ void WaveletRepresentation::Denoise(int n_coef)
 	}
 	else
 	{
-		this->DWT();
+		this->DWT(_depth);
 		std::vector<double> help;
 		for (int n=0; n<_grid_size; n++)
 		{
 			/* Find the correct threshold */
 			help = _coefficients.at(n);
-			std::sort(help.begin(), help.end(), greater<double>());
+			std::sort(help.begin(), help.end(), std::greater<double>());
 			double thresh = help.at(n_coef-1);
 
 			for (auto & coeff : _coefficients.at(n))
 			{
-				if (abs(coeff) < thresh)
+				if (std::abs(coeff) < thresh)
 				{
 					coeff = 0.;
 				}
@@ -348,74 +460,68 @@ void WaveletRepresentation::Denoise(int n_coef)
 	}
 }
 
-void WaveletRepresentation::Denoise(double thresh)
+void WaveletRepresentation::Denoise(const double thresh, const int J)
 {
+    int L = std::pow(2, J);
 	if (_is_transformed)
 	{
-		std::vector<double> help;
 		for (int n=0; n<_grid_size; n++)
 		{
-			for (auto & coeff : _coefficients.at(n))
+			for (int i = std::pow(2,J); i < _number_of_bins; i++)
 			{
-				if (abs(coeff) < thresh)
+				if (std::abs(_coefficients.at(n).at(i)) < thresh)
 				{
-					coeff = 0.;
+					_coefficients.at(n).at(i) = 0.;
 				}
 			}
 		}
 	}
 	else
 	{
-		this->DWT();
-		std::vector<double> help;
-		for (int n=0; n<_grid_size; n++)
-		{
-			for (auto & coeff : _coefficients.at(n))
-			{
-				if (abs(coeff) < thresh)
+		this->DWT(_depth - J);
+		if (thresh == 0.)
+			for (int n=0; n<_grid_size; n++)
+                std::fill(_coefficients.at(n).begin()+L, _coefficients.at(n).end(), 0.);
+        else
+			for (int n=0; n<_grid_size; n++)
 				{
-					coeff = 0.;
+					for (int i = L; i < _number_of_bins; i++)
+					{
+						if (std::abs(_coefficients.at(n).at(i)) < thresh)
+						{
+							_coefficients.at(n).at(i) = 0.;
+						}
+					}
 				}
-			}
-		}
 		this->iDWT();
 	}
 }
 
 
 
-void WaveletRepresentation::Cutoff(int depth)
-{
-    int cutoff = std::pow(2, depth);
-    if (cutoff<_number_of_bins)
+void WaveletRepresentation::Cutoff(int cutoff)
+{	
+    int L = std::pow(2, cutoff);
+    if (L<_number_of_bins)
     {
         if (_is_transformed)
         {
             std::vector<double> help;
             for (int n=0; n<_grid_size; n++)
             {
-                std::fill(_coefficients.at(n).begin()+cutoff, _coefficients.at(n).end(), 0.);
+                std::fill(_coefficients.at(n).begin()+L, _coefficients.at(n).end(), 0.);
             }
         }
         else
         {
         	/* DWT */
-            for (int n=0; n<_grid_size; n++)
-			{
-				_coefficients.at(n).clear();
-				_length.at(n).clear();
-				_flag.at(n).clear();
-				dwt(_histogram.at(n), _depth-depth, _filter, _coefficients.at(n), _flag.at(n), _length.at(n));
-				assert(_length.at(n).at(1) == cutoff );
-			}
-            for (int n=0; n<_grid_size; n++)
-            {
-                std::fill(_coefficients.at(n).begin()+_length.at(n).at(1), _coefficients.at(n).end(), 0.);
-            }
+            this->DWT(_depth - cutoff);
 
+            for (int n=0; n<_grid_size; n++)
+                std::fill(_coefficients.at(n).begin()+L , _coefficients.at(n).end(), 0.);
+            
             /* iDWT */
-			for (int n=0; n<_grid_size; n++)
-				idwt(_coefficients.at(n), _flag.at(n), _filter, _histogram.at(n), _length.at(n));
+			this->iDWT();
         }
     }
 }
@@ -424,40 +530,42 @@ void WaveletRepresentation::DiscardNegativeValues()
 {
 	for (auto & hist : _histogram)
 	{
-		//double corr = 0;
 		for (auto & value : hist)
-		{
-			if (value < 0)
-			{
-				//corr -= value;
-				value=0;
-			}
-		}
-//		if (corr >0)
-//		{
-//			corr /= _number_of_bins;
-//			for (auto & value : hist)
-//				value += corr;
-//		}
+			if (value < 0) value=0;
 	}
 }
 
 void WaveletRepresentation::Reset()
 {
-	for (auto & hist : _histogram)
+	for (auto & hist : _histogram) 
 		std::fill(hist.begin(), hist.end(), 0.);
 	_is_transformed = false;
 }
 
 void WaveletRepresentation::print(std::ostream& os) const
 {
-	os << "Histogram: " << _grid_size << " grid cells by " << _number_of_bins << " velocity bins" << std::endl;
-    for (auto & hist : _histogram)
-    {
-        for (auto & value : hist)
-        {
-            os << value << "\t";
-        }
-        os << std::endl;
-    }
+	if (_is_transformed)
+	{
+		os << "Histogram: " << _grid_size << " grid cells by " << _length.front() << " velocity bins" << std::endl;
+	    for (auto & hist : _coefficients)
+	    {
+	        for (int i=0; i<_length.front(); i++)
+	        {
+	            os << std::scientific << hist.at(i) << "\t";
+	        }
+	        os << std::endl;
+	    }
+	}
+	else
+	{
+		os << "Histogram: " << _grid_size << " grid cells by " << _number_of_bins << " velocity bins" << std::endl;
+	    for (auto & hist : _histogram)
+	    {
+	        for (auto & value : hist)
+	        {
+	            os << std::scientific << value << "\t";
+	        }
+	        os << std::endl;
+	    }
+	}
 }
