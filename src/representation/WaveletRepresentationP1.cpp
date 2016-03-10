@@ -24,7 +24,6 @@ void WaveletRepresentationP1::Weigh(int size,
 
 		_histogram.at(xbin).at(vbin) += (1.-cellpos)*weights[i];
 		_histogram.at((xbin+1)&(_grid_size-1)).at(vbin) += cellpos*weights[i];
-
 	}
     
     for (auto & cell : _histogram)
@@ -55,20 +54,21 @@ void WaveletRepresentationP1::Weigh(int size,
 	{
 		double vel = velocity[i];
 		double pos = position[i] +  delay*vel;
-
-
 		int xbin = _plasma->find_index_on_grid(pos);
 		double cellpos = _plasma->find_position_in_cell(pos);
-
 		vel += delay*Tools::EvaluateP1Function(accfield, xbin, cellpos);
 
 
-		int vbin = static_cast<int>((vmin+vel)*idv)&(_number_of_bins-1); // Periodization in v
 
-		periodic_helper.at(xbin)[vbin] += (1.-cellpos)*weights[i];
-		periodic_helper.at(xbin+1)[vbin] += cellpos*weights[i];
+		int vbin = static_cast<int>((vmin+vel)*idv); // Periodization in v
+		if (vbin >= 0 && vbin < _number_of_bins)
+		{
+			periodic_helper.at(xbin)[vbin] += (1.-cellpos)*weights[i];
+			periodic_helper.at(xbin+1)[vbin] += cellpos*weights[i];
+		}
+		
 	}
-    
+
     for (auto & cell : _histogram)
     {
         for (auto & value : cell)
@@ -120,7 +120,6 @@ void WaveletRepresentationP1::Load(int size,
 		double pos = L*xs;
 		int bin = _plasma->find_index_on_grid(pos);
 		double cellpos = _plasma->find_position_in_cell(pos);
-	    double weight = Tools::EvaluateP1Function(density, bin, cellpos);
 
 		auto it_icdf_left = icdf.at(bin).begin();
 		auto it_icdf_right = icdf.at(bin+1 < _grid_size ? bin+1 : 0).begin();

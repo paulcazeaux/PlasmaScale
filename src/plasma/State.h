@@ -21,6 +21,9 @@
 #include "parameterization/MacroParameterization.h"
 #include "tools/CurveDiagnostic.h"
 #include "tools/ScatterDiagnostic.h"
+ 
+#include <chrono>
+typedef std::chrono::microseconds timeunit;
 
 /* Forward declarations */
 class MacroParameterization;

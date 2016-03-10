@@ -59,9 +59,6 @@ class MacroParameterizationWavelets : public MacroParameterization
 		std::vector<ActiveWaveletRepresentation> 	_stack_ion_distribution;
 		int 										_stack_index;
 
-		/* Initial value for the current step, used for the Runge-Kutta integration */
-		ActiveWaveletRepresentation					_current_step_ion_distribution;
-
 		/* Record arrays for the datapoints from the microsolver */
 		std::vector<double>							_record_times;
 		std::vector<ActiveWaveletRepresentation> 	_record_ion_distribution;
@@ -82,6 +79,7 @@ class MacroParameterizationWavelets : public MacroParameterization
 	public:
 		/* constructor  ========================================================================= */
 		MacroParameterizationWavelets() {}
+		MacroParameterizationWavelets(MacroParameterization & parameterization, double electron_thermal_vel);
 		MacroParameterizationWavelets(MacroParameterization & parameterization, double electron_thermal_vel, double ion_vmax);
 		virtual ~MacroParameterizationWavelets() {}
 

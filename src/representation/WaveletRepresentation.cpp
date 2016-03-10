@@ -368,21 +368,25 @@ void WaveletRepresentation::DWT(const int J)
 	for (int n=0; n<_grid_size; n++)
 	{
 		size = _number_of_bins;
-		for (int j = 0 ; j<std::min(J, _depth); j++)
+		if (std::accumulate(_coefficients.at(n).begin(), _coefficients.at(n).end(), 0.) > 1e-10)
 		{
-			size = size/2;
-			std::fill_n(tmp.begin(), 2*size, 0.);
-			for (int i=0; i<size; i++)
+			for (int j = 0 ; j<std::min(J, _depth); j++)
 			{
-				for (int m= 0; m<_filter_length; m++)
+				size = size/2;
+				std::fill_n(tmp.begin(), 2*size, 0.);
+				for (int i=0; i<size; i++)
 				{
-					int r = (2*i+m)&(2*size-1);
-					tmp.at(i) += _low_pass.at(m)*_coefficients.at(n).at(r);
-					tmp.at(size+i) += _high_pass.at(m)*_coefficients.at(n).at(r);
+					for (int m= 0; m<_filter_length; m++)
+					{
+						int r = (2*i+m)&(2*size-1);
+						tmp.at(i) += _low_pass.at(m)*_coefficients.at(n).at(r);
+						tmp.at(size+i) += _high_pass.at(m)*_coefficients.at(n).at(r);
+					}
 				}
+				std::copy(tmp.begin(), tmp.begin()+2*size, _coefficients.at(n).begin());
 			}
-			std::copy(tmp.begin(), tmp.begin()+2*size, _coefficients.at(n).begin());
 		}
+			
 	}
 	_is_transformed = true;
 }
@@ -546,24 +550,24 @@ void WaveletRepresentation::print(std::ostream& os) const
 {
 	if (_is_transformed)
 	{
-		os << "Histogram: " << _grid_size << " grid cells by " << _length.front() << " velocity bins" << std::endl;
-	    for (auto & hist : _coefficients)
+		os << "Histogram: " << _grid_size/4 << " grid cells by " << _length.front() << " velocity bins" << std::endl;
+	    for (int i=3*_grid_size/8; i<5*_grid_size/8; i++)
 	    {
-	        for (int i=0; i<_length.front(); i++)
+	        for (int j=0; j<_length.front(); j++)
 	        {
-	            os << std::scientific << hist.at(i) << "\t";
+	            os << std::scientific << _coefficients.at(i).at(j) << "\t";
 	        }
 	        os << std::endl;
 	    }
 	}
 	else
 	{
-		os << "Histogram: " << _grid_size << " grid cells by " << _number_of_bins << " velocity bins" << std::endl;
-	    for (auto & hist : _histogram)
+		os << "Histogram: " << _grid_size/4 << " grid cells by " << _number_of_bins << " velocity bins" << std::endl;
+	    for (int i=3*_grid_size/8; i<5*_grid_size/8; i++)
 	    {
-	        for (auto & value : hist)
+	        for (int j=0; j<_length.front(); j++)
 	        {
-	            os << std::scientific << value << "\t";
+	            os << std::scientific << _histogram.at(i).at(j) << "\t";
 	        }
 	        os << std::endl;
 	    }

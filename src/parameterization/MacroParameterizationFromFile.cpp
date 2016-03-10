@@ -12,6 +12,8 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 	int max_size_history, use_full_PIC, record_microsteps;
 	char a_char[80];
 
+	std::cout << std::scientific;
+
 	/* read lines until we get to numbers */
 	while (std::fscanf(InputDeck,"%d %lg %d %d %d %d %d %lg", &number_of_populations, &dt, &number_of_microsteps, &macro_to_micro_dt_ratio, &velocity_accumulation_interval, &depth, &cutoff, &intensity) <8)
 	{
@@ -75,10 +77,10 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 			fscanf(InputDeck,"%s",a_char);
 		}
 		std::cout << "Parameters for population " << (population_index+1) << std::endl << "---------------------------" << std::endl;
-		std::cout << "Number of particles:\t" << n << "\tNumber of init. groups:\t" << nlg <<  "\tQuiet start exponent:\t" << nv2 << std::endl;
-		std::cout << "Plasma pulsation:\t" << wp << "\tCycl. pulsation:\t" << wc << "\tq/m ratio:\t\t" << qm << std::endl;
+		std::cout << "Number of particles:\t" << n << "\t\tNumber of init. groups:\t" << nlg <<  "\tQuiet start exponent:\t" << nv2 << std::endl;
+		std::cout << "Plasma pulsation:\t" << wp << "\tCycl. pulsation:\t" << wc << "\tq/m ratio:\t" << qm << std::endl;
 		std::cout << "Random therm. veloc.:\t" << vt1 << "\tQuiet therm. veloc.:\t" << vt2 << "\tMean velocity:\t\t" << v0 << std::endl;
-		std::cout << "Velocity init.:\t# bins:\t" << nbins << "\tLower bound:\t\t" << vlower << "\tUpper bound:\t\t" << vupper << std::endl;
+		std::cout << "Velocity init.:\t# bins:\t" << nbins << "\t\tLower bound:\t\t" << vlower << "\tUpper bound:\t\t" << vupper << std::endl;
 		std::cout << "---------------------------" << std::endl;
 
 
@@ -100,7 +102,6 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 	}
 
 	_debye_scaling = std::pow((_random_mean_thermal_vel.back()+_quiet_mean_thermal_vel.back())/_plasma_pulsations.back(), 2.);
-
 }
 
 void MacroParameterizationFromFile::Load(State & state) const
@@ -246,7 +247,6 @@ void MacroParameterizationFromFile::Load(State & state) const
 
 	/* Implement the population expansion */
 	int size = _plasma->get_grid_size();
-	double tol2 = 1e-20, iter_max = 100;
 	double offset = (1.-_init_occupation)*_plasma->get_length()/2.;
 	double population_density = static_cast<double>(size)/static_cast<double>(_population_sizes.front());
 
@@ -274,55 +274,57 @@ void MacroParameterizationFromFile::Load(State & state) const
 			ion_density[0] += cellpos;
 	}
 
-	/* Determine the electron density from the Boltzmann approximation */
-	/* Initialization */
 
+	/*----------------------------------------------------------------*/
+	/* Newton's method solve for the electrostatic potential assuming */
+	/* 			a Boltzmann distribution for the electrons 			  */
+	/*----------------------------------------------------------------*/
+		/* Initialization */
+
+	double tol2 = 1e-30, iter_max = 100;
+	double scaling = _debye_scaling/std::pow(_plasma->get_dx(), 2.);
 	for (int i=0; i<size; i++)
 	{
 		ion_density.at(i) = population_density*ion_density.at(i);
 		potential.at(i) = std::log(ion_density.at(i)+1e-10);
 	}
-
-
+	for (int i=0; i<size; i++)
+	{
+		exp_potential.at(i) = std::exp(potential.at(i));
+		residual.at(i)	=  
+			  2./3. * exp_potential.at(i) + 1./6. * (exp_potential.at((i>0?i-1:size-1)) + exp_potential.at((i<size-1?i+1:0)))
+				+ scaling * ( 2*potential.at(i) - potential.at((i>0?i-1:size-1)) - potential.at((i<size-1?i+1:0)) )
+				- 2./3. * ion_density.at(i) - 1./6. * (ion_density.at((i>0?i-1:size-1)) + ion_density.at((i<size-1?i+1:0)));
+		conj_dir.at(i) = residual.at(i);
+	}
 	/* Newton's method loop */
-	double scaling = - _debye_scaling/std::pow(_plasma->get_dx(), 2.);
 	for (int count=0; count<iter_max; count++)
 	{
 		/* Inner solve : CG algorithm */
 
-		for (int i=0; i<size; i++)
-		{
-			exp_potential.at(i) = std::exp(potential.at(i));
-				/* Initial value for the CG algorithm : zero. */
-			residual.at(i)	=  exp_potential.at(i)  +  scaling * (
-											  potential.at((i>0?i-1:size-1)) 
-											+ potential.at((i<size-1?i+1:0)) 
-											- 2*potential.at(i)
-												    			 )
-									- ion_density.at(i);
-			conj_dir.at(i) = residual.at(i);
-		}
+		
+		/* Initial value for the CG algorithm : zero. */
 		std::fill(update.begin(), update.end(), 0.);
 
 
 		/* Inner loop */
 
-		double rnorm2 = 0, delta, alpha, beta;
+		double rnorm2_init = 0, rnorm2, delta, alpha, beta;
 		for (int i=0; i<size; i++)
 		{
-			rnorm2 += residual.at(i)*residual.at(i);
+			rnorm2_init += residual.at(i)*residual.at(i);
 		}
 
-		for (int count_cg=0; count_cg<iter_max; count_cg++)
+		rnorm2 = rnorm2_init;
+		for (int count_cg=0; count_cg<1e4; count_cg++)
 		{
 			/* Compute the matrix-vector product */
 			delta = 0;
 			for (int i=0; i<size; i++)
 			{
-				dir.at(i) = (exp_potential.at(i)-2*scaling)*conj_dir.at(i) 
-										+ scaling * (	conj_dir.at((i>0?i-1:size-1)) 
-													  + conj_dir.at((i<size-1?i+1:0))
-													);
+				dir.at(i) =			(2./3.*exp_potential.at(i)+2*scaling)*conj_dir.at(i) 
+										+ (1/6.*exp_potential.at((i>0?i-1:size-1)) - scaling) * conj_dir.at((i>0?i-1:size-1)) 
+										+ (1/6.*exp_potential.at((i<size-1?i+1:0)) - scaling) * conj_dir.at((i<size-1?i+1:0));
 				delta += dir.at(i) * conj_dir.at(i);
 			}
 
@@ -335,7 +337,7 @@ void MacroParameterizationFromFile::Load(State & state) const
 				residual.at(i) -= alpha* dir.at(i);
 				rnorm2 += residual.at(i)*residual.at(i);
 			}
-			if (rnorm2 < tol2/2.)
+			if (rnorm2 < .01*rnorm2_init)
 				break;
 			beta *= rnorm2;
 			for (int i=0; i<size; i++)
@@ -345,29 +347,59 @@ void MacroParameterizationFromFile::Load(State & state) const
 			}
 		}
 
+		for (int i=0; i<size; i++)
+		{
+			potential.at(i) -= update.at(i);
+			exp_potential.at(i) = std::exp(potential.at(i));
+		}
 		double err=0;
 		for (int i=0; i<size; i++)
 		{
-			err += update.at(i) * update.at(i);
-			potential.at(i) -= update.at(i);
-		}
+			residual.at(i)	=  2./3. * exp_potential.at(i) + 1./6. * (exp_potential.at((i>0?i-1:size-1)) + exp_potential.at((i<size-1?i+1:0)))
+				+ scaling * ( 2*potential.at(i) - potential.at((i>0?i-1:size-1)) - potential.at((i<size-1?i+1:0)) )
+				- 2./3. * ion_density.at(i) - 1./6. * (ion_density.at((i>0?i-1:size-1)) + ion_density.at((i<size-1?i+1:0)));
+			conj_dir.at(i) = residual.at(i);
+			err += 	std::pow(residual.at(i), 2.);
+		}		
 		if (err < tol2)
-			{
-				std::cout << "Newton error: " << err << std::endl;
-				break;
-			}
+			break;
 	}
-	for (int i=0; i<size; i++)
-		exp_potential.at(i) = std::exp(potential.at(i));
 
-	auto it_weights = weights.at(1)->begin();
+	static std::vector<double> icdf;
+	icdf.resize(size+1);
+	icdf.front() = 0;
+	for (int i=1; i<size; i++)
+	{
+		icdf.at(i) = icdf.at(i-1)+.5*(exp_potential.at(i-1)+exp_potential.at(i));
+	}
+	icdf.at(size) = icdf.at(size-1)+.5*(exp_potential.at(size-1)+exp_potential.at(0));
+
+	double dx = _plasma->get_length()/icdf.back();
+	for (auto & h : icdf)
+		h *= dx;
+
+	dx = _plasma->get_length()/size;
 	for (auto & x : *positions.back())
 	{
-		int bin = _plasma->find_index_on_grid(x);
-		double cellpos = _plasma->find_position_in_cell(x);
-		*it_weights++ = Tools::EvaluateP1Function(exp_potential, bin, cellpos);
-	}
+		/*****************/
+    	/* Binary search */
+    	/*****************/
 
+		int index_down = 0;
+		int index_up = size+1;
+		while (index_up - index_down > 1)
+		{
+			int index_mid = (index_up + index_down)/2;
+			if (x < icdf[index_mid])
+				index_up = index_mid;
+			else
+				index_down = index_mid;
+		}
+
+		double xdown = icdf[index_down];
+		double xup = icdf[index_up];
+		x = dx*(index_down + (x-xdown)/(xup-xdown));
+	}
 }
 
 double MacroParameterizationFromFile::get_initial_thermal_vel(int population_index) const
