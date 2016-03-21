@@ -27,7 +27,8 @@ class MaxwellianRepresentation : public Representation
 		/* pointer on object */
 		std::shared_ptr<const Plasma>		_plasma;
 		/* parameter */
-		int 								_grid_size;
+		int 								_grid_end;
+		double 								_reference_density;
 		/* values */
 		std::vector<double> 				_density;
 		std::vector<double> 				_velocity;
@@ -40,7 +41,7 @@ class MaxwellianRepresentation : public Representation
 	public:
 		/* constructor  ========================================================================= */
 		MaxwellianRepresentation() {}
-		MaxwellianRepresentation(std::shared_ptr<const Plasma> plasma, int grid_size);
+		MaxwellianRepresentation(std::shared_ptr<const Plasma> plasma, double reference_density);
 
 		/* static method */
 		static void InitializeQuietStartArrays(int number_of_bins);
@@ -66,36 +67,38 @@ class MaxwellianRepresentation : public Representation
 
 		virtual void SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const double & thermal_velocity);
 		virtual void SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const std::vector<double> & thermal_velocity);
-		virtual void GetDensityVelocity(std::vector<double> & density, std::vector<double> & velocity) const;
-		virtual void GetDensityVelocityPressure(std::vector<double> & density, std::vector<double> & velocity, std::vector<double> & pressure) const;
+		virtual void GetDensityVelocity(std::vector<double> & density, std::vector<double> & velocity);
+		virtual void GetDensityVelocityPressure(std::vector<double> & density, std::vector<double> & velocity, std::vector<double> & pressure);
 
 		virtual void Reset();
 		virtual void print(std::ostream& os) const;
-		virtual int get_grid_size() const 	{ return _grid_size;	}
-		virtual void set_grid_size(const int new_grid_size)
+		virtual int  get_grid_end() const 	{ return _grid_end;	}
+		virtual void set_grid_end(const int new_grid_end)
 		{
-			_density.resize(new_grid_size);
-			_velocity.resize(new_grid_size);
-			_thermal_velocity.resize(new_grid_size);
-			_grid_size = new_grid_size;
+			_density.resize(new_grid_end+1);
+			_velocity.resize(new_grid_end+1);
+			_thermal_velocity.resize(new_grid_end+1);
+			_grid_end = new_grid_end;
 		}
 
 		/* operator overload */
 		MaxwellianRepresentation& operator=(const MaxwellianRepresentation& rhs)
 		{
 			_plasma = rhs._plasma;
-			_grid_size = rhs._grid_size;
+			_grid_end = rhs._grid_end;
+			_reference_density = rhs._reference_density;
 
-			_density = std::vector<double>(rhs._density.begin(), rhs._density.begin()+_grid_size);
-			_density = std::vector<double>(rhs._velocity.begin(), rhs._velocity.begin()+_grid_size);
-			_density = std::vector<double>(rhs._thermal_velocity.begin(), rhs._thermal_velocity.begin()+_grid_size);
+			_density = std::vector<double>(rhs._density.begin(), rhs._density.begin()+_grid_end+1);
+			_density = std::vector<double>(rhs._velocity.begin(), rhs._velocity.begin()+_grid_end+1);
+			_density = std::vector<double>(rhs._thermal_velocity.begin(), rhs._thermal_velocity.begin()+_grid_end+1);
 
 			return *this;
 		}
 
 		MaxwellianRepresentation& operator+=(const MaxwellianRepresentation& rhs)
 		{
-			for (int n=0; n<_grid_size; n++)
+			assert((_grid_end==rhs._grid_end)&&(_reference_density=rhs._reference_density));
+			for (int n=0; n<=_grid_end; n++)
 			{
 				_density.at(n) += rhs._density.at(n);
 				_velocity.at(n) += rhs._velocity.at(n);
@@ -111,7 +114,8 @@ class MaxwellianRepresentation : public Representation
 
 		MaxwellianRepresentation& operator-=(const MaxwellianRepresentation& rhs)
 		{
-			for (int n=0; n<_grid_size; n++)
+			assert((_grid_end==rhs._grid_end)&&(_reference_density=rhs._reference_density));
+			for (int n=0; n<=_grid_end; n++)
 			{
 				_density.at(n) -= rhs._density.at(n);
 				_velocity.at(n) -= rhs._velocity.at(n);
@@ -127,7 +131,7 @@ class MaxwellianRepresentation : public Representation
 
 		MaxwellianRepresentation& operator*=(const double lambda)
 		{
-			for (int n=0; n<_grid_size; n++)
+			for (int n=0; n<=_grid_end; n++)
 			{
 				_density.at(n) *= lambda;
 				_velocity.at(n) *= lambda;

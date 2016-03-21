@@ -24,8 +24,8 @@ class WaveletRepresentationP1 : public WaveletRepresentation
 {
 	public:
 		/* constructor  ========================================================================= */
-		WaveletRepresentationP1() {}
-		WaveletRepresentationP1(std::shared_ptr<const Plasma> plasma, double vmax, int depth, int grid_size);
+		WaveletRepresentationP1() {};
+		WaveletRepresentationP1(std::shared_ptr<const Plasma> plasma, double vmin, double vmax, int depth, double reference_density);
 
 		/* methods */
 		virtual void Weigh(int size,

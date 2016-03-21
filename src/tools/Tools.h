@@ -34,7 +34,7 @@ class Tools
 			if (bin+1 < values.size())
 				return (1-cellpos)*values.at(bin) + cellpos*values.at(bin+1);
 			else
-				return (1-cellpos)*values.at(bin) + cellpos*values.front();
+				return 0.;
 		}
 
 		template<typename T>
@@ -82,7 +82,6 @@ class Tools
 		}
 
 		static void AssembleICDF(std::vector<double>& histogram, std::vector<double>& icdf, double& density);
-		static double ComputePoissonEmpiricalScaling(const std::vector<std::vector<double> >& histogram, const int& patch_size = 8);
 };
 
 

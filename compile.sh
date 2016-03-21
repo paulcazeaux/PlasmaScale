@@ -3,6 +3,7 @@
 # user parameter
 TARGET="PlasmaScale"
 #TARGET="t-HaarTools"
+#TARGET="t-Eigen"
 
 # cmake parameters
 export CC=clang
@@ -21,7 +22,6 @@ echo "==========================================================================
 echo "                                       MAKE                                          " 
 echo "====================================================================================="
 make ${TARGET}
-# make
 
 
 # additional run
@@ -33,7 +33,7 @@ InputFile=/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/c
 
 ExportFile=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Size_2000/null
 rm ${ExportFile}.dmp ${ExportFile}.out
-./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 1 -s 30 -nox > ${ExportFile}.out
+./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 2 -s 60 -nox > ${ExportFile}.out
 open ${ExportFile}.out
 
 # ExportFolder=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Test_ndt_Size_500/

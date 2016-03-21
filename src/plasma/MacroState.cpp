@@ -7,17 +7,15 @@ MacroState::MacroState(FILE *& InputDeck)
 	_micro_state = std::unique_ptr<State>(new State(initialization));
 	_simulation_time = _micro_state->get_simulation_time();
 	_macro_iteration = std::make_shared<int>(0);
+	_macro_dt = _plasma->_dt * _plasma->_macro_to_micro_dt_ratio;
 
 	// Using the EFPI parameterization
-	if (_plasma->get_number_of_populations() != 2)
+	if (_plasma->_number_of_populations != 2)
 	{
-		throw std::runtime_error("There are " + std::to_string(_plasma->get_number_of_populations()) + " and not 2 populations as required to use the EFPI parameterization.\n");
+		throw std::runtime_error("There are " + std::to_string(_plasma->_number_of_populations) + " and not 2 populations as required to use the EFPI parameterization.\n");
 	}
 
-	_macro_dt = _plasma->get_dt() * _plasma->get_macro_to_micro_dt_ratio();
-	double vte = initialization.get_initial_thermal_vel(1); // Recover the electron thermal velocity
-
-	_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationWavelets(initialization, vte));
+	_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationWavelets(initialization));
 	_parameterization->Initialize(*_micro_state);
 }
 
@@ -30,9 +28,9 @@ std::ostream& operator<<( std::ostream& os, const MacroState& state)
 
 void MacroState::Step()
 {
-	// We suppose initially that the microstate has already been correctly loaded at the end of the previous step.
+	/* We suppose initially that the microstate has already been correctly loaded at the end of the previous step. */
 	_parameterization->Step(*_micro_state);
-	/* By construction the Step() function should leave the PIC code correctly initialized for the next step */
+	/* By construction the Step() function should leave the particles correctly initialized for the next step */
 	_micro_state->ComputeVelocityProfile();
 
 	(*_macro_iteration)++;
@@ -47,7 +45,8 @@ void MacroState::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &dia
 
 void MacroState::WriteData(std::fstream & fout)
 {
-	if (!_plasma->get_record_microsteps())
+
+	if (!_plasma->_record_microsteps)
 		fout << std::endl << "t = " << *_simulation_time << std::endl;
 	_parameterization->WriteData(fout);
 }

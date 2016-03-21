@@ -50,11 +50,11 @@ class Representation
 
 		virtual void SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const double & thermal_velocity) = 0;
 		virtual void SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const std::vector<double> & thermal_velocity) = 0;
-		virtual void GetDensityVelocity(std::vector<double> & density, std::vector<double> & velocity) const = 0;
-		virtual void GetDensityVelocityPressure(std::vector<double> & density, std::vector<double> & velocity, std::vector<double> & pressure) const = 0;
+		virtual void GetDensityVelocity(std::vector<double> & density, std::vector<double> & velocity) = 0;
+		virtual void GetDensityVelocityPressure(std::vector<double> & density, std::vector<double> & velocity, std::vector<double> & pressure) = 0;
 
 		virtual void print(std::ostream& os) const = 0;
-		virtual int get_grid_size() const = 0;
-		virtual void set_grid_size(const int new_grid_size) = 0;
+		virtual int get_grid_end() const = 0;
+		virtual void set_grid_end(const int new_grid_end) = 0;
 };
 #endif

@@ -18,6 +18,8 @@
 #include <cmath>
 #include <cassert>
 #include <iostream>
+ 
+#include <eigen3/Eigen/Sparse>
 
 /* Declarations */
 
@@ -35,12 +37,6 @@ class MacroParameterizationFromFile : public MacroParameterization
 
 			// Perturbation
 		double						_init_occupation;
-		double 						_debye_scaling;
-
-			// Diagnostics
-		std::vector<int>			_bin_numbers;
-		std::vector<double>			_upper_velocities;
-		std::vector<double>			_lower_velocities;
 
 	public:
 
@@ -48,13 +44,8 @@ class MacroParameterizationFromFile : public MacroParameterization
 		
 		virtual void 	Load(State & state) const;
 
-		double 			get_initial_thermal_vel(int population_index)	const;
-
-		virtual bool 	HaveVelocityDiagnostics()		const	{return true;	}
-		virtual double 	GetBinStart(int index)			const;
-		virtual double 	GetBinEnd(int index)			const;
-		virtual	double	GetBinWidth(int index)			const;
-		virtual int		GetNumberOfBins(int index)		const;
+		virtual double 	get_initial_thermal_vel(int population_index)	const
+			{	return _quiet_mean_thermal_vel.at(population_index) + _random_mean_thermal_vel.at(population_index);	}
 };
 
 #endif

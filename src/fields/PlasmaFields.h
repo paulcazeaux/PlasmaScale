@@ -4,7 +4,6 @@
  *
  * description:
  *  -> store & compute the fields (potential, energy, charge)
- *	-> Poisson solver
  *  
  * ============================================================================= */
 
@@ -17,48 +16,33 @@
 #include <cmath>
 
 #include "plasma/Plasma.h"
-#include "fields/Field.h"
-
-#define AKPERP               2.405
 
 /* Declarations */
 
 class PlasmaFields
 {
+	friend class State;
+	friend class PopulationOfParticles;
+
 	private:
 		/* class members ======================================================================== */
 		/* pointer on object */
 		std::shared_ptr<const Plasma>				_plasma;
 
-		/* Physical parameters */
-		const double								_length;
-		const double								_epsilon;
-		const double								_E0;
-		const double								_w0;
-
 		/* Simulation parameters */
-		const int 									_grid_size;
-		const double								_dx;
-
-		/* Modal filter & Fourier Poisson kernel */
-		std::unique_ptr<const std::vector<double> > _filtered_kernel;
-		std::unique_ptr<const std::vector<double> > _filter;
-		const double								_filter_parameter_1;
-		const double								_filter_parameter_2;
+		const int 									_grid_end;
 
 		/* Time */
 		std::shared_ptr<double>						_simulation_time;
 		std::shared_ptr<int>						_iteration;
 
 		/* Fields */
-		Field 										_charge;
-		Field 										_electrical_field;
-		Field 										_potential;
+		std::vector<double> 						_charge;
+		std::vector<double> 						_electrical_field;
+		std::vector<double> 						_potential;
 
 		/* Computed energy */
-		const int 									_max_mode;
-		double 										_electrostatic_energy_total;
-		std::vector<double>							_electrostatic_energy_by_mode;
+		double 										_electrostatic_energy;
 
 	public:
 		/* constuctor and destructor ============================================================ */
@@ -68,28 +52,17 @@ class PlasmaFields
 		~PlasmaFields() {}
 
 		/* getter =========================================================================*/
-		double * get_density_ptr()						const 	{return _charge.get_ptr();				}
-		double * get_electrical_field_ptr()				const	{return _electrical_field.get_ptr();	}
-		double * get_potential_ptr()					const 	{return _potential.get_ptr();		}
+		double * get_density_ptr()						{return _charge.data();				}
+		double * get_electrical_field_ptr()				{return _electrical_field.data();	}
+		double * get_potential_ptr()					{return _potential.data();		}
 
 		/* methods ======================================================================= */
-		void PushBackElectrostaticEnergy(std::vector<double>& electrostatic_energy, std::vector<std::vector<double>	>& electrostatic_energy_by_mode) const;
-		void ComputeAndFilter();
-		void GetEField(std::vector<double> & Efield);
+		void PushBackElectrostaticEnergy(std::vector<double>& electrostatic_energy) const;
+		void Compute();
 		void ResetCharge()
 		{
-			_charge.Reset();
+			for (double & rho: _charge) rho = 0.;
 		}
-		void SubstractMeanDensity(const double rho0)
-		{
-			for (int i=0; i<_grid_size; i++)
-			{
-				_charge._values[i] -= rho0;
-			}
-		}
-
-		void WeighParticle(double position, double charge);
-		
 };
 
 #endif

@@ -25,7 +25,7 @@ class MaxwellianRepresentationP1 : public MaxwellianRepresentation
 	public:
 		/* constructor  ========================================================================= */
 		MaxwellianRepresentationP1() {}
-		MaxwellianRepresentationP1(std::shared_ptr<const Plasma> plasma, int grid_size);
+		MaxwellianRepresentationP1(std::shared_ptr<const Plasma> plasma, double reference_density);
 
 		/* methods */
 		virtual void Weigh(int size,

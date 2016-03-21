@@ -47,10 +47,6 @@ class History
 		std::vector<double> 					_total_energy;
 		std::vector<double>						_moment;
 
-		/* electrostatic energy by mode */
-		const int 								_max_mode;
-		std::vector<std::vector<double>	>		_electrostatic_energy_by_mode;
-
 		/* moment and energy by population */
 		const int 								_number_of_populations;
 		std::vector<std::vector<double>	>		_kinetic_energy_by_population;

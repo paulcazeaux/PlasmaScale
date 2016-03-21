@@ -9,7 +9,7 @@
 ### 1) Include the sources
 ######################################################################################
 
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src/tools)
+# INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src/tools)
 
 ######################################################################################
 
@@ -28,8 +28,7 @@ LINK_DIRECTORIES(${CMAKE_BINARY_DIR}/lib)
 ######################################################################################
 
 SET (TEST_LIST
-	t-HaarTools
-	t-Tools
+	t-Eigen
 )
 
 FOREACH (test ${TEST_LIST})
@@ -40,11 +39,6 @@ ENDFOREACH (test)
 FOREACH (test ${TEST_LIST})
 	  ADD_EXECUTABLE(${test} ${T_${test}_SOURCES}) 
 	  ADD_TEST(${test} ${test}) 
-ENDFOREACH (test)
-	
-# Link the librairies
-FOREACH (test ${TEST_LIST})
-	  TARGET_LINK_LIBRARIES(${test} PSCALE) 
 ENDFOREACH (test)
 
 ######################################################################################

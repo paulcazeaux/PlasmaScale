@@ -1,6 +1,9 @@
 {
 	"folders":
 	[
+	{
+			"path": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale"
+		},
 		{
 			"path": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg"
 		},
@@ -21,9 +24,6 @@
 		},
 		{
 			"path": "tools"
-		},
-		{
-			"path": "wavelets"
 		},
 		{
 			"path": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/src"

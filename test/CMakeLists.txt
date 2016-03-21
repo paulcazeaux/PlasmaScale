@@ -1,2 +1,3 @@
 ADD_SUBDIRECTORY(representations)
 ADD_SUBDIRECTORY(tools)
+ADD_SUBDIRECTORY(algebra)

@@ -1,16 +1,15 @@
 #include "representation/WaveletRepresentationP1.h"
 
-WaveletRepresentationP1::WaveletRepresentationP1(std::shared_ptr<const Plasma> plasma, double vmax, int depth, int grid_size) :
-WaveletRepresentation(plasma, vmax, depth, grid_size) {}
+WaveletRepresentationP1::WaveletRepresentationP1(std::shared_ptr<const Plasma> plasma, double vmin, double vmax, int depth, double reference_density) :
+WaveletRepresentation(plasma, vmin, vmax, depth, reference_density) {}
 
 void WaveletRepresentationP1::Weigh(int size,
 								std::vector<double>::iterator 	position,
 								std::vector<double>::iterator  	velocity,
 								std::vector<double>::iterator 	weights)
 {
-	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
-    double idv = 1/(_dv*_plasma->get_dt());
-    double vmin = static_cast<double>(_number_of_bins)/(2.*idv);
+    double idv = 1/(_dv*_plasma->_dt);
+    double vmin = _vmin*_plasma->_dt;
 
 	this->Reset();
 
@@ -18,19 +17,27 @@ void WaveletRepresentationP1::Weigh(int size,
 	{
 		double pos = position[i];
 		int xbin = _plasma->find_index_on_grid(pos);
-		double cellpos = _plasma->find_position_in_cell(pos);
 
-		int vbin = static_cast<int>((vmin+velocity[i])*idv)&(_number_of_bins-1); // Periodization in v
+		if (xbin>=0 && xbin<_grid_end)
+		{
+			int vbin = static_cast<int>((velocity[i]-vmin)*idv);
+			if (vbin<0) vbin = 0;
+			if (vbin>=_number_of_bins) vbin = _number_of_bins-1;
 
-		_histogram.at(xbin).at(vbin) += (1.-cellpos)*weights[i];
-		_histogram.at((xbin+1)&(_grid_size-1)).at(vbin) += cellpos*weights[i];
+			double s = _plasma->find_position_in_cell(pos);
+			_histogram.at(xbin).at(vbin) += (1.-s)*weights[i];
+			_histogram.at(xbin+1).at(vbin) += s*weights[i];
+		}
 	}
+	for (double & c: _histogram.front())
+		c *= 2;
+	for (double & c: _histogram.back())
+		c *= 2;
     
-    for (auto & cell : _histogram)
-    {
-        for (auto & value : cell)
-            value *= population_density;
-    }
+	double n0 = 1./(_reference_density*_plasma->_dx);
+    for (auto & col : _histogram)
+        for (auto & value : col)
+            value *= n0;
 }
 
 void WaveletRepresentationP1::Weigh(int size,
@@ -40,39 +47,56 @@ void WaveletRepresentationP1::Weigh(int size,
 								const double delay,
 								const std::vector<double> & accfield)
 {
-	double population_density = static_cast<double>(_grid_size)/static_cast<double>(size);
-    double idv = 1/(_dv*_plasma->get_dt());
-    double vmin = static_cast<double>(_number_of_bins)/(2.*idv);
+    double idv = 1/(_dv*_plasma->_dt);
+    double vmin = _vmin*_plasma->_dt;
 	this->Reset();
-
-	static std::vector<std::vector<double>::iterator> periodic_helper = std::vector<std::vector<double>::iterator>(_grid_size+1);
-	for (int bin = 0; bin<_grid_size; bin++)
-		periodic_helper.at(bin) = _histogram.at(bin).begin();
-	periodic_helper.at(_grid_size) = _histogram.at(0).begin();
 
 	for (int i=0; i<size; i++)
 	{
-		double vel = velocity[i];
-		double pos = position[i] +  delay*vel;
-		int xbin = _plasma->find_index_on_grid(pos);
-		double cellpos = _plasma->find_position_in_cell(pos);
-		vel += delay*Tools::EvaluateP1Function(accfield, xbin, cellpos);
-
-
-
-		int vbin = static_cast<int>((vmin+vel)*idv); // Periodization in v
-		if (vbin >= 0 && vbin < _number_of_bins)
+		double pos = position[i] +  delay*velocity[i];
+		if (pos >= 0)
 		{
-			periodic_helper.at(xbin)[vbin] += (1.-cellpos)*weights[i];
-			periodic_helper.at(xbin+1)[vbin] += cellpos*weights[i];
-		}
-		
-	}
+			int xbin = _plasma->find_index_on_grid(pos);
 
+			if (xbin<_grid_end)
+			{
+				double s = _plasma->find_position_in_cell(pos);
+				double vel = velocity[i] + delay*Tools::EvaluateP1Function(accfield, xbin, s);
+				int vbin = static_cast<int>((vel-vmin)*idv);
+				if (vbin<0) vbin = 0;
+				if (vbin>=_number_of_bins) vbin = _number_of_bins-1;
+
+				_histogram.at(xbin)[vbin] += (1.-s)*weights[i];
+				_histogram.at(xbin+1)[vbin] += s*weights[i];
+			}
+		}
+		else
+		{
+			pos = -pos;
+			int xbin = _plasma->find_index_on_grid(pos);
+			if (xbin<_grid_end)
+			{
+				double s = _plasma->find_position_in_cell(pos);
+				double vel = -velocity[i] + delay*Tools::EvaluateP1Function(accfield, xbin, s);
+				int vbin = static_cast<int>((vel-vmin)*idv);
+				if (vbin<0) vbin = 0;
+				if (vbin>=_number_of_bins) vbin = _number_of_bins-1;
+
+				_histogram.at(xbin)[vbin] += (1.-s)*weights[i];
+				_histogram.at(xbin+1)[vbin] += s*weights[i];
+			}
+		}
+	}
+	for (double & c: _histogram.front())
+		c *= 2;
+	for (double & c: _histogram.back())
+		c *= 2;
+
+	double n0 = 1./(_reference_density*_plasma->_dx);
     for (auto & cell : _histogram)
     {
         for (auto & value : cell)
-            value *= population_density;
+            value *= n0;
     }
 }
 
@@ -83,32 +107,50 @@ void WaveletRepresentationP1::Load(int size,
 {
 	assert(size > 1);
 
-	static std::vector<double> vel = std::vector<double>(_number_of_bins+1);
-	static std::vector<std::vector<double> > icdf = std::vector<std::vector<double> >(_grid_size);
-	static std::vector<double> density = std::vector<double>(_grid_size);
-	/* sanity checks */
+
+	static std::vector<double> vel;
+	static std::vector<double> icdf_pos;
+	static std::vector<std::vector<double> > icdf_vel;
+	static std::vector<double> density;
 	vel.resize(_number_of_bins+1);
+	icdf_pos.resize(_grid_end+1);
+	icdf_vel.resize(_grid_end+1);
+	density.resize(_grid_end+1);
+
+	/*********************************/
+	/* Initialize quiet start arrays */	
+	/*********************************/
 	for (int i=0; i<=_number_of_bins; i++)
 	{
-		vel.at(i) = static_cast<double>(i)*_dv - _vmax;
+		vel.at(i) = static_cast<double>(i)*_dv + _vmin;
 	}
-	icdf.resize(_grid_size);
-	density.resize(_grid_size);
 
-	for (int n=0; n<_grid_size; n++)
+
+	for (int n=0; n<=_grid_end; n++)
 	{
-		Tools::AssembleICDF(_histogram.at(n), icdf.at(n), density.at(n));
+		Tools::AssembleICDF(_histogram.at(n), icdf_vel.at(n), density.at(n));
 	}
-	double L = _plasma->get_length();
-	double dn = 1./static_cast<double>(size);
 
-	double xs = 0.;			
+	icdf_pos.front() = 0;
+	for (int i=1; i<=_grid_end; i++)
+		icdf_pos.at(i) = icdf_pos.at(i-1)+.5*(density.at(i-1)+density.at(i));
+	for (auto & h : icdf_pos)
+		h /= icdf_pos.back();
+
+	/**************************/
+	/* Quiet particle loading */	
+	/**************************/
+
+	double dn = 1./static_cast<double>(size);
 	double fv = 0.5*dn;
-	int index = 0;
+	double xs = 0.;
 
 	for (int i=0; i<size; i++)
 	{
+		/************************************************************************/
 		/* bit-reversed scrambling to reduce the correlation with the positions */
+		/************************************************************************/
+
 		double xsi = 0.5;
 		xs -= 0.5;
 		while (xs >= 0.0)
@@ -117,45 +159,57 @@ void WaveletRepresentationP1::Load(int size,
 			xs -= xsi;
 		} 
 		xs += 2.0*xsi;
-		double pos = L*xs;
+
+		/**********************************/
+    	/* Binary search for the position */
+    	/**********************************/
+
+		int index_down = 0;
+		int index_up = _grid_end;
+		while (index_up - index_down > 1)
+		{
+			int index_mid = (index_up + index_down)/2;
+			if (xs < icdf_pos[index_mid])
+				index_up = index_mid;
+			else
+				index_down = index_mid;
+		}
+
+		double xdown = icdf_pos[index_down];
+		double xup = icdf_pos[index_up];
+		double pos = _plasma->_dx*(index_down + (xs-xdown)/(xup-xdown));
+
 		int bin = _plasma->find_index_on_grid(pos);
-		double cellpos = _plasma->find_position_in_cell(pos);
+		double s = _plasma->find_position_in_cell(pos);
+        double dens = Tools::EvaluateP1Function(density, bin, s);
 
-		auto it_icdf_left = icdf.at(bin).begin();
-		auto it_icdf_right = icdf.at(bin+1 < _grid_size ? bin+1 : 0).begin();
-        double weight = Tools::EvaluateP1Function(density, bin, cellpos);
-        if (weight>1e-20)
-        { 
-        	/*****************/
-        	/* Binary search */
-        	/*****************/
+		/* Guard against accidents */
+        if (dens == 0.0)  s = 0.5;
 
-			int index_down = 0;
-			int index_up = icdf.at(bin).size();
-			while (index_up - index_down > 1)
-			{
-				int index_mid = (index_up + index_down)/2;
-				if (weight*fv < (1.-cellpos)*it_icdf_left[index_mid] + cellpos*it_icdf_right[index_mid])
-					index_up = index_mid;
-				else
-					index_down = index_mid;
-			}
+        /**********************************/
+    	/* Binary search for the velocity */
+    	/**********************************/
 
-			double fvdown = (1.-cellpos)*it_icdf_left[index_down] + cellpos*it_icdf_right[index_down];
-			double fvup = (1.-cellpos)*it_icdf_left[index_up] + cellpos*it_icdf_right[index_up];
+		auto it_icdf_left = icdf_vel.at(bin).begin();
+		auto it_icdf_right = icdf_vel.at(bin+1).begin();
 
+		index_down = 0;
+		index_up = _number_of_bins;
+		while (index_up - index_down > 1)
+		{
+			int index_mid = (index_up + index_down)/2;
+			if (dens*fv < (1.-s)*it_icdf_left[index_mid] + s*it_icdf_right[index_mid])
+				index_up = index_mid;
+			else
+				index_down = index_mid;
+		}
 
-			position[i] = pos;
-			weights[i]  = weight;
-			velocity[i] = vel.at(index_down) + _dv*(weight*fv - fvdown)/(fvup - fvdown);
-        }
-        else
-        {
-        	position[i] = 0;
-            weights[i] = 0;
-            velocity[i] = 0;
-        }
+		double fvdown = (1.-s)*it_icdf_left[index_down] + s*it_icdf_right[index_down];
+		double fvup = (1.-s)*it_icdf_left[index_up] + s*it_icdf_right[index_up];
 
+		position[i] = pos;
+		weights[i]  = 1.;
+		velocity[i] = vel.at(index_down) + _dv*(dens*fv - fvdown)/(fvup - fvdown);
 		fv += dn;
 	}
 }

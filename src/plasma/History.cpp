@@ -3,21 +3,16 @@
 /* constuctor and destructor ============================================================ */
 History::History(std::shared_ptr<const Plasma> plasma) :
 		_plasma(plasma),
-		_max_size(plasma->get_max_size()),
-		_velocity_accumulation_interval(plasma->get_velocity_accumulation_interval()),
+		_max_size(plasma->_max_size_history),
+		_velocity_accumulation_interval(plasma->_velocity_accumulation_interval),
 		_interval(1),
-		_max_mode(plasma->get_max_mode()),
-		_number_of_populations(plasma->get_number_of_populations())
+		_number_of_populations(plasma->_number_of_populations)
 {
 	_size = 0;
 	_time_array.reserve(_max_size);
 	_electrostatic_energy.reserve(_max_size);
 	_kinetic_energy.reserve(_max_size);
 	_total_energy.reserve(_max_size);
-
-	_electrostatic_energy_by_mode = std::vector<std::vector<double>	>(_max_mode);
-	for (auto & it : _electrostatic_energy_by_mode)
-		it.reserve(_max_size);
 
 	_kinetic_energy_by_population = std::vector<std::vector<double>	>(_number_of_populations);
 	_moment_by_population = std::vector<std::vector<double>	>(_number_of_populations);
@@ -35,11 +30,7 @@ void History::Resize(int size)
 	_electrostatic_energy.resize(size);
 	_kinetic_energy.resize(size);
 	_total_energy.resize(size);
-	for (auto & it : _electrostatic_energy_by_mode)
-		it.resize(size);
-	
-	for (auto & it : _electrostatic_energy_by_mode)
-		it.resize(size);
+
 	for (auto & it : _moment_by_population)
 		it.reserve(size);
 	_size = size;
@@ -55,7 +46,7 @@ void History::Compute(const State& state)
 
 	_time_array.push_back(*(state._simulation_time));
 
-	state.PushBackElectrostaticEnergy(_electrostatic_energy, _electrostatic_energy_by_mode);
+	state.PushBackElectrostaticEnergy(_electrostatic_energy);
 	state.PushBackKineticEnergy(_kinetic_energy, _kinetic_energy_by_population);
 	state.PushBackMoment(_moment, _moment_by_population);
 
@@ -81,8 +72,6 @@ void History::Comb()
 			it[i] = it[k];		
 		for (auto & it : _moment_by_population)
 			it[i] = it[k];
-		for (auto & it : _electrostatic_energy_by_mode)
-			it[i] = it[k];
 	}
 	_interval*=4;
 	this->Resize(_size/4);
@@ -97,14 +86,6 @@ void 	History::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagn
 
 	diagnostics.emplace_back(new CurveDiagnostic("linlog", "Time", "Field Energy(t)", 410, 670));
 	diagnostics.back()->AddData(_time_array.data(), _electrostatic_energy.data(), &_size, 4);
-
-	char buffer[25];
-	for (int m=0; m<_max_mode; m++)
-	{
-		sprintf(buffer, "Mode %d ESE", m+1);
-		diagnostics.emplace_back(new CurveDiagnostic("linlog", "Time", buffer, 410, 670));
-		diagnostics.back()->AddData(_time_array.data(), _electrostatic_energy_by_mode.at(m).data(), &_size, 4);
-	}
 
 	diagnostics.emplace_back(new CurveDiagnostic("linlin", "Time", "Total Energy(t)", 820, 670));
 	diagnostics.back()->AddData(_time_array.data(), _total_energy.data(), &_size, 4);

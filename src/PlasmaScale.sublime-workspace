@@ -4,8 +4,128 @@
 		"selected_items":
 		[
 			[
+				"exp",
+				"exp_potential"
+			],
+			[
+				"popul",
+				"population_density"
+			],
+			[
+				"ion_de",
+				"ion_density_map"
+			],
+			[
+				"E",
+				"Exp_potential"
+			],
+			[
+				"_pop",
+				"_population_size_ptr"
+			],
+			[
+				"_mac",
+				"_macro_grid_size_ptr"
+			],
+			[
+				"_vel",
+				"_velocity"
+			],
+			[
+				"macro",
+				"macro_grid_size"
+			],
+			[
+				"plas",
+				"plasma_length"
+			],
+			[
+				"fiel",
+				"field_time"
+			],
+			[
+				"_num",
+				"_number_of_microsteps"
+			],
+			[
+				"_macr",
+				"_macro_to_micro_dt_ratio"
+			],
+			[
+				"Max",
+				"ActiveMaxwellianRepresentation"
+			],
+			[
+				"ele",
+				"electron_velocity"
+			],
+			[
+				"Calcul",
+				"CalculateTotalMoment"
+			],
+			[
+				"hist",
+				"histogram_sym"
+			],
+			[
+				"_hi",
+				"_histogram"
+			],
+			[
+				"veloci",
+				"velocity_x"
+			],
+			[
+				"pop",
+				"population_size"
+			],
+			[
+				"Calcu",
+				"CalculateIonMoment"
+			],
+			[
+				"_nu",
+				"_number_of_bins"
+			],
+			[
+				"number",
+				"number_of_damping_steps"
+			],
+			[
 				"num",
-				"number_of_populations"
+				"number_of_microsteps"
+			],
+			[
+				"second",
+				"second_slope"
+			],
+			[
+				"_stack",
+				"_stack_ion_distribution"
+			],
+			[
+				"_ion",
+				"_stack_ion_distribution"
+			],
+			[
+				"_quie",
+				"_quiet_start_icdf"
+			],
+			[
+				"se",
+				"search_time"
+			],
+			[
+				"count",
+				"count_steps"
+			],
+			[
+				"_recor",
+				"_record_times"
+			],
+			[
+				"_unit",
+				"_unit_masses"
 			],
 			[
 				"_ele",
@@ -44,10 +164,6 @@
 				"electrostatic_energy_by_mode"
 			],
 			[
-				"ele",
-				"electrostatic_energy"
-			],
-			[
 				"_mom",
 				"_moment_by_population"
 			],
@@ -58,10 +174,6 @@
 			[
 				"it_vel",
 				"it_vel_x"
-			],
-			[
-				"_vel",
-				"_velocity_x"
 			],
 			[
 				"_ve",
@@ -136,10 +248,6 @@
 				"_number_of_particles"
 			],
 			[
-				"_unit",
-				"_unit_mass"
-			],
-			[
 				"popu",
 				"population_index"
 			],
@@ -166,10 +274,6 @@
 			[
 				"_fil",
 				"_filter_parameter_2"
-			],
-			[
-				"pop",
-				"population_size"
 			],
 			[
 				"_s",
@@ -268,32 +372,128 @@
 	"buffers":
 	[
 		{
-			"file": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/ionwave.inp",
+			"file": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/plasmaexpansion.inp",
 			"settings":
 			{
-				"buffer_size": 1088,
+				"buffer_size": 926,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "parameterization/MacroParameterizationWavelets.cpp",
+			"settings":
+			{
+				"buffer_size": 24406,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "parameterization/MacroParameterizationFromFile.cpp",
+			"settings":
+			{
+				"buffer_size": 14138,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/compile.sh",
+			"settings":
+			{
+				"buffer_size": 3470,
 				"line_ending": "Unix"
 			}
 		}
 	],
-	"build_system": "",
+	"build_system": "Packages/User/xes1.sublime-build",
 	"build_system_choices":
 	[
+		[
+			[
+				[
+					"Packages/C++/C++ Single File.sublime-build",
+					""
+				],
+				[
+					"Packages/C++/C++ Single File.sublime-build",
+					"Run"
+				],
+				[
+					"Packages/User/xes1.sublime-build",
+					""
+				]
+			],
+			[
+				"Packages/User/xes1.sublime-build",
+				""
+			]
+		]
 	],
 	"build_varint": "",
 	"command_palette":
 	{
-		"height": 67.0,
-		"last_filter": "",
+		"height": 327.0,
+		"last_filter": "project",
 		"selected_items":
 		[
 			[
+				"project",
+				"Project Manager: Open Project in New Window"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"proj",
+				"Project: Edit Project"
+			],
+			[
+				"list",
+				"Package Control: List Packages"
+			],
+			[
 				"cmake",
-				"Set Syntax: CMake"
+				"Package Control: Remove Package"
+			],
+			[
+				"package install",
+				"Package Control: Install Package"
+			],
+			[
+				"pack",
+				"Package Control: Upgrade/Overwrite All Packages"
+			],
+			[
+				"unmanaged",
+				"Package Control: List Unmanaged Packages"
 			],
 			[
 				"Package Control: ",
+				"Package Control: List Packages"
+			],
+			[
+				"package control",
 				"Package Control: Install Package"
+			],
+			[
+				"make",
+				"Set Syntax: Makefile"
+			],
+			[
+				"bash",
+				"Set Syntax: Shell Script (Bash)"
+			],
+			[
+				"sh",
+				"Set Syntax: HTML"
+			],
+			[
+				"c++",
+				"Set Syntax: C++"
+			],
+			[
+				"update",
+				"Package Control: Upgrade/Overwrite All Packages"
 			]
 		],
 		"width": 449.0
@@ -317,9 +517,63 @@
 	},
 	"expanded_folders":
 	[
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale"
 	],
 	"file_history":
 	[
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/PlasmaScale.sublime-project",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/src/CMakeLists.txt",
+		"/Users/cazeaux/Library/Application Support/Sublime Text 3/Packages/User/Package Control.sublime-settings",
+		"/Users/cazeaux/Library/Application Support/Sublime Text 3/Packages/Package Control/Package Control.sublime-settings",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/representation/WaveletRepresentation.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/representation/WaveletRepresentationP1.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/representation/MaxwellianRepresentation.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/representation/MaxwellianRepresentationP1.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/particles/PopulationOfParticles.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/plasma/Simulation.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/src/PlasmaScale.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/plasma/MacroState.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/parameterization/MacroParameterizationWavelets.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/plasma/State.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/representation/WaveletRepresentation.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/plasma/Plasma.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/plasma/State.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/representation/MaxwellianRepresentation.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/representation/Representation.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/representation/WaveletRepresentationP1.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/representation/MaxwellianRepresentationP1.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/test/algebra/t-Eigen.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/plasma/Plasma.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/plasma/History.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/plasma/History.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/particles/PopulationOfParticles.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/parameterization/MacroParameterizationFromFile.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/parameterization/MacroParameterizationFromFile.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/fields/PlasmaFields.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/fields/PlasmaFields.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/parameterization/MacroParameterizationWavelets.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/test/tools/t-Eigen.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/test/tools/t_Eigen.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/parameterization/MacroParameterization.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/parameterization/MacroParameterization.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/plasma/MacroState.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/tools/Tools.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/tools/Tools.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/representation/PUREHaarRepresentation.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/representation/PUREHaarRepresentation.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/ionwave.inp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/parameterization/MacroParameterizationFullPICtoHistogram.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/parameterization/MacroParameterizationFullPICtoHistogram.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/fields/Field.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/parameterization/MacroParameterizationPUREHaar.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Projets_actuels/Minnesota/2D/kaxiras/CoupledLayers paper/Feb2016/bs7x7.svg",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/wavelets/wavelet2s.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/wavelets/wavelet2s.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/plasma/Simulation.h",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/parameterization/MacroParameterizationEFPI.cpp",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/wavelets/README.MINGW4.5-STATIC.txt",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/compile.sh",
+		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/ionwave.inp",
 		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/PlasmaScale.cpp",
 		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/PlasmaScale.h",
 		"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/tools/XGrafixInterface.h",
@@ -394,70 +648,20 @@
 		"/pool/bempp/installer/py_modules/trilinos.py",
 		"/pool/bempp/installer/py_modules/tools.pyc",
 		"/pool/bempp/installer/py_modules/tools.py",
-		"/pool/bempp/installer/py_modules/tbb.pyc",
-		"/pool/bempp/installer/py_modules/tbb.py",
-		"/pool/bempp/installer/py_modules/swig.pyc",
-		"/pool/bempp/installer/py_modules/swig.py",
-		"/pool/bempp/installer/py_modules/python_patch.pyc",
-		"/pool/bempp/installer/py_modules/python_patch.py",
-		"/pool/bempp/installer/py_modules/mkl.pyc",
-		"/pool/bempp/installer/py_modules/mkl.py",
-		"/pool/bempp/installer/py_modules/dune.pyc",
-		"/pool/bempp/installer/py_modules/dune.py",
-		"/pool/bempp/installer/py_modules/cmake.pyc",
-		"/pool/bempp/installer/py_modules/cmake.py",
-		"/pool/bempp/installer/py_modules/boost.pyc",
-		"/pool/bempp/installer/py_modules/boost.py",
-		"/pool/bempp/installer/py_modules/bempp.pyc",
-		"/pool/bempp/installer/py_modules/bempp.py",
-		"/pool/bempp/installer/py_modules/armadillo.pyc",
-		"/pool/bempp/installer/py_modules/armadillo.py",
-		"/pool/bempp/installer/py_modules/ahmed.pyc",
-		"/pool/bempp/installer/py_modules/ahmed.py",
-		"/pool/bempp/installer/py_modules/__init__.pyc",
-		"/pool/bempp/installer/py_modules/__init__.py",
-		"/pool/bempp/cmake/BemppConfig.cmake.in",
-		"/pool/bempp/cmake/BemppConfigLocation.in",
-		"/pool/bempp/lib/CMakeLists.txt",
-		"/pool/bempp/python/bempp/CMakeLists.txt",
-		"/pool/bempp/doc/misc/CMakeLists.txt.example",
-		"/pool/bempp/README",
-		"/pool/bempp/bempp_setup.cfg.generated",
-		"/pool/bempp/installer/build_scripts/posix/boost_build.sh",
-		"/pool/bempp/build/contrib/boost/boost_build.sh",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_sdot_returns_double.dir/build.make",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_zdotc.dir/build.make",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_sdot_returns_float.dir/build.make",
-		"/pool/bempp/test_lapack/build/CMakeFiles/test_lapack.dir/build.make",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_blas.dir/build.make",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_zdotc_g77.dir/build.make",
-		"/pool/bempp/test_lapack/build/cmake_install.cmake",
-		"/pool/bempp/test_blas/build/cmake_install.cmake",
-		"/pool/bempp/test_blas/build/CMakeCache.txt",
-		"/pool/bempp/test_lapack/build/CMakeCache.txt",
-		"/pool/bempp/test_lapack/build/CMakeFiles/CMakeDirectoryInformation.cmake",
-		"/pool/bempp/test_blas/build/CMakeFiles/CMakeDirectoryInformation.cmake",
-		"/pool/bempp/test_blas/build/CMakeFiles/CMakeOutput.log",
-		"/pool/bempp/test_lapack/build/CMakeFiles/CMakeOutput.log",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_zdotc.dir/CXX.includecache",
-		"/pool/bempp/test_lapack/build/CMakeFiles/test_lapack.dir/CXX.includecache",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_blas.dir/CXX.includecache",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_sdot_returns_float.dir/CXX.includecache",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_zdotc_g77.dir/CXX.includecache",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_sdot_returns_double.dir/CXX.includecache",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_sdot_returns_float.dir/depend.internal",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_zdotc.dir/depend.internal",
-		"/pool/bempp/test_blas/build/CMakeFiles/test_zdotc_g77.dir/depend.internal"
+		"/pool/bempp/installer/py_modules/tbb.pyc"
 	],
 	"find":
 	{
-		"height": 23.0
+		"height": 35.0
 	},
 	"find_in_files":
 	{
 		"height": 93.0,
 		"where_history":
 		[
+			"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src/",
+			"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/src",
+			"/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/",
 			"",
 			"Power.cpp",
 			""
@@ -468,141 +672,183 @@
 		"case_sensitive": true,
 		"find_history":
 		[
-			"l",
-			"])",
-			"_size",
-			"get_x_grid_ptr",
-			"get_velocity_bin_array_ptr",
-			"_max_size_history",
-			"_electrostatic_energy_by_mode",
-			"Computed",
-			"_electrostatic_energy_by_mode",
-			"iterator",
-			"random",
-			"x0",
-			"dvb",
-			"static_cast<int>",
-			"instant_velocity_profile",
-			"std::static_cast",
-			"bin_size",
-			"nbins",
-			"bin_number",
-			"Weigh_Particle",
-			"Reset_Charge",
-			"population",
-			"_cyclotronic_rotation_parameter",
-			"density",
-			"number_of_particles",
-			"_number_of_particles",
-			"nv2",
-			"ddx",
-			"_grid_size",
+			"length",
+			"number_of_populations",
+			"periodic_helper",
+			"cellpos",
+			"first_slope",
+			"make_unique",
+			"size",
+			"_histogram",
+			"DWT",
+			"dt",
 			"grid_size",
-			"grid°size",
-			"cyc",
-			"dxdt",
-			"Compute()",
-			"plasma.",
-			"_length",
-			"_values",
-			"Plasma",
-			" endl",
-			"PI",
-			"diameter",
-			"index",
-			"*=",
-			"*= 1.0",
-			"inv_length",
-			"it",
-			"e0t",
-			"dxi",
-			"hdxi",
-			"eot",
-			"li",
-			"dxdt",
-			"ae",
-			"_charge",
-			"get_mass",
-			"_charge",
-			"kk",
-			"ng",
-			"e_field",
-			"phi_k",
-			"rho_k",
-			"_values",
-			"(*",
-			"(",
-			"(*",
+			"filter",
+			"is_velocity_profiling_active",
+			"_plasma",
+			"_plasma->get",
+			"_plasma",
+			"\\*_population_size",
+			"_population_size",
+			"\\*_number_of_bins",
+			"*_number_of_bins",
+			"_number_of_bins",
+			"mid_bin_array",
+			"new",
+			"_plasma",
+			"grid_size",
+			"dt",
+			"_plasma",
+			"_plasma->get_macro_to_micro_dt_ratio\\(\\)",
+			"_plasma->get_number_of_microsteps\\(\\)",
+			"_plasma",
+			"_plasma->length",
+			"_plasma",
+			"_plasma->macro_dx",
+			"_plasma->dt",
+			"_plasma->dx",
+			"_plasma",
+			"_plasma->_",
+			"get_grid_size_ptr\\(\\)",
+			"_plasma->get_macro_dx\\(\\)",
 			"_grid_size",
-			"_grid_size/2",
-			"esem_hist",
-			"eses",
-			"twothirds",
-			"onesix",
-			"cub",
-			"acub",
-			"sqr",
-			"get_values_x",
-			"sqr",
-			"acub",
-			"twothirds",
-			"onesix",
-			"cub",
-			"hdx",
-			"ecconst",
-			"ae",
-			"dxdt",
-			"ecconst",
-			"HISTMAX",
-			"HISTMAXX",
-			"x_array",
-			"setv",
-			"argv",
-			"argc",
-			"Start",
-			"flag",
-			"tbb",
-			"boost",
-			"doc",
-			"bempp",
-			"prefix+\"/bempp",
-			"prefix+\"/bempp\"",
-			"prefix+\"/bempp",
-			"bempp",
-			"belpp",
-			"beloo$",
-			"bempp",
-			"/bempp",
-			"Main_prefix/bempp",
-			"/bempp",
-			"bempp/include",
-			"bempp/lib",
-			"BIP",
-			"exactFunction",
-			"testGridFunction",
-			"Fiber::Function<ValueType>&",
-			"KernelFunctor",
-			"KernelFunctorFromTestFunction",
-			"addGeometricalDependencies",
-			"integral",
-			"L2NormOfDifference",
-			"testGridFunction",
-			"Fiber::Function<ResultType>& testGridFunction",
-			"gridFunction",
-			"refFunction",
-			"gridFunction",
-			"KernelFunctorFromUnaryFunction",
-			"L2NormOfDifference",
-			"L2NormOfDifferenceIntegrandFunctor",
-			"localCoefficients",
-			"gridFunction"
+			"_dx",
+			"_length",
+			"_plasma",
+			"_plasma->get_dt\\(\\)",
+			"_plasma",
+			"dt",
+			"_plasma",
+			"_plasma.dx",
+			"_plasma.dt",
+			"_plasma->get_length\\(\\)",
+			"_plasma",
+			"dx",
+			"plasma._dx",
+			"plasma._dt",
+			"plasma._dt\\(\\)",
+			"plasma._dx\\(\\)",
+			"plasma->get_dx()",
+			"plasma->get_dt()",
+			"get_dt()",
+			"set_macro_grid_size",
+			"SpMat",
+			"_solver",
+			"_x_grid",
+			"_macro_x_grid",
+			"v0",
+			"velocityocity",
+			"it_vel_x",
+			"velocityocities",
+			"velocityoc",
+			"velocity",
+			"x_vel",
+			"x_velocity",
+			"velocities_x",
+			"velocity_x",
+			"y_",
+			"_y",
+			"y",
+			"cyclo",
+			"PopulationOfParticles\\(",
+			"PopulationOfParticles(",
+			"cyclotron",
+			"magnetized",
+			"y_veloc",
+			"velocity_y",
+			"y_velocity",
+			"get_vector_of_y_velocity_arrays",
+			"get_vector_of_position_arrays",
+			"get_density_ptr",
+			"friend",
+			"get_electrical_field_ptr",
+			"get_potential_ptr",
+			"get_density_ptr",
+			"_epsilon",
+			"grid_size",
+			"&",
+			"mode",
+			"_electrostatic_energy_total",
+			"mode",
+			"la",
+			"_inverse_of_particle_radius",
+			"rho0",
+			"ResetCharge",
+			"SubstractMeanDensity",
+			"ComputeAndFilter",
+			"ComputerAndFilter",
+			"mode",
+			"eigen",
+			"abs",
+			"std::cout",
+			"helper",
+			"_accfield",
+			"SetAccField",
+			"_current_step_ion_",
+			"timenunit",
+			"dt",
+			"Prepare",
+			"std::log",
+			"delay",
+			"density",
+			"Load",
+			"damping",
+			"alpha",
+			"_number_of_bins",
+			"_accumulation_weight",
+			"PushBackKineticEnergy",
+			"electron_thermal_vel",
+			"TotalMoment",
+			"std::move"
 		],
 		"highlight": true,
 		"in_selection": false,
 		"preserve_case": false,
-		"regex": false,
+		"regex": true,
 		"replace_history":
 		[
+			"s",
+			"slope",
+			"grid_end",
+			"_coefficients",
+			"grid_end",
+			"_population_size",
+			"_number_of_bins",
+			"_plasma->_macro_to_micro_dt_ratio",
+			"_plasma->_number_of_microsteps",
+			"_plasma->_length",
+			"_plasma->_macro_dx",
+			"_plasma->_dt",
+			"_plasma->_dx",
+			"_plasma->macro_dx",
+			"dx",
+			"_plasma->dt",
+			"_plasma->dx",
+			"_plasma->dt",
+			"_plasma->length",
+			"plasma.dx",
+			"plasma.dt",
+			"plasma._dt",
+			"plasma._dx",
+			"plasma._dt",
+			"velocity",
+			"it_vel",
+			"velocity",
+			"velocities",
+			"velocity",
+			"_electrostatic_energy",
+			"Compute",
+			"icdf",
+			"cutoff_time",
+			"std::abs",
+			"_high_pass",
+			"_low_pass",
+			"delay_time",
+			"algebra_time",
+			"timeunit",
+			".at(i)",
+			"quiet_start_icdf",
+			"quiet_start_vel",
 			"_max_size",
 			"partial_velocity_profile",
 			"_number_of_bins",
@@ -649,19 +895,19 @@
 			[
 				{
 					"buffer": 0,
-					"file": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/ionwave.inp",
+					"file": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/plasmaexpansion.inp",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1088,
+						"buffer_size": 926,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								685,
-								685
+								261,
+								261
 							]
 						],
 						"settings":
@@ -673,6 +919,99 @@
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "parameterization/MacroParameterizationWavelets.cpp",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 24406,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								24074,
+								24074
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "parameterization/MacroParameterizationFromFile.cpp",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 14138,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								508,
+								508
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 3,
+					"file": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/compile.sh",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3470,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								205,
+								205
+							]
+						],
+						"settings":
+						{
+							"color_scheme": "Packages/Monokai Extended/Monokai Extended.tmTheme",
+							"syntax": "Packages/ShellScript/Shell-Unix-Generic.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
 					"type": "text"
 				}
 			]
@@ -695,6 +1034,12 @@
 				0,
 				1,
 				1
+			],
+			[
+				0,
+				1,
+				1,
+				2
 			]
 		],
 		"cols":
@@ -705,6 +1050,7 @@
 		"rows":
 		[
 			0.0,
+			0.827582082747,
 			1.0
 		]
 	},
@@ -717,11 +1063,11 @@
 	{
 		"height": 0.0
 	},
-	"pinned_build_system": "Packages/LaTeXTools/LaTeX.sublime-build",
+	"pinned_build_system": "",
 	"project": "PlasmaScale.sublime-project",
 	"replace":
 	{
-		"height": 42.0
+		"height": 64.0
 	},
 	"save_all_on_build": true,
 	"select_file":
@@ -763,7 +1109,7 @@
 	"show_open_files": true,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 303.0,
+	"side_bar_width": 359.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

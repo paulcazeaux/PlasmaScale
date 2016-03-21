@@ -3,22 +3,19 @@
 /* Constructors ========================================================================================= */
 PopulationOfParticles::PopulationOfParticles(std::shared_ptr<const Plasma> plasma,
 			std::shared_ptr<int> iteration,
-			double population_size, double unit_mass, double unit_charge, double cyclotronic_rotation_parameter) :
+			double population_size, double unit_mass, double unit_charge) :
 		_plasma(plasma), 
 		_iteration(iteration),
+		_population_size(population_size),
 		_unit_mass(unit_mass),
 		_total_mass(unit_mass * population_size),
 		_total_weight(population_size),
-		_mean_density(population_size*unit_charge/plasma->get_length()),
-		_unit_charge(unit_charge),
-		_cyclotronic_rotation_parameter(cyclotronic_rotation_parameter),
-		_magnetized(_cyclotronic_rotation_parameter!=0.)
+		_mean_density(population_size*unit_charge/plasma->_length),
+		_unit_charge(unit_charge)
 {
-	_population_size = std::unique_ptr<int> (new int(population_size));
 	_weights = std::vector<double> (population_size, 1.0);
 	_position = std::vector<double> (population_size);
-	_velocity_x = std::vector<double> (population_size);
-	_velocity_y = std::vector<double> (population_size);
+	_velocity = std::vector<double> (population_size);
 
 	_profiling_active = false;
 }
@@ -27,39 +24,46 @@ PopulationOfParticles::PopulationOfParticles(const MacroParameterization & param
 					std::shared_ptr<int> iteration) :
 		_plasma(parameterization.get_plasma()),
 		_iteration(iteration),
+		_population_size(parameterization.get_population_size(index)),
 		_unit_mass(parameterization.get_unit_mass(index)),
-		_unit_charge(parameterization.get_unit_charge(index)),
-		_cyclotronic_rotation_parameter(parameterization.get_cyclotronic_rotation_parameter(index)),
-		_magnetized(_cyclotronic_rotation_parameter!=0.)
+		_unit_charge(parameterization.get_unit_charge(index))
 
 {
-	_population_size = std::unique_ptr<int> (new int(parameterization.get_population_size(index)));
-	_weights = std::vector<double> (*_population_size, 1.0);
-	_position = std::vector<double> (*_population_size);
-	_velocity_x = std::vector<double> (*_population_size);
-	_velocity_y = std::vector<double> (*_population_size);
+	_weights = std::vector<double> (_population_size, 1.0);
+	_position = std::vector<double> (_population_size);
+	_velocity = std::vector<double> (_population_size);
 
-	_total_mass = _unit_mass * (*_population_size);
-	_total_weight = *_population_size;
-	_mean_density = (*_population_size)*_unit_charge/_plasma->get_length();
+	_total_mass = _unit_mass * _population_size;
+	_total_weight = _population_size;
+	_mean_density = _population_size*_unit_charge/_plasma->_length;
 
 	this->SetupVelocityDiagnostics(parameterization, index);
 }
 
+void PopulationOfParticles::set_new_number_of_particles(const int np)
+{
+	_population_size = np;
+	_weights.resize(np);
+	_position.resize(np);
+	_velocity.resize(np);
+
+	_total_mass = _unit_mass * _population_size;
+	_total_weight = _population_size;
+	_mean_density = _population_size*_unit_charge/_plasma->_length;
+}
+
 void PopulationOfParticles::Reset()
 {
-	std::fill(_weights.begin(), 	_weights.end(), 		1.);
-	std::fill(_position.begin(), 	_position.end(), 		0.);
-	std::fill(_velocity_x.begin(), _velocity_x.end(), 	0.);
-	std::fill(_velocity_y.begin(), _velocity_y.end(), 	0.);
+	std::fill(_weights.begin(), 	_weights.end(), 	1.);
+	std::fill(_position.begin(), 	_position.end(), 	0.);
+	std::fill(_velocity.begin(), 	_velocity.end(), 	0.);
 }
 
 bool PopulationOfParticles::CheckParameters(const MacroParameterization & parameterization, const int index)
 {
-	return ((parameterization.get_population_size(index)==*_population_size)
+	return ((parameterization.get_population_size(index)==_population_size)
 			&& (parameterization.get_unit_charge(index)==_unit_charge)
-			&& (parameterization.get_unit_mass(index)==_unit_mass) 
-			&& (parameterization.get_cyclotronic_rotation_parameter(index)==_cyclotronic_rotation_parameter));
+			&& (parameterization.get_unit_mass(index)==_unit_mass));
 }
 
 void PopulationOfParticles::ComputeAggregateParameters()
@@ -71,192 +75,119 @@ void PopulationOfParticles::ComputeAggregateParameters()
 	}
 	_total_weight = total_weight;
 	_total_mass = total_weight * _unit_mass;
-	_mean_density = _total_weight * _unit_charge/_plasma->get_length();
+	_mean_density = _total_weight * _unit_charge/_plasma->_length;
 }
 
 void PopulationOfParticles::Move()
-{
-	static double plasma_length = static_cast<double>(_plasma->get_length());
-	std::vector<double>::iterator it_vel_x = _velocity_x.begin();
-	
-	for (auto & position : _position) 
+{	
+	int i=0, N = _population_size;
+	while (i<N)
  	{
-		position += *(it_vel_x++);
-		while (position < 0.0)
+		_position[i] += _velocity[i];
+
+		if (_position[i] < 0.0)
 		{
-			position += plasma_length;
+			/* Reflected particle */
+			_position[i] = - _position[i];
+			_velocity[i] = -_velocity[i];
+			i++;
 		}
-		while (position  >= plasma_length)
+		else if (_position[i]  >= _plasma->_length) 
 		{
-			position -= plasma_length;
+			/* Particle escapes */
+			_total_weight  -= _weights[i];
+			_total_mass 	= _total_weight * _unit_mass;
+			_mean_density 	= _total_weight * _unit_charge/_plasma->_length;
+
+			_position[i] = _position[N-1];
+			_velocity[i] = _velocity[N-1];
+			_weights[i]  = _weights[N-1];
+			N--;
 		}
- 	}
+		else
+		{
+			i++;
+		}
+	}
+	_population_size = N;
 }
 
 void PopulationOfParticles::Accelerate(const PlasmaFields& fields, double factor /* = 1.0 */ )
 {
 	/* Compute the acceleration from the Lorentz forces */
-	static double dt = _plasma->get_dt();
- 	static int 	grid_size = _plasma->get_grid_size();
-	static std::vector<double> acceleration(grid_size);
-	static double previous_e_to_acc_factor = 1.;
-	static int previous_iteration = 0;
-	std::vector<double>::iterator it_acc, it_vel_x, it_vel_y, it_weights;
+	static std::vector<double> acceleration;
+	std::vector<double>::iterator it_acc, it_vel, it_weights;
 
-	double e_to_acc_factor = _unit_charge/_unit_mass *dt*dt* factor;
+	double e_to_acc_factor = _unit_charge/_unit_mass * std::pow(_plasma->_dt, 2) * factor;
 	double sum_v = 0.0, sum_v_square = 0.0;
 
- 	if (!_magnetized)
-   	{
-   		if (e_to_acc_factor != previous_e_to_acc_factor || (*_iteration) != previous_iteration) /* check if it is necessary to recompute the array */
-		{ 
-			double * e_field_array = fields.get_electrical_field_ptr();
-		 	for (int i=0; i<grid_size; i++)
-		 		acceleration.at(i) = e_to_acc_factor * e_field_array[i];  // do full steps
-		 	
-		 	previous_e_to_acc_factor = e_to_acc_factor;
- 			previous_iteration = *_iteration;
+	acceleration.resize(_plasma->_grid_end+1);
+ 	for (int i=0; i<=_plasma->_grid_end; i++)
+ 		acceleration.at(i) = e_to_acc_factor * fields._electrical_field.at(i);  // do full steps
+
+	int grid_end = _plasma->_grid_end;
+	for (int i=0; i<_population_size; i++)
+	{
+		double	vold =  _velocity.at(i), vnew = vold;
+		int 	bin = _plasma->find_index_on_grid(_position.at(i));
+		double	s = _plasma->find_position_in_cell(_position.at(i));		// Belongs to [0, 1)
+
+		if (bin >= 0 && bin < grid_end)
+		{
+			vnew += (1. - s) * acceleration.at(bin);
+			vnew += s * acceleration.at(bin+1);
 		}
 
- 		it_vel_x 	= _velocity_x.begin();
- 		it_weights	= _weights.begin();
- 		for (auto & position : _position)
- 		{
-			double	vold = *it_vel_x, vnew = *it_vel_x;
- 			int 	bin = _plasma->find_index_on_grid(position);				// Guaranteed to belong to [[0 ... grid_size -1]]
- 			double	position_in_cell = _plasma->find_position_in_cell(position);		// Belongs to [0, 1)
-		
-			if (bin < grid_size - 1)
-			{
-				vnew += (1. - position_in_cell) * acceleration.at(bin);
-				vnew += position_in_cell * acceleration.at(bin+1);
-			}
-			else
-			{
-				vnew += (1. - position_in_cell) * acceleration.at(bin);
-				vnew += position_in_cell * acceleration.at(bin+1-grid_size);  
-			}
-
-			sum_v 			+= (*it_weights) * vnew;
-			sum_v_square 	+= (*it_weights)*vold*vnew;
-			*(it_vel_x++) = vnew;
-			it_weights++;
-		}
-		_moment  = 		_unit_mass * sum_v 		 /dt;
- 		_kinetic_energy = 0.5 * _unit_mass * sum_v_square / std::pow(dt, 2.0);
+		sum_v 			+= _weights.at(i) * vnew;
+		sum_v_square 	+= _weights.at(i) * vold*vnew;
+		_velocity.at(i) = vnew;
 	}
-	else
-   	{
-   		if (e_to_acc_factor != previous_e_to_acc_factor || (*_iteration) != previous_iteration) /* check if it is necessary to recompute the array */
-		{ 
-			double * e_field_array = fields.get_electrical_field_ptr();
-		 	for (int i=0; i<grid_size; i++)
-		 		acceleration.at(i) = 0.5 * e_to_acc_factor * e_field_array[i];  // do half steps
-
-		 	previous_e_to_acc_factor = e_to_acc_factor;
- 			previous_iteration = *_iteration;
-		}
- 		double s = 2.0*_cyclotronic_rotation_parameter/(1.0 + std::pow(_cyclotronic_rotation_parameter, 2.0));
-
- 		it_vel_x 	= _velocity_x.begin();
- 		it_vel_y 	= _velocity_y.begin();
- 		it_weights	= _weights.begin();
- 		for (auto & position : _position)
- 		{			
- 			double	vx, vy, acc;
- 			int 	bin = _plasma->find_index_on_grid(position);				// Guaranteed to belong to [[0 ... grid_size -1]]
- 			double	position_in_cell = _plasma->find_position_in_cell(position);		// Belongs to [0, 1)
-			if (bin < grid_size - 1)
-			{
-				acc = (1. - position_in_cell) * acceleration.at(bin) + position_in_cell * acceleration.at(bin+1);  
-			}
-			else
-			{
-				acc = (1. - position_in_cell) * acceleration.at(bin) + position_in_cell * acceleration.at(bin+1-grid_size);  
-			}
-			vy	= *it_vel_y;
-			vx	= *it_vel_x - _cyclotronic_rotation_parameter * vy + acc;
-			vy += s * vx;
-			vx -= _cyclotronic_rotation_parameter * vy;
-
-			sum_v_square += std::pow(*it_weights++, 2.0) * (vx*vx + vy*vy);
-
-			*it_vel_x++ = vx + acc;
-			*it_vel_y++ = vy;
-		}
-
- 		_kinetic_energy = 0.5 * _unit_mass * sum_v_square / std::pow(dt, 2.0);
-	}
+	_moment  = 		_unit_mass * sum_v / _plasma->_dt;
+	_kinetic_energy = 0.5 * _unit_mass * sum_v_square / std::pow(_plasma->_dt, 2.0);
 }
 
 void PopulationOfParticles::Weigh(PlasmaFields& fields)
 {
-	auto it_weights = _weights.begin();
-	for (auto & position : _position)
-	{
-		fields.WeighParticle( position, _unit_charge * (*it_weights++));
-	}
-	fields.SubstractMeanDensity(_mean_density);
-}
+	double qdx = _unit_charge / _plasma->_dx;
+	int grid_end = _plasma->_grid_end;
 
-void PopulationOfParticles::Prepare(const PlasmaFields &fields)
-{
-	static double dt = _plasma->get_dt();
- 
- 	/* Rescaling */
-	if (!_magnetized)
+	for (int i=0; i<_population_size; i++)
 	{
-		for (auto & it : _velocity_x) 
-	  		it *= dt;
-	}
-	else
-	{
-		double cos_cyclotron = 1.0 /std::sqrt(1.0 + std::pow(_cyclotronic_rotation_parameter, 2.0));
-		double sin_cyclotron = cos_cyclotron * _cyclotronic_rotation_parameter;
-
-		std::vector<double>::iterator it_vel_x = _velocity_x.begin();
-		std::vector<double>::iterator it_vel_y = _velocity_y.begin();
-		for (; it_vel_x!= _velocity_x.end(); it_vel_x++, it_vel_y++) 
+		double x = _position[i];
+		int bin 	= _plasma->find_index_on_grid(x);
+		if (bin>=0 && bin<grid_end)
 		{
-			double vx = *it_vel_x, vy = *it_vel_y;
-			*it_vel_x =  dt * ( sin_cyclotron * vy + cos_cyclotron * vx);
-			*it_vel_y =  dt * ( cos_cyclotron * vy - sin_cyclotron * vx);
+			double s = _plasma->find_position_in_cell(x);
+			double w = _weights[i]*qdx;
+
+			fields._charge[bin]   += (1.-s)*w;
+			fields._charge[bin+1] += s*w;
 		}
 	}
-
-	/* Prepare the particles velocities by taking one-half step back with the acceleration induced by the fields */
-	this->Accelerate(fields, -0.5);
-	this->ComputeVelocityProfile();
 }
 
-void PopulationOfParticles::Prepare(const PlasmaFields &fields, const bool toggle_half_step)
+void PopulationOfParticles::Prepare(const PlasmaFields &fields, const bool toggle_half_step /* = true */)
 {
-	static double dt = _plasma->get_dt();
- 
  	/* Rescaling */
-	if (!_magnetized)
-	{
-		for (auto & it : _velocity_x) 
-	  		it *= dt;
-	}
-	else
-	{
-		double cos_cyclotron = 1.0 /std::sqrt(1.0 + std::pow(_cyclotronic_rotation_parameter, 2.0));
-		double sin_cyclotron = cos_cyclotron * _cyclotronic_rotation_parameter;
-
-		std::vector<double>::iterator it_vel_x = _velocity_x.begin();
-		std::vector<double>::iterator it_vel_y = _velocity_y.begin();
-		for (; it_vel_x!= _velocity_x.end(); it_vel_x++, it_vel_y++) 
-		{
-			double vx = *it_vel_x, vy = *it_vel_y;
-			*it_vel_x =  dt * ( sin_cyclotron * vy + cos_cyclotron * vx);
-			*it_vel_y =  dt * ( cos_cyclotron * vy - sin_cyclotron * vx);
-		}
-	}
+	double dt = _plasma->_dt;
+	for (auto & v : _velocity) 
+  		v *= dt;
+	  	
 	/* Prepare the particles velocities by taking one-half step back with the acceleration induced by the fields */
 	if (toggle_half_step)
 		this->Accelerate(fields, -0.5);
-
+	else
+	{
+		double sum_v = 0.0, sum_v_square = 0.0;
+		for (int i=0; i<_population_size; i++)
+		{
+			double	v =  _velocity.at(i);
+			sum_v 			+= _weights.at(i) * v;
+			sum_v_square 	+= _weights.at(i) * v * v;
+		}
+		_moment  = 		_unit_mass * sum_v / _plasma->_dt;
+		_kinetic_energy = 0.5 * _unit_mass * sum_v_square / std::pow(_plasma->_dt, 2.0);
+	}
 	this->ComputeVelocityProfile();
 }
 
@@ -270,13 +201,13 @@ void PopulationOfParticles::SetupVelocityDiagnostics(int nbins, int velocity_acc
 	}
 
 	_profiling_active = true;
-	_number_of_bins = std::unique_ptr<int>(new int( nbins>2 ? nbins : 2));
+	_number_of_bins = (nbins>2 ? nbins : 2);
 	_velocity_accumulation_interval = velocity_accumulation_interval;
 	_count 							= 0;
 	_accumulation_weight			= 1./static_cast<double>(velocity_accumulation_interval);
-	_mid_bin_array 					= std::unique_ptr<std::vector<double> > (new std::vector<double>(*_number_of_bins));
-	_partial_velocity_profile 		= std::unique_ptr<std::vector<double> > (new std::vector<double>(*_number_of_bins, 0.));
-	_accumulated_velocity_profile	= std::unique_ptr<std::vector<double> > (new std::vector<double>(*_number_of_bins, 0.));
+	_mid_bin_array 					= std::make_unique<std::vector<double> > (_number_of_bins);
+	_partial_velocity_profile 		= std::make_unique<std::vector<double> > (_number_of_bins);
+	_accumulated_velocity_profile	= std::make_unique<std::vector<double> > (_number_of_bins);
 
 	if(vupper-vlower < 0.0)
 	{
@@ -291,34 +222,34 @@ void PopulationOfParticles::SetupVelocityDiagnostics(int nbins, int velocity_acc
 	if(vupper-vlower > 0.0)
 	{
 		_bin_start = vlower;
-		_bin_width = (vupper-vlower)/static_cast<double>(*_number_of_bins);
+		_bin_width = (vupper-vlower)/static_cast<double>(_number_of_bins);
 	}
 	else if(vt1 + vt2 > 0.0) 
 	{
 		_bin_start = v0 - 5.0*(vt1 + vt2);  
-		_bin_width = 10.0 * (vt1 + vt2)/static_cast<double>(*_number_of_bins);  /*  so that the distribution goes from
+		_bin_width = 10.0 * (vt1 + vt2)/static_cast<double>(_number_of_bins);  /*  so that the distribution goes from
 							v0-5*vt to v0+5*vt  */
 	}
 	else if (v0!=0)
 	{
 		_bin_start = (v0 < 0 ? 2.0*v0 : 0);
-		_bin_width = 2.0*std::abs(v0)/static_cast<double>(*_number_of_bins);
+		_bin_width = 2.0*std::abs(v0)/static_cast<double>(_number_of_bins);
 	}
 	else
 	{
 		_bin_start = 0.0;
-		_bin_width = 1.0/static_cast<double>(*_number_of_bins);
+		_bin_width = 1.0/static_cast<double>(_number_of_bins);
 	}
 
 		/*  setup _mid_bin_array for this population  */
-	for(int i=0; i<*_number_of_bins; i++)
+	for(int i=0; i<_number_of_bins; i++)
 	{
 		_mid_bin_array->at(i) = (_bin_start + _bin_width*(static_cast<double>(i)+0.5));
 	}
 
 		/* Rescaling */
-	_bin_width *= _plasma->get_dt();
-	_bin_start *= _plasma->get_dt();
+	_bin_width *= _plasma->_dt;
+	_bin_start *= _plasma->_dt;
 
 }
 
@@ -331,42 +262,41 @@ void PopulationOfParticles::SetupVelocityDiagnostics(const MacroParameterization
 	}
 
 	_profiling_active = true;
-	_number_of_bins = std::unique_ptr<int>(new int( parameterization.GetNumberOfBins(index)));
-	_velocity_accumulation_interval = _plasma->get_velocity_accumulation_interval();
+	_number_of_bins = parameterization.GetNumberOfBins(index);
 	_count 							= 0;
-	_accumulation_weight			= 1./static_cast<double>(_velocity_accumulation_interval);
-	_mid_bin_array 					= std::unique_ptr<std::vector<double> > (new std::vector<double>(*_number_of_bins));
-	_partial_velocity_profile 		= std::unique_ptr<std::vector<double> > (new std::vector<double>(*_number_of_bins, 0.));
-	_accumulated_velocity_profile	= std::unique_ptr<std::vector<double> > (new std::vector<double>(*_number_of_bins, 0.));
+	_accumulation_weight			= 1./static_cast<double>(_plasma->_velocity_accumulation_interval);
+	_mid_bin_array 					= std::make_unique<std::vector<double> > (_number_of_bins);
+	_partial_velocity_profile 		= std::make_unique<std::vector<double> > (_number_of_bins);
+	_accumulated_velocity_profile	= std::make_unique<std::vector<double> > (_number_of_bins);
 
 	_bin_start = parameterization.GetBinStart(index);
 	_bin_width = parameterization.GetBinWidth(index);
 
 		/*  setup _mid_bin_array for this population  */
-	for(int i=0; i<*_number_of_bins; i++)
+	for(int i=0; i<_number_of_bins; i++)
 	{
 		_mid_bin_array->at(i) = (_bin_start + _bin_width*(static_cast<double>(i)+0.5));
 	}
 
 		/* Rescaling */
-	_bin_width *= _plasma->get_dt();
-	_bin_start *= _plasma->get_dt();
+	_bin_width *= _plasma->_dt;
+	_bin_start *= _plasma->_dt;
 }
 
 void PopulationOfParticles::ComputeVelocityProfile()
 {
 	if (!_profiling_active)
 		return;
+
 	/* Add the current velocity distribution to the partial accumulated distribution */
 	if (_count < _velocity_accumulation_interval)
 	{
-		auto it_weights = _weights.begin();
-		for (auto & v : _velocity_x)
+		for (int i=0; i<_population_size; i++)
 		{
-			int v_index = static_cast<int>(std::floor((v-_bin_start)/_bin_width));
-			if(v_index>=0 && v_index<*_number_of_bins)
+			int v_index = static_cast<int>(std::floor((_velocity.at(i)-_bin_start)/_bin_width));
+			if(v_index>=0 && v_index<_number_of_bins)
 			{
-				_partial_velocity_profile->at(v_index) += _accumulation_weight * (*it_weights++);
+				_partial_velocity_profile->at(v_index) += _accumulation_weight * _weights.at(i);
 			}
 		}
 		_count++;
@@ -375,21 +305,17 @@ void PopulationOfParticles::ComputeVelocityProfile()
 	if (_count == _velocity_accumulation_interval)
 	{
 	/* Yes ! Now we update the accumulated profile */
-		auto it_avp = _accumulated_velocity_profile->begin();
-		for (auto & v : *_partial_velocity_profile)
-		{
-			*(it_avp++) =  v * _unit_mass;
-		}
+		for (int i=0; i<_number_of_bins; i++)
+			_accumulated_velocity_profile->at(i) =  _partial_velocity_profile->at(i) * _unit_mass;
 
 			/* Reset the partial accumulated distribution to the current velocity distribution */
 		std::fill(_partial_velocity_profile->begin(), _partial_velocity_profile->end(), 0.);
-		auto it_weights = _weights.begin();
-		for (auto & v : _velocity_x)
+		for (int i=0; i<_population_size; i++)
 		{
-			int v_index = static_cast<int>(std::floor((v-_bin_start)/_bin_width));
-			if(v_index>=0 && v_index<*_number_of_bins)
+			int v_index = static_cast<int>(std::floor((_velocity.at(i)-_bin_start)/_bin_width));
+			if(v_index>=0 && v_index<_number_of_bins)
 			{
-				_partial_velocity_profile->at(v_index) += _accumulation_weight * (*it_weights++);
+				_partial_velocity_profile->at(v_index) += _accumulation_weight * _weights.at(i);
 			}
 		}
 	/* Reset the accumulation counter */
@@ -399,15 +325,15 @@ void PopulationOfParticles::ComputeVelocityProfile()
 
 void PopulationOfParticles::ComputeVelocityProfile(std::vector<double> & velocity_profile)
 {
-	velocity_profile.resize(*_number_of_bins);
+	velocity_profile.resize(_number_of_bins);
 	std::fill(velocity_profile.begin(), velocity_profile.end(), 0.);
-	auto it_weights = _weights.begin();
-	for (auto & v : _velocity_x)
+
+	for (int i=0; i<_population_size; i++)
 	{
-		int v_index = static_cast<int>(std::floor((v-_bin_start)/_bin_width));
-		if(v_index>=0 && v_index<*_number_of_bins)
+		int v_index = static_cast<int>(std::floor((_velocity.at(i)-_bin_start)/_bin_width));
+		if(v_index>=0 && v_index<_number_of_bins)
 		{
-			velocity_profile.at(v_index) += _unit_mass * (*it_weights++);
+			velocity_profile.at(v_index) += _unit_mass * _weights.at(i);
 		}
 	}
 }

@@ -4,7 +4,7 @@
 
 /* constuctor and destructor ============================================================ */
 State::State(	std::shared_ptr<const Plasma> plasma ) :
-	_plasma(plasma), _number_of_populations(plasma->get_number_of_populations())
+	_plasma(plasma), _number_of_populations(plasma->_number_of_populations)
 {
 	_simulation_time 	= std::make_shared<double>(0.0);
 	_iteration			= std::make_shared<int>(0);
@@ -47,11 +47,20 @@ std::ostream& operator<<( std::ostream& os, const State& state)
 	return os;
 }
 
+void State::set_new_number_of_particles(const int population_index, const int new_population_size)
+{
+	_populations.at(population_index)->set_new_number_of_particles(new_population_size);
+}
+
+
 void State::Load(const MacroParameterization & parameterization)
 {
 	/* First we check that the size and parameters are right */
 	for (int index=0; index<_number_of_populations; index++)
 	{
+		/* Set number of particles in the population */
+		_populations.at(index)->set_new_number_of_particles(parameterization.get_population_size(index));
+
 		if (!_populations.at(index)->CheckParameters(parameterization, index))
 		{
             std::cout << "Attention ! Wrong parameters for the population. Creating a new one, this could break diagnostics pointers !!" << std::endl;
@@ -61,7 +70,7 @@ void State::Load(const MacroParameterization & parameterization)
 	/* Then we let the parameterization fill the particle arrays */
 	parameterization.Load(*this);
 	this->Weigh();
-	_fields->ComputeAndFilter();
+	_fields->Compute();
 	for (auto & population : _populations)
 	{
 		population->ComputeAggregateParameters();
@@ -69,10 +78,10 @@ void State::Load(const MacroParameterization & parameterization)
 	}
 }
 
-void State::Prepare(const bool toggle_half_step)
+void State::Prepare(const bool toggle_half_step /* = true */)
 {
 	this->Weigh();
-	_fields->ComputeAndFilter();
+	_fields->Compute();
 	for (auto & population : _populations)
 	{
 		population->ComputeAggregateParameters();
@@ -80,10 +89,10 @@ void State::Prepare(const bool toggle_half_step)
 	}
 }
 
-void State::Prepare(const int population_index, const bool toggle_half_step)
+void State::Prepare(const int population_index, const bool toggle_half_step /* = true */)
 {
 	this->Weigh();
-	_fields->ComputeAndFilter();
+	_fields->Compute();
 	for (auto & population : _populations)
 		population->ComputeAggregateParameters();
 	_populations.at(population_index)->Prepare(*_fields, toggle_half_step);
@@ -93,56 +102,43 @@ void State::Step()
 {
 	this->Accelerate();
 	this->Move();
-	_fields->ComputeAndFilter();
+	_fields->Compute();
 
 	(*_iteration)++;
-	*_simulation_time += _plasma->get_dt();
+	*_simulation_time += _plasma->_dt;
 }
 
 void State::GetEField(std::vector<double> & Efield)
 {
-	_fields->ComputeAndFilter();
-	_fields->GetEField(Efield);
+	_fields->Compute();
+	Efield.resize(_plasma->_grid_end+1);
+	for (int j=0; j<=_plasma->_grid_end; j++)
+		Efield.at(j) = _fields->_electrical_field.at(j);
 }
 
 void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics)
 {
 	char buffer[25];
-	double dt = _plasma->get_dt();
-	double length = _plasma->get_length();
-
 
 	std::vector<std::vector<double> * > positions 		= this->get_vector_of_position_arrays();
-	std::vector<std::vector<double> * > x_velocities 	= this->get_vector_of_x_velocity_arrays();
-	std::vector<std::vector<double> * > y_velocities 	= this->get_vector_of_y_velocity_arrays();
-	std::vector<bool> magnetizations					= this->get_vector_of_magnetizations();
+	std::vector<std::vector<double> * > velocity 	= this->get_vector_of_velocity_arrays();
 	std::vector<int *> sizes 							= this->get_vector_of_sizes();
 
 	/*  set up  windows for the phase space distribution of particles.  */
 	diagnostics.emplace_back(new ScatterDiagnostic(
 				"linlin", "X", "Vx-X Phase Space",
 				 410, 0, 
-				 1.0, 1.0/dt,
-				 false, false, 0.0, length, -3.0, 3.0, std::string("closed")));
+				 1.0, 1.0/_plasma->_dt,
+				 false, false, 0.0, _plasma->_length, -3.0, 3.0, std::string("closed")));
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		diagnostics.back()->AddData(positions.at(i), x_velocities.at(i), sizes.at(i), i);
+		diagnostics.back()->AddData(positions.at(i), velocity.at(i), sizes.at(i), i);
 	}
 
 
 	/*  set up  windows for velocity distributions.  */
 
-	for (int i = 0; i<_number_of_populations; i++)
-	{
-		if (magnetizations.at(i))
-		{
-			std::sprintf(buffer, "Vy vs Vx species %d", i+1);
-			diagnostics.emplace_back(new ScatterDiagnostic("linlin", "Velocity", buffer, 410, 335));
-			diagnostics.back()->AddData(x_velocities.at(i), y_velocities.at(i), sizes.at(i), i);
-		}
-	}
-
-	if (_plasma->is_velocity_profiling_active())
+	if (_plasma->_profiling_active)
 	{
 		std::vector<std::vector<double> *> mid_bin_arrays 		= this->get_vector_of_bin_arrays();
 		std::vector<std::vector<double> *> velocity_profiles 	= this->get_vector_of_velocity_profiles();
@@ -167,19 +163,19 @@ void State::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnost
 
 
 	double * x_array 	= _plasma->get_x_grid_ptr();
-	int * grid_size 	= _plasma->get_grid_size_ptr(); 
+	int * grid_end 	= _plasma->get_grid_end_ptr(); 
 	double * rho		= _fields->get_density_ptr();
 	double * e 			= _fields->get_electrical_field_ptr();
 	double * phi 		= _fields->get_potential_ptr();
 
-	diagnostics.emplace_back(new CurveDiagnostic("linlin", "X", "rho(x)", 0, 670, 1.0, 1.0, false, true, 0.0, length, 0.0, 0.0));
-	diagnostics.back()->AddData(x_array, rho, grid_size, 2);
+	diagnostics.emplace_back(new CurveDiagnostic("linlin", "X", "rho(x)", 0, 670, 1.0, 1.0, false, true, 0.0, _plasma->_length, 0.0, 0.0));
+	diagnostics.back()->AddData(x_array, rho, grid_end, 2);
 
-	diagnostics.emplace_back(new CurveDiagnostic("linlin", "X", "E field(x)", 410, 670, 1.0, 1.0, false, true, 0.0, length, 0.0, 0.0));
-	diagnostics.back()->AddData(x_array, e, grid_size, 3);
+	diagnostics.emplace_back(new CurveDiagnostic("linlin", "X", "E field(x)", 410, 670, 1.0, 1.0, false, true, 0.0, _plasma->_length, 0.0, 0.0));
+	diagnostics.back()->AddData(x_array, e, grid_end, 3);
 
-	diagnostics.emplace_back(new CurveDiagnostic("linlin", "X", "Potential(x)", 820, 670, 1.0, 1.0, false, true, 0.0, length, 0.0, 0.0));
-	diagnostics.back()->AddData(x_array, phi, grid_size, 4);
+	diagnostics.emplace_back(new CurveDiagnostic("linlin", "X", "Potential(x)", 820, 670, 1.0, 1.0, false, true, 0.0, _plasma->_length, 0.0, 0.0));
+	diagnostics.back()->AddData(x_array, phi, grid_end, 4);
 
 	/* SKIP THE GRAPH OF Potential phi(k) : IT IS FALSE IN THE ORIGINAL XES1 */
 }
@@ -196,22 +192,12 @@ std::vector<std::vector<double> * >	State::get_vector_of_position_arrays() const
 	return positions;
 }
 
-std::vector<std::vector<double> * >	State::get_vector_of_x_velocity_arrays() const
+std::vector<std::vector<double> * >	State::get_vector_of_velocity_arrays() const
 {
 	std::vector<std::vector<double> * > velocities = std::vector<std::vector<double> * > (_populations.size());
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		velocities.at(i) = & (_populations.at(i)->_velocity_x);
-	}
-	return velocities;
-}
-
-std::vector<std::vector<double> * >	State::get_vector_of_y_velocity_arrays() const
-{
-	std::vector<std::vector<double> * > velocities = std::vector<std::vector<double> * > (_populations.size());
-	for (int i = 0; i < _number_of_populations; i++)
-	{
-		velocities.at(i) = & (_populations.at(i)->_velocity_y);
+		velocities.at(i) = & (_populations.at(i)->_velocity);
 	}
 	return velocities;
 }
@@ -226,22 +212,12 @@ std::vector<std::vector<double> * >	State::get_vector_of_weight_arrays() const
 	return weights;
 }
 
-std::vector<bool> State::get_vector_of_magnetizations() const
-{
-	std::vector<bool> magnetizations = std::vector<bool>(_populations.size());
-	for (int i = 0; i < _number_of_populations; i++)
-	{
-		magnetizations.at(i) = _populations.at(i)->_magnetized;
-	}
-	return magnetizations;
-}
-
 std::vector<int *>	State::get_vector_of_sizes() const
 {
 	std::vector<int *> sizes = std::vector<int *>(_number_of_populations);
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		sizes.at(i) = (_populations.at(i)->_population_size).get();
+		sizes.at(i) = & (_populations.at(i)->_population_size);
 	}
 	return sizes;
 }
@@ -271,7 +247,7 @@ std::vector<int *>	State::get_vector_of_number_of_bins() const
 	std::vector<int *> number_of_bins = std::vector<int *>(_number_of_populations);
 	for (int i = 0; i < _number_of_populations; i++)
 	{
-		number_of_bins.at(i) = (_populations.at(i)->_number_of_bins).get();
+		number_of_bins.at(i) = & (_populations.at(i)->_number_of_bins);
 	}
 	return number_of_bins;
 }
@@ -296,9 +272,9 @@ void 	State::ComputeVelocityProfile(std::vector<std::vector<double> >& profile_b
 	}
 }
 
-void	State::PushBackElectrostaticEnergy(std::vector<double>& electrostatic_energy, std::vector<std::vector<double>	>& electrostatic_energy_by_mode) const
+void	State::PushBackElectrostaticEnergy(std::vector<double>& electrostatic_energy) const
 {
-	_fields->PushBackElectrostaticEnergy(electrostatic_energy, electrostatic_energy_by_mode);
+	_fields->PushBackElectrostaticEnergy(electrostatic_energy);
 }
 
 

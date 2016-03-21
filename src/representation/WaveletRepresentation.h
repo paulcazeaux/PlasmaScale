@@ -35,10 +35,12 @@ class WaveletRepresentation : public Representation
 		std::shared_ptr<const Plasma>		_plasma;
 
 		/* parameters */
+		double 								_vmin;
 		double 								_vmax;
 		int 								_depth;
 		int 								_number_of_bins;
-		int 								_grid_size;
+		int 								_grid_end;
+		double 								_reference_density;
 		double 								_dv;
 		std::vector<double> 				_low_pass;
 		std::vector<double> 				_high_pass;
@@ -54,7 +56,7 @@ class WaveletRepresentation : public Representation
 	public:
 		/* constructor  ========================================================================= */
 		WaveletRepresentation() {};
-		WaveletRepresentation(std::shared_ptr<const Plasma> plasma, double vmax, int depth, int grid_size);
+		WaveletRepresentation(std::shared_ptr<const Plasma> plasma, double vmin, double vmax, int depth, double reference_density);
 
 		/* methods */
 		virtual void Weigh(int size,
@@ -74,10 +76,10 @@ class WaveletRepresentation : public Representation
 		virtual void Coarsen();
 		virtual void Refine();
 
-		virtual void SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const double & thermal_velocity);
-		virtual void SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const std::vector<double> & thermal_velocity);
-		virtual void GetDensityVelocity(std::vector<double> & density, std::vector<double> & velocity) const;
-		virtual void GetDensityVelocityPressure(std::vector<double> & density, std::vector<double> & velocity, std::vector<double> & pressure) const;
+		virtual void SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const double & thermal_velocity) { /* TODO */ };
+		virtual void SetAdiabaticValues(const std::vector<double> & density, const std::vector<double> & velocity, const std::vector<double> & thermal_velocity) { /* TODO */ };
+		virtual void GetDensityVelocity(std::vector<double> & density, std::vector<double> & velocity);
+		virtual void GetDensityVelocityPressure(std::vector<double> & density, std::vector<double> & velocity, std::vector<double> & pressure);
 		virtual void GetVelocityMoment(double& moment);
 
 		void DWT(const int J);
@@ -89,25 +91,34 @@ class WaveletRepresentation : public Representation
 
 		virtual void Reset();
 		virtual void print(std::ostream& os) const;
-		virtual int get_grid_size() const 	{ return _grid_size;	}
-		virtual void set_grid_size(const int new_grid_size)
+		virtual int get_grid_end() const 	{ return _grid_end;	}
+		virtual void set_grid_end(const int new_grid_end)
 		{
-			_histogram.resize(new_grid_size);
-			for (int n=_grid_size; n<new_grid_size; n++)
-				_histogram.at(n).resize(_number_of_bins);
-
-			_coefficients.resize(new_grid_size);
-			_grid_size = new_grid_size;
+			if (!_is_transformed)
+			{
+				_histogram.resize(new_grid_end+1);
+				for (int n=_grid_end+1; n<=new_grid_end; n++)
+					_histogram.at(n).resize(_number_of_bins);
+			}
+			else
+			{
+				_coefficients.resize(new_grid_end+1);
+				for (int n=_grid_end+1; n<=new_grid_end; n++)
+					_coefficients.at(n).resize(_number_of_bins);
+			}
+			_grid_end = new_grid_end;
 		}
 
 		/* operator overload */
 		WaveletRepresentation& operator=(const WaveletRepresentation & rhs)
 		{
 			_plasma = rhs._plasma;
+			_vmin  = rhs._vmin;
 			_vmax = rhs._vmax;
 			_depth = rhs._depth;
 			_number_of_bins = rhs._number_of_bins;
-			_grid_size = rhs._grid_size;
+			_grid_end = rhs._grid_end;
+			_reference_density = rhs._reference_density;
 			_dv = rhs._dv;
 			_low_pass = rhs._low_pass;
 			_high_pass = rhs._high_pass;
@@ -115,8 +126,8 @@ class WaveletRepresentation : public Representation
 
 			_is_transformed = rhs._is_transformed;
 
-			_histogram.resize(_grid_size);
-			_coefficients.resize(_grid_size);
+			_histogram.resize(_grid_end+1);
+			_coefficients.resize(_grid_end+1);
 
             if (_is_transformed)
             {
@@ -132,11 +143,11 @@ class WaveletRepresentation : public Representation
 
 		WaveletRepresentation& operator+=(const WaveletRepresentation& rhs)
 		{
-			assert((_grid_size==rhs._grid_size)&&(_number_of_bins==rhs._number_of_bins)&&(_vmax==rhs._vmax));
+			assert((_grid_end==rhs._grid_end)&&(_number_of_bins==rhs._number_of_bins)&&(_vmax==rhs._vmax)&&(_vmin==rhs._vmin)&&(_reference_density=rhs._reference_density));
 
 			if (_is_transformed)
 			{
-				for (int n=0; n<_grid_size; n++)
+				for (int n=0; n<=_grid_end; n++)
 				{
 					for (int i=0; i<_number_of_bins; i++)
 					{
@@ -146,7 +157,7 @@ class WaveletRepresentation : public Representation
 			}
 			else
 			{
-				for (int n=0; n<_grid_size; n++)
+				for (int n=0; n<=_grid_end; n++)
 				{
 					for (int i=0; i<_number_of_bins; i++)
 					{
@@ -159,11 +170,11 @@ class WaveletRepresentation : public Representation
 
 		WaveletRepresentation& operator-=(const WaveletRepresentation& rhs)
 		{
-			assert((_grid_size==rhs._grid_size)&&(_number_of_bins==rhs._number_of_bins)&&(_vmax==rhs._vmax));
+			assert((_grid_end==rhs._grid_end)&&(_number_of_bins==rhs._number_of_bins)&&(_vmax==rhs._vmax)&&(_vmin==rhs._vmin)&&(_reference_density=rhs._reference_density));
 
 			if (_is_transformed)
 			{
-				for (int n=0; n<_grid_size; n++)
+				for (int n=0; n<=_grid_end; n++)
 				{
 					for (int i=0; i<_number_of_bins; i++)
 					{
@@ -173,7 +184,7 @@ class WaveletRepresentation : public Representation
 			}
 			else
 			{
-				for (int n=0; n<_grid_size; n++)
+				for (int n=0; n<=_grid_end; n++)
 				{
 					for (int i=0; i<_number_of_bins; i++)
 					{
@@ -188,7 +199,7 @@ class WaveletRepresentation : public Representation
 		{
 			if (_is_transformed)
 			{
-				for (int n=0; n<_grid_size; n++)
+				for (int n=0; n<=_grid_end; n++)
 				{
 					for (int i=0; i<_number_of_bins; i++)
 					{
@@ -198,7 +209,7 @@ class WaveletRepresentation : public Representation
 			}
 			else
 			{
-				for (int n=0; n<_grid_size; n++)
+				for (int n=0; n<=_grid_end; n++)
 				{
 					for (int i=0; i<_number_of_bins; i++)
 					{

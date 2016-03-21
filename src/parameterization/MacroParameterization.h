@@ -35,13 +35,18 @@ class MacroParameterization
 		int								_number_of_populations;
 
 		/* Properties */
-
 		std::vector<int>				_population_sizes;
 
+		std::vector<double>				_reference_densities;
 		std::vector<double>				_unit_charges;
 		std::vector<double>				_unit_masses;
 		std::vector<double>				_plasma_pulsations;
-		std::vector<double>				_cyclotronic_rotation_parameters;
+		std::vector<double> 			_thermal_velocities;
+
+		/* Velocity bounds */
+		std::vector<int>			_bin_numbers;
+		std::vector<double>			_upper_velocities;
+		std::vector<double>			_lower_velocities;
 
 	public:
 		/* constuctor and destructor ============================================================ */
@@ -62,26 +67,25 @@ class MacroParameterization
 		int		get_population_size(int index)					const 	{ return _population_sizes.at(index);	}
 		double 	get_unit_charge(int index)						const 	{ return _unit_charges.at(index);		}
 		double 	get_unit_mass(int index)						const 	{ return _unit_masses.at(index);		}
-		double 	get_cyclotronic_rotation_parameter(int index)	const 	{ return _cyclotronic_rotation_parameters.at(index);	}
 
 		/* virtual methods ====================================================================== */
 
-		virtual void Load(State & state) const 
-		{
-			std::cout << "A Load function should be implemented for your choice of parameterization !" << std::endl;
-		}
+		virtual void Load(State & state) const = 0;
+
 		virtual void SetAccField(State & state) {}
 
 		virtual void Initialize(State &) {}
 
+		double 	get_initial_thermal_vel(int population_index)	const {	 return _thermal_velocities.at(population_index); }
+
 		/* If implemented, the Step() function should leave the PIC micro state in a correctly initialized state */
 		virtual void Step(State &) {}
 
-		virtual bool HaveVelocityDiagnostics()					const 	{return false;	}
-		virtual double 	GetBinStart(int)						const 	{return 0.;		}
-		virtual double 	GetBinEnd(int)							const 	{return 0.;		}
-		virtual	double	GetBinWidth(int)						const 	{return 0.;		}
-		virtual	int		GetNumberOfBins(int)					const 	{return 0;		}
+        virtual bool 	HaveVelocityDiagnostics()       const;
+		virtual double 	GetBinStart(int index)			const;
+		virtual double 	GetBinEnd(int index)			const;
+		virtual	double	GetBinWidth(int index)			const;
+		virtual int		GetNumberOfBins(int index)		const;
 
 		virtual void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics) {}
 		virtual void WriteData(std::fstream & fout) {}

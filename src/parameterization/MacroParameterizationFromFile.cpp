@@ -5,9 +5,9 @@
 MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 {
 	/* Parameters for the plasma */
-	double length, dt, epsilon, la, e0, w0;
-	int number_of_populations, grid_size, macro_grid_size, number_of_microsteps, macro_to_micro_dt_ratio, velocity_accumulation_interval, depth, cutoff, max_mode;
-	double filter_parameter_1, filter_parameter_2, intensity;
+	double length, dt, epsilon, e0, w0;
+	int number_of_populations, grid_end, macro_grid_end, number_of_microsteps, macro_to_micro_dt_ratio, velocity_accumulation_interval, depth, cutoff;
+	double intensity;
 
 	int max_size_history, use_full_PIC, record_microsteps;
 	char a_char[80];
@@ -19,11 +19,11 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 	{
 		std::fscanf(InputDeck, "%s", a_char);
 	}
-	while (std::fscanf(InputDeck,"%lg %d %d %d %lg %lg %d %d %d", &length, &grid_size, &macro_grid_size, &max_mode, &filter_parameter_1, &filter_parameter_2, &max_size_history, &use_full_PIC, &record_microsteps) <9)
+	while (std::fscanf(InputDeck,"%lg %d %d %d %d %d", &length, &grid_end, &macro_grid_end, &max_size_history, &use_full_PIC, &record_microsteps) <6)
 	{
 		std::fscanf(InputDeck, "%s", a_char);
 	}
-	while (std::fscanf(InputDeck,"%lg %lg %lg %lg", &epsilon, &la, &e0, &w0) < 4)
+	while (std::fscanf(InputDeck,"%lg %lg %lg", &epsilon, &e0, &w0) < 3)
 	{
 		std::fscanf(InputDeck, "%s", a_char);
 	}
@@ -35,19 +35,22 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 		std::fscanf(InputDeck, "%s", a_char);
 	}
 
-
 	if(velocity_accumulation_interval<0) 
 	{ 
 		std::printf("\nError:  accum can't be negative! \n"); exit(1);
 	}
 
+	if (use_full_PIC == 1)
+	{
+		number_of_microsteps = 0;
+	}
 	_plasma = std::make_shared<const Plasma>(length, dt, number_of_microsteps, macro_to_micro_dt_ratio,
-				epsilon, la, 0.0, e0, w0,
-				number_of_populations, grid_size, macro_grid_size, velocity_accumulation_interval, max_mode, depth, cutoff, intensity,
-				filter_parameter_1, filter_parameter_2, max_size_history, static_cast<bool>(use_full_PIC), static_cast<bool>(record_microsteps));
+				epsilon, e0, w0,
+				number_of_populations, grid_end, macro_grid_end, velocity_accumulation_interval, depth, cutoff, intensity,
+				max_size_history, static_cast<bool>(use_full_PIC), static_cast<bool>(record_microsteps));
 	std::cout << *_plasma << std::endl;
 	std::cout << "Initialization of a plasma expansion :" << std::endl;
-	std::cout << "Initial size: " << _init_occupation * _plasma->get_length() << " out of a total length: " << _plasma->get_length() << std::endl;
+	std::cout << "Initial size: " << _init_occupation * _plasma->_length << " out of a total length: " << _plasma->_length << std::endl;
 
 	_number_of_populations = number_of_populations;
 	if (_number_of_populations !=2)
@@ -68,7 +71,7 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 		{
 			fscanf(InputDeck,"%s",a_char);
 		}
-		while (fscanf(InputDeck, "%lg %lg %lg %lg %lg %lg", &wp, &wc, &qm, &vt1, &vt2, &v0) < 6)
+		while (fscanf(InputDeck, "%lg %lg %lg %lg %lg", &wp, &qm, &vt1, &vt2, &v0) < 5)
 		{
 			fscanf(InputDeck,"%s",a_char);
 		}
@@ -78,14 +81,24 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 		}
 		std::cout << "Parameters for population " << (population_index+1) << std::endl << "---------------------------" << std::endl;
 		std::cout << "Number of particles:\t" << n << "\t\tNumber of init. groups:\t" << nlg <<  "\tQuiet start exponent:\t" << nv2 << std::endl;
-		std::cout << "Plasma pulsation:\t" << wp << "\tCycl. pulsation:\t" << wc << "\tq/m ratio:\t" << qm << std::endl;
+		std::cout << "Plasma pulsation:\t" << wp << "\tq/m ratio:\t" << qm << std::endl;
 		std::cout << "Random therm. veloc.:\t" << vt1 << "\tQuiet therm. veloc.:\t" << vt2 << "\tMean velocity:\t\t" << v0 << std::endl;
 		std::cout << "Velocity init.:\t# bins:\t" << nbins << "\t\tLower bound:\t\t" << vlower << "\tUpper bound:\t\t" << vupper << std::endl;
 		std::cout << "---------------------------" << std::endl;
 
+		if(vupper-vlower < 0.0)
+		{
+			printf("\nInitialization error: vupper must be > vlower! \n");
+			exit(1);
+		}
+		if(vt1<0 || vt2<0)
+		{ 
+			printf("\nInitialization error: can't have negative thermal voltages!\n");
+			exit(1);
+		}
 
-		_cyclotronic_rotation_parameters.push_back(std::tan(-0.5*wc*_plasma->get_dt()));
-		_unit_charges.push_back(_plasma->get_length()*wp*wp/(_plasma->get_epsilon()*n*qm));
+		_reference_densities.push_back(n / (_init_occupation*_plasma->_length));
+		_unit_charges.push_back(_plasma->_epsilon*_init_occupation*_plasma->_length*wp*wp/(n*qm));
 		_unit_masses.push_back(_unit_charges.at(population_index)/qm);
 		_plasma_pulsations.push_back(wp);
 		_population_sizes.push_back(n);
@@ -95,44 +108,39 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 		_quiet_start_exponents.push_back(nv2);
 		_random_mean_thermal_vel.push_back(vt1);
 		_quiet_mean_thermal_vel.push_back(vt2);
+		_thermal_velocities.push_back(vt1+vt2);
 
 		_bin_numbers.push_back( (nbins>2 ? nbins : 2));
 		_upper_velocities.push_back(vupper);
 		_lower_velocities.push_back(vlower);
 	}
-
-	_debye_scaling = std::pow((_random_mean_thermal_vel.back()+_quiet_mean_thermal_vel.back())/_plasma_pulsations.back(), 2.);
 }
 
 void MacroParameterizationFromFile::Load(State & state) const
 /* Fill the particle arrays to initialize the microscopic state */
 {
-	std::vector<std::vector<double> * > positions 		= state.get_vector_of_position_arrays();
-	std::vector<std::vector<double> * > x_velocities 	= state.get_vector_of_x_velocity_arrays();
-	std::vector<std::vector<double> * > y_velocities 	= state.get_vector_of_y_velocity_arrays();
-	std::vector<std::vector<double> * > weights 		= state.get_vector_of_weight_arrays();
+	std::vector<std::vector<double> * > positions 	= state.get_vector_of_position_arrays();
+	std::vector<std::vector<double> * > velocities 	= state.get_vector_of_velocity_arrays();
+	std::vector<std::vector<double> * > weights 	= state.get_vector_of_weight_arrays();
 
 	assert(positions.size() ==_number_of_populations);
-	assert(x_velocities.size() ==_number_of_populations);
-	assert(y_velocities.size() ==_number_of_populations);
+	assert(velocities.size() ==_number_of_populations);
 	assert(weights.size() ==_number_of_populations);
 
 	state.Reset();
 
 	for (int population_index=0; population_index < _number_of_populations; population_index++)
 	{
-		int group_size = _group_sizes.at(population_index);
+		int group_size 		= _group_sizes.at(population_index);
 		int population_size = _population_sizes.at(population_index);
-		int nbins = _bin_numbers.at(population_index);
+		int nbins 			= _bin_numbers.at(population_index);
 
-		std::vector<double> * position 		= positions.at(population_index);
-		std::vector<double> * velocity_x 	= x_velocities.at(population_index);
-		std::vector<double> * velocity_y 	= y_velocities.at(population_index);
-		std::vector<double> * weight 		= weights.at(population_index);
+		std::vector<double> * position 	= positions.at(population_index);
+		std::vector<double> * velocity 	= velocities.at(population_index);
+		std::vector<double> * weight 	= weights.at(population_index);
 
 		assert(position->size() == population_size);
-		assert(velocity_x->size() == population_size);
-		assert(velocity_y->size() == population_size);
+		assert(velocity->size() == population_size);
 		assert(weight->size() == population_size);
 
 		double v0 = _mean_velocities.at(population_index);
@@ -140,16 +148,17 @@ void MacroParameterizationFromFile::Load(State & state) const
 		double vt2 = _quiet_mean_thermal_vel.at(population_index);
 		double quiet_start_exponent = _quiet_start_exponents.at(population_index);
 
-		double population_density = _plasma->get_length() / static_cast<double>(population_size);
-		double group_density = _plasma->get_length() * static_cast<double>(group_size) / static_cast<double>(population_size);
+		double particle_spacing = 1./_reference_densities.at(population_index);
+		double group_spacing = particle_spacing * static_cast<double>(group_size);
 
 		static std::vector<double> helper;
 		helper.resize(nbins);
 
 		for (int i=0; i < group_size; i++)
 		{
-			position->at(i) 	= ( static_cast<double>(i) + 0.5 ) * population_density;
-			velocity_x->at(i) 	= v0;
+			position->at(i) 	= ( static_cast<double>(i) + 0.5 ) * particle_spacing;
+			velocity->at(i) 	= v0;
+			weight->at(i) 		= 1.;
 		}
 
 		if (vt2 != 0.0) 
@@ -181,14 +190,14 @@ void MacroParameterizationFromFile::Load(State & state) const
 					if (it_helper == helper.end()) 
 						perror("distribution function error");
 				}
-				velocity_x->at(i) += dv* (std::distance(helper.begin(), it_helper)
+				velocity->at(i) += dv* (std::distance(helper.begin(), it_helper)
 										 + (fv - *it_helper)/(*(it_helper+1) - *it_helper)) - vmax;
 			}
 
 			double xs = 0.0;
 			for (int i=0; i<group_size; i++)
 			{
-				position->at(i) = xs*group_density + 0.5*population_density;
+				position->at(i) = xs*group_spacing + 0.5*particle_spacing;
 				/* bit-reversed scrambling to reduce the correlation with the positions */
 				double xsi = 0.5;
 				xs -= 0.5;
@@ -201,79 +210,24 @@ void MacroParameterizationFromFile::Load(State & state) const
 			}
 		}
 
-		bool magnetized = (_cyclotronic_rotation_parameters.at(population_index) != 0.) ;
-		if (magnetized) 
-		{
-			for (int i=0; i < group_size; i++) 
-			{
-				double v = velocity_x->at(i);
-				double theta = RandomTools::Generate_randomly_uniform(0., 2.*M_PI);
-				velocity_x->at(i) = v*std::cos(theta);
-				velocity_y->at(i) = v*std::sin(theta);
-			}
-		}
 		if (group_size < population_size)
 		{
-			double xs = 0.0;
+			double x0 = 0.0;
 			for (int k=group_size; k< population_size; k+=group_size)
 			{
-				xs += group_density;
+				x0 += group_spacing;
 				for (int j=0; j < group_size; j++) 
 				{
-					 position->at(j+k) = position->at(j) + xs;
-					 velocity_x->at(j+k) = velocity_x->at(j);
-					 if (magnetized) 
-					 {
-						velocity_x->at(j+k) = velocity_y->at(j);
-					 }
+					 position->at(j+k) = position->at(j) + x0;
+					 velocity->at(j+k) = velocity->at(j);
 				}
 			}
 		}
 
 		if (vt1 != 0.0)
-		{
-			auto it_vel_y = velocity_y->begin();
-			for (auto & vel_x : *velocity_x)
-			{
+			for (auto & vel_x : *velocity)
 				vel_x 	+= vt1*RandomTools::Generate_randomly_normal(0.0, 1.0);
-				if (magnetized)
-				{
-					*it_vel_y++ 	+= vt1*RandomTools::Generate_randomly_normal(0.0, 1.0);
-				}
-			}
-		}
-
 	}
-
-	/* Implement the population expansion */
-	int size = _plasma->get_grid_size();
-	double offset = (1.-_init_occupation)*_plasma->get_length()/2.;
-	double population_density = static_cast<double>(size)/static_cast<double>(_population_sizes.front());
-
-	std::vector<double> 	ion_density = std::vector<double>(size),
-							potential = std::vector<double>(size),
-						   	exp_potential = std::vector<double>(size), 
-						   	update = std::vector<double>(size);
-	std::vector<double> residual = std::vector<double>(size),
-							conj_dir = std::vector<double>(size),
-							dir = std::vector<double>(size);
-
-	for (int i=0; i<_population_sizes.front(); i++)
-	{
-		double x 			= _init_occupation*positions.front()->at(i) + offset;
-		int bin 			= _plasma->find_index_on_grid(x);
-		double cellpos		= _plasma->find_position_in_cell(x);
-
-		positions.front()->at(i) = x;
-		weights.front()->at(i) = 1.;
-
-		ion_density[bin] += (1. - cellpos);
-		if (bin+1< size)
-			ion_density[bin+1] += cellpos;
-		else
-			ion_density[0] += cellpos;
-	}
-
 
 	/*----------------------------------------------------------------*/
 	/* Newton's method solve for the electrostatic potential assuming */
@@ -282,103 +236,92 @@ void MacroParameterizationFromFile::Load(State & state) const
 		/* Initialization */
 
 	double tol2 = 1e-30, iter_max = 100;
-	double scaling = _debye_scaling/std::pow(_plasma->get_dx(), 2.);
-	for (int i=0; i<size; i++)
+	int grid_end = _plasma->_grid_end;
+	double debye_length = (_random_mean_thermal_vel.back()+_quiet_mean_thermal_vel.back())/_plasma_pulsations.back();
+	double scaling = std::pow(debye_length/_plasma->_dx, 2.);
+
+	std::vector<double> 	ion_density = std::vector<double>(grid_end+1),
+						   	exp_potential = std::vector<double>(grid_end+1);
+	Eigen::Map<Eigen::VectorXd> Ion_density(ion_density.data(), grid_end+1);
+	Eigen::Map<Eigen::VectorXd> Exp_potential(exp_potential.data(), grid_end+1);
+	Eigen::VectorXd Residual(grid_end+1), Potential(grid_end+1), Update(grid_end+1);
+
+	std::vector<Eigen::Triplet<double> > J_T;
+	Eigen::SparseMatrix<double> J;
+	Eigen::SimplicialCholesky<Eigen::SparseMatrix<double> > solver;
+
+	/* Neumann condition at x = 0 */
+	J_T.push_back(Eigen::Triplet<double>(0,0, scaling));
+	J_T.push_back(Eigen::Triplet<double>(0,1, -scaling));
+	for (int i=1; i<grid_end; i++)
 	{
-		ion_density.at(i) = population_density*ion_density.at(i);
-		potential.at(i) = std::log(ion_density.at(i)+1e-10);
+		J_T.push_back(Eigen::Triplet<double>(i, i-1, -scaling));
+		J_T.push_back(Eigen::Triplet<double>(i, i,  2*scaling));
+		J_T.push_back(Eigen::Triplet<double>(i, i+1, -scaling));
 	}
-	for (int i=0; i<size; i++)
+	/* Neumann condition at x = _length */
+	J_T.push_back(Eigen::Triplet<double>(grid_end, grid_end, scaling));
+	J_T.push_back(Eigen::Triplet<double>(grid_end, grid_end-1, -scaling));
+
+	J = Eigen::SparseMatrix<double>(grid_end+1, grid_end+1);
+	J.setFromTriplets(J_T.begin(), J_T.end());
+
+	/* Measure the ion density */
+	for (int i=0; i<_population_sizes.front(); i++)
 	{
-		exp_potential.at(i) = std::exp(potential.at(i));
-		residual.at(i)	=  
-			  2./3. * exp_potential.at(i) + 1./6. * (exp_potential.at((i>0?i-1:size-1)) + exp_potential.at((i<size-1?i+1:0)))
-				+ scaling * ( 2*potential.at(i) - potential.at((i>0?i-1:size-1)) - potential.at((i<size-1?i+1:0)) )
-				- 2./3. * ion_density.at(i) - 1./6. * (ion_density.at((i>0?i-1:size-1)) + ion_density.at((i<size-1?i+1:0)));
-		conj_dir.at(i) = residual.at(i);
+		double x 			= positions.front()->at(i);
+		int bin 			= _plasma->find_index_on_grid(x);
+
+		double s = _plasma->find_position_in_cell(x);
+		ion_density[bin  ] += (1. - s);
+		ion_density[bin+1] += s;
 	}
+	ion_density[0] *= 2;
+	ion_density[grid_end] *= 2;
+	double n0 = 1./(_reference_densities.front()*_plasma->_dx);
+	for (double & rho: ion_density) 
+		rho *= n0;
+
+	Potential = (Ion_density.array()+1e-15).log();
+	Exp_potential = Potential.array().exp();
+	Residual = Exp_potential - Ion_density + J*Potential;
+
 	/* Newton's method loop */
 	for (int count=0; count<iter_max; count++)
 	{
-		/* Inner solve : CG algorithm */
-
+		Eigen::SparseMatrix<double> Je = J;
+		Je.coeffRef(0,0) += .5* Exp_potential(0); 
+		for (int i=1; i<grid_end; i++) Je.coeffRef(i,i) += Exp_potential(i); 
+		Je.coeffRef(grid_end, grid_end) += .5* Exp_potential(grid_end);
 		
-		/* Initial value for the CG algorithm : zero. */
-		std::fill(update.begin(), update.end(), 0.);
+		solver.compute(Je);
 
+		Residual(0) *= .5; 
+		Residual(grid_end) *= .5;
+		Update = solver.solve(Residual);
 
-		/* Inner loop */
-
-		double rnorm2_init = 0, rnorm2, delta, alpha, beta;
-		for (int i=0; i<size; i++)
-		{
-			rnorm2_init += residual.at(i)*residual.at(i);
-		}
-
-		rnorm2 = rnorm2_init;
-		for (int count_cg=0; count_cg<1e4; count_cg++)
-		{
-			/* Compute the matrix-vector product */
-			delta = 0;
-			for (int i=0; i<size; i++)
-			{
-				dir.at(i) =			(2./3.*exp_potential.at(i)+2*scaling)*conj_dir.at(i) 
-										+ (1/6.*exp_potential.at((i>0?i-1:size-1)) - scaling) * conj_dir.at((i>0?i-1:size-1)) 
-										+ (1/6.*exp_potential.at((i<size-1?i+1:0)) - scaling) * conj_dir.at((i<size-1?i+1:0));
-				delta += dir.at(i) * conj_dir.at(i);
-			}
-
-			beta = 1./rnorm2;
-			alpha = rnorm2/delta;
-			rnorm2 = 0;
-			for (int i=0; i<size; i++)
-			{
-				update.at(i) += alpha * conj_dir.at(i);
-				residual.at(i) -= alpha* dir.at(i);
-				rnorm2 += residual.at(i)*residual.at(i);
-			}
-			if (rnorm2 < .01*rnorm2_init)
-				break;
-			beta *= rnorm2;
-			for (int i=0; i<size; i++)
-			{
-				conj_dir.at(i) *= beta;
-				conj_dir.at(i) += residual.at(i);
-			}
-		}
-
-		for (int i=0; i<size; i++)
-		{
-			potential.at(i) -= update.at(i);
-			exp_potential.at(i) = std::exp(potential.at(i));
-		}
-		double err=0;
-		for (int i=0; i<size; i++)
-		{
-			residual.at(i)	=  2./3. * exp_potential.at(i) + 1./6. * (exp_potential.at((i>0?i-1:size-1)) + exp_potential.at((i<size-1?i+1:0)))
-				+ scaling * ( 2*potential.at(i) - potential.at((i>0?i-1:size-1)) - potential.at((i<size-1?i+1:0)) )
-				- 2./3. * ion_density.at(i) - 1./6. * (ion_density.at((i>0?i-1:size-1)) + ion_density.at((i<size-1?i+1:0)));
-			conj_dir.at(i) = residual.at(i);
-			err += 	std::pow(residual.at(i), 2.);
-		}		
-		if (err < tol2)
+		Potential -= Update;
+		Exp_potential = Potential.array().exp();
+		Residual = Exp_potential - Ion_density + J*Potential;
+	
+		if (Residual.squaredNorm() < tol2)
 			break;
 	}
 
+
 	static std::vector<double> icdf;
-	icdf.resize(size+1);
+	icdf.resize(grid_end+1);
 	icdf.front() = 0;
-	for (int i=1; i<size; i++)
+	for (int i=1; i<=grid_end; i++)
 	{
 		icdf.at(i) = icdf.at(i-1)+.5*(exp_potential.at(i-1)+exp_potential.at(i));
 	}
-	icdf.at(size) = icdf.at(size-1)+.5*(exp_potential.at(size-1)+exp_potential.at(0));
 
-	double dx = _plasma->get_length()/icdf.back();
+	double dx = _population_sizes.back()/_reference_densities.back()/icdf.back();
 	for (auto & h : icdf)
 		h *= dx;
 
-	dx = _plasma->get_length()/size;
+	dx = _plasma->_dx;
 	for (auto & x : *positions.back())
 	{
 		/*****************/
@@ -386,7 +329,7 @@ void MacroParameterizationFromFile::Load(State & state) const
     	/*****************/
 
 		int index_down = 0;
-		int index_up = size+1;
+		int index_up = grid_end;
 		while (index_up - index_down > 1)
 		{
 			int index_mid = (index_up + index_down)/2;
@@ -400,128 +343,4 @@ void MacroParameterizationFromFile::Load(State & state) const
 		double xup = icdf[index_up];
 		x = dx*(index_down + (x-xdown)/(xup-xdown));
 	}
-}
-
-double MacroParameterizationFromFile::get_initial_thermal_vel(int population_index) const
-{
-	return _quiet_mean_thermal_vel.at(population_index) + _random_mean_thermal_vel.at(population_index);
-}
-
-double MacroParameterizationFromFile::GetBinStart(int population_index) const
-{
-	double vupper = _upper_velocities.at(population_index);
-	double vlower = _lower_velocities.at(population_index);
-	double vt1 = _random_mean_thermal_vel.at(population_index);
-	double vt2 = _quiet_mean_thermal_vel.at(population_index);
-	double v0 = _mean_velocities.at(population_index);
-
-	if(vupper - vlower < 0.0)
-	{
-		printf("\nInitialization error: vupper must be > vlower! \n");
-		exit(1);
-	}
-	if(vt1<0 ||vt2<0)
-	{ 
-		printf("\nInitialization error: can't have negative thermal voltages!\n");
-		exit(1);
-	}
-	if(vupper-vlower > 0.0)
-	{
-		return vlower;
-	}
-	else if(vt1 + vt2 > 0.0) 
-	{
-		return v0 - 5.0*(vt1 + vt2);
-	}
-	else if (v0!=0)
-	{
-		return (v0 < 0 ? 2.0*v0 : 0);
-	}
-	else
-	{
-		return 0.0;
-	}
-
-}
-
-double MacroParameterizationFromFile::GetBinEnd(int population_index) const
-{
-	double vupper = _upper_velocities.at(population_index);
-	double vlower = _lower_velocities.at(population_index);
-	double vt1 = _random_mean_thermal_vel.at(population_index);
-	double vt2 = _quiet_mean_thermal_vel.at(population_index);
-	double v0 = _mean_velocities.at(population_index);
-
-	if(vupper - vlower < 0.0)
-	{
-		printf("\nInitialization error: vupper must be > vlower! \n");
-		exit(1);
-	}
-	if(vt1<0 ||vt2<0)
-	{ 
-		printf("\nInitialization error: can't have negative thermal voltages!\n");
-		exit(1);
-	}
-	if(vupper-vlower > 0.0)
-	{
-		return vupper;
-	}
-	else if(vt1 + vt2 > 0.0) 
-	{
-		return v0 + 5.0*(vt1 + vt2);
-	}
-	else if (v0!=0)
-	{
-		return (v0 > 0 ? 2.0*v0 : 0);
-	}
-	else
-	{
-		return 0.0;
-	}
-
-}
-
-double MacroParameterizationFromFile::GetBinWidth(int population_index)	const
-{
-	double vupper = _upper_velocities.at(population_index);
-	double vlower = _lower_velocities.at(population_index);
-	double vt1 = _random_mean_thermal_vel.at(population_index);
-	double vt2 = _quiet_mean_thermal_vel.at(population_index);
-	double v0 = _mean_velocities.at(population_index);
-	int nbins = _bin_numbers.at(population_index);
-
-	if(vupper-vlower < 0.0)
-	{
-		printf("\nInitialization error: vupper must be > vlower! \n");
-		exit(1);
-	}
-	if(vt1<0 ||vt2<0)
-	{ 
-		printf("\nInitialization error: can't have negative thermal voltages!\n");
-		exit(1);
-	}
-	if(vupper-vlower > 0.0)
-	{
-		return (vupper-vlower)/static_cast<double>(nbins);
-	}
-	else if(vt1 + vt2 > 0.0) 
-	{
-		return 10.0 * (vt1 + vt2)/static_cast<double>(nbins);  /*  so that the distribution goes from
-							v0-5*vt to v0+5*vt  */
-	}
-	else if (v0!=0)
-	{
-		return 2.0*std::abs(v0)/static_cast<double>(nbins);
-	}
-	else
-	{
-		return 1.0/static_cast<double>(nbins);
-	}
-
-}
-
-
-int MacroParameterizationFromFile::GetNumberOfBins(int population_index) const
-{
-	return _bin_numbers.at(population_index);
 }
