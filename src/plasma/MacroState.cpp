@@ -18,17 +18,8 @@ MacroState::MacroState(FILE *& InputDeck)
 	double vti = initialization.get_initial_thermal_vel(0); // Recover the ion thermal velocity
 	double vte = initialization.get_initial_thermal_vel(1); // Recover the electron thermal velocity
 
-	if (_plasma->uses_full_PIC())
-	{
-		//_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationFullPICtoMaxwell(initialization));
-		_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationFullPICtoHistogram(initialization, vte, 10.*vti));
-	}
-	else	
-	{
-		//_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationEFPI(initialization, vte));
-		_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationWavelets(initialization, vte, 10.*vti));
-		//_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationPUREHaar(initialization, vte, 10.*vti));
-	}
+	_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationWavelets(initialization, vte, 10.*vti));
+	//_parameterization = std::unique_ptr<MacroParameterization>(new MacroParameterizationPUREHaar(initialization, vte, 10.*vti));
 	_parameterization->Initialize(*_micro_state);
 }
 

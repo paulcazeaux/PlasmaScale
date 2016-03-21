@@ -333,12 +333,12 @@ void PUREHaarRepresentation::Denoise(int n_coef)
 	{
 		/* Find the correct threshold */
 		help = _detail_coefficients.at(n);
-		std::sort(help.begin(), help.end(), greater<double>());
+		std::sort(help.begin(), help.end(), std::greater<double>());
 		double thresh = help.at(n_coef-1);
 
 		for (auto & coeff : _detail_coefficients.at(n))
 		{
-			if (abs(coeff) < thresh)
+			if (std::abs(coeff) < thresh)
 			{
 				coeff = 0.;
 			}
@@ -356,7 +356,7 @@ void PUREHaarRepresentation::Denoise(double thresh)
 	{
 		for (auto & coeff : _detail_coefficients.at(n))
 		{
-			if (abs(coeff) < thresh)
+			if (std::abs(coeff) < thresh)
 			{
 				coeff = 0.;
 			}
