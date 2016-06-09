@@ -97,8 +97,8 @@ MacroParameterizationFromFile::MacroParameterizationFromFile(FILE *& InputDeck)
 			exit(1);
 		}
 
-		_reference_densities.push_back(n / (_init_occupation*_plasma->_length));
-		_unit_charges.push_back(_plasma->_epsilon*_init_occupation*_plasma->_length*wp*wp/(n*qm));
+		_reference_densities.push_back(M_2_SQRTPI*n/(_init_occupation*_plasma->_length));
+		_unit_charges.push_back(_plasma->_epsilon*wp*wp/(_reference_densities.at(population_index)*qm));
 		_unit_masses.push_back(_unit_charges.at(population_index)/qm);
 		_plasma_pulsations.push_back(wp);
 		_population_sizes.push_back(n);
@@ -127,107 +127,47 @@ void MacroParameterizationFromFile::Load(State & state) const
 	assert(velocities.size() ==_number_of_populations);
 	assert(weights.size() ==_number_of_populations);
 
-	state.Reset();
-
 	for (int population_index=0; population_index < _number_of_populations; population_index++)
 	{
-		int group_size 		= _group_sizes.at(population_index);
 		int population_size = _population_sizes.at(population_index);
-		int nbins 			= _bin_numbers.at(population_index);
 
-		std::vector<double> * position 	= positions.at(population_index);
-		std::vector<double> * velocity 	= velocities.at(population_index);
-		std::vector<double> * weight 	= weights.at(population_index);
-
-		assert(position->size() == population_size);
-		assert(velocity->size() == population_size);
-		assert(weight->size() == population_size);
-
-		double v0 = _mean_velocities.at(population_index);
-		double vt1 = _random_mean_thermal_vel.at(population_index);
-		double vt2 = _quiet_mean_thermal_vel.at(population_index);
-		double quiet_start_exponent = _quiet_start_exponents.at(population_index);
-
-		double particle_spacing = 1./_reference_densities.at(population_index);
-		double group_spacing = particle_spacing * static_cast<double>(group_size);
-
-		static std::vector<double> helper;
-		helper.resize(nbins);
-
-		for (int i=0; i < group_size; i++)
-		{
-			position->at(i) 	= ( static_cast<double>(i) + 0.5 ) * particle_spacing;
-			velocity->at(i) 	= v0;
-			weight->at(i) 		= 1.;
-		}
-
-		if (vt2 != 0.0) 
-		{
-			double vmax = 5.0*vt2;
-			double dv = 2.0*vmax/(static_cast<double>(nbins - 1));
-			double vvnv2 = 1.0;
-			helper.front() = 0.0;
-
-			for (int i=1; i < helper.size(); i++)
-			{
-				double vv = ((i - 0.5)*dv - vmax)/vt2;
-				if (quiet_start_exponent != 0)
-				{
-					vvnv2 = std::pow(vv,static_cast<double>(quiet_start_exponent));
-				}
-				helper.at(i) = helper.at(i-1) + vvnv2*std::exp(-0.5*vv*vv);
-			}
-
-			double df = helper.back()/group_size;
-
-			auto it_helper = helper.begin();
-			for (int i=0; i<group_size; i++)
-			{
-				double fv = (i + 0.5)*df;
-				while (fv >= *(it_helper+1)) 
-				{
-					it_helper++;
-					if (it_helper == helper.end()) 
-						perror("distribution function error");
-				}
-				velocity->at(i) += dv* (std::distance(helper.begin(), it_helper)
-										 + (fv - *it_helper)/(*(it_helper+1) - *it_helper)) - vmax;
-			}
-
-			double xs = 0.0;
-			for (int i=0; i<group_size; i++)
-			{
-				position->at(i) = xs*group_spacing + 0.5*particle_spacing;
-				/* bit-reversed scrambling to reduce the correlation with the positions */
-				double xsi = 0.5;
-				xs -= 0.5;
-				while (xs >= 0.0)
-				{
-					xsi *= 0.5;
-					xs -= xsi;
-				} 
-				xs += 2.0*xsi;
-			}
-		}
-
-		if (group_size < population_size)
-		{
-			double x0 = 0.0;
-			for (int k=group_size; k< population_size; k+=group_size)
-			{
-				x0 += group_spacing;
-				for (int j=0; j < group_size; j++) 
-				{
-					 position->at(j+k) = position->at(j) + x0;
-					 velocity->at(j+k) = velocity->at(j);
-				}
-			}
-		}
-
-		if (vt1 != 0.0)
-			for (auto & vel_x : *velocity)
-				vel_x 	+= vt1*RandomTools::Generate_randomly_normal(0.0, 1.0);
+		assert(positions.at(population_index)->size() == population_size);
+		assert(velocities.at(population_index)->size() == population_size);
+		assert(weights.at(population_index)->size() == population_size);
 	}
+
+
+	state.Reset();
+
+	/**************************************/
+	/* Now we implement a Gaussian plasma */
+	/**************************************/
+
+	/* Characteristic radius of the spatial Gaussian profile */
+	double r0 = _init_occupation*_plasma->_length;
+
+	double xs = 0.0;
+	double x0 = .5/_population_sizes.front();
+	for (int i=0; i<_population_sizes.front(); i++)
+	{
+		double x = _plasma->_length*(xs + x0);
+		positions.front()->at(i)	= x;
+		x /= r0;
+		weights.front()->at(i) 		= std::exp(-x*x);
+
+		/* bit-reversed scrambling to reduce the correlation between positions and velocities */
+		double xsi = 0.5;
+		xs -= 0.5;
+		while (xs >= 0.0)
+		{
+			xsi *= 0.5;
+			xs -= xsi;
+		} 
+		xs += 2.0*xsi;
+	}
+
+	double w0 = _population_sizes.front() / std::accumulate(weights.front()->begin(), weights.front()->end(), 0.);
+	for (double & w: *weights.front()) w *= w0;
 
 	/*----------------------------------------------------------------*/
 	/* Newton's method solve for the electrostatic potential assuming */
@@ -236,9 +176,9 @@ void MacroParameterizationFromFile::Load(State & state) const
 		/* Initialization */
 
 	double tol2 = 1e-30, iter_max = 100;
-	int grid_end = _plasma->_grid_end;
 	double debye_length = (_random_mean_thermal_vel.back()+_quiet_mean_thermal_vel.back())/_plasma_pulsations.back();
 	double scaling = std::pow(debye_length/_plasma->_dx, 2.);
+	int grid_end = _plasma->_grid_end;
 
 	std::vector<double> 	ion_density = std::vector<double>(grid_end+1),
 						   	exp_potential = std::vector<double>(grid_end+1);
@@ -270,11 +210,12 @@ void MacroParameterizationFromFile::Load(State & state) const
 	for (int i=0; i<_population_sizes.front(); i++)
 	{
 		double x 			= positions.front()->at(i);
+		double w 			= weights.front()->at(i);
 		int bin 			= _plasma->find_index_on_grid(x);
 
 		double s = _plasma->find_position_in_cell(x);
-		ion_density[bin  ] += (1. - s);
-		ion_density[bin+1] += s;
+		ion_density[bin  ] += w*(1. - s);
+		ion_density[bin+1] += w*s;
 	}
 	ion_density[0] *= 2;
 	ion_density[grid_end] *= 2;
@@ -282,9 +223,11 @@ void MacroParameterizationFromFile::Load(State & state) const
 	for (double & rho: ion_density) 
 		rho *= n0;
 
-	Potential = (Ion_density.array()+1e-15).log();
+	Potential = Ion_density.array().log();
 	Exp_potential = Potential.array().exp();
-	Residual = Exp_potential - Ion_density + J*Potential;
+	Residual = Exp_potential - Ion_density ;
+	Residual(0) *= .5;  Residual(grid_end) *= .5;
+	Residual += J*Potential;
 
 	/* Newton's method loop */
 	for (int count=0; count<iter_max; count++)
@@ -296,51 +239,109 @@ void MacroParameterizationFromFile::Load(State & state) const
 		
 		solver.compute(Je);
 
-		Residual(0) *= .5; 
-		Residual(grid_end) *= .5;
 		Update = solver.solve(Residual);
 
 		Potential -= Update;
 		Exp_potential = Potential.array().exp();
-		Residual = Exp_potential - Ion_density + J*Potential;
+		Residual = Exp_potential - Ion_density ;
+		Residual(0) *= .5;  Residual(grid_end) *= .5;
+		Residual += J*Potential;
 	
 		if (Residual.squaredNorm() < tol2)
 			break;
 	}
 
+	xs = 0.0;
+	x0 = .5/_population_sizes.back();
 
-	static std::vector<double> icdf;
-	icdf.resize(grid_end+1);
-	icdf.front() = 0;
-	for (int i=1; i<=grid_end; i++)
+	for (int i=0; i<_population_sizes.back(); i++)
 	{
-		icdf.at(i) = icdf.at(i-1)+.5*(exp_potential.at(i-1)+exp_potential.at(i));
+		double x 		= _plasma->_length*(xs + x0);
+		int bin 		= _plasma->find_index_on_grid(x);
+		double cellpos 	= _plasma->find_position_in_cell(x);
+
+		positions.back()->at(i) = x;
+		weights.back()->at(i) 	= Tools::EvaluateP1Function(exp_potential, bin, cellpos);
+
+		/* bit-reversed scrambling to reduce the correlation between positions and velocities */
+		double xsi = 0.5;
+		xs -= 0.5;
+		while (xs >= 0.0)
+		{
+			xsi *= 0.5;
+			xs -= xsi;
+		} 
+		xs += 2.0*xsi;
 	}
 
-	double dx = _population_sizes.back()/_reference_densities.back()/icdf.back();
-	for (auto & h : icdf)
-		h *= dx;
+	w0 = _population_sizes.back() / std::accumulate(weights.back()->begin(), weights.back()->end(), 0.);
+	for (double & w: *weights.back()) w *= w0;
 
-	dx = _plasma->_dx;
-	for (auto & x : *positions.back())
+	/***************************************************************************************/
+	/* Finally we implement spatially constant temperature particle velocity distributions */
+	/***************************************************************************************/
+	for (int population_index=0; population_index < _number_of_populations; population_index++)
 	{
-		/*****************/
-    	/* Binary search */
-    	/*****************/
+		std::vector<double> * velocity 	= velocities.at(population_index);
+		int population_size = _population_sizes.at(population_index);
+		int nbins 			= _bin_numbers.at(population_index);
 
-		int index_down = 0;
-		int index_up = grid_end;
-		while (index_up - index_down > 1)
+		double v0 = _mean_velocities.at(population_index);
+		double vt1 = _random_mean_thermal_vel.at(population_index);
+		double vt2 = _quiet_mean_thermal_vel.at(population_index);
+		double quiet_start_exponent = _quiet_start_exponents.at(population_index);
+
+		static std::vector<double> helper;
+		helper.resize(nbins);
+
+		for (double & v: *velocity)
+			v = v0;
+
+		if (vt2 != 0.0) 
 		{
-			int index_mid = (index_up + index_down)/2;
-			if (x < icdf[index_mid])
-				index_up = index_mid;
-			else
-				index_down = index_mid;
+			double vmax = 5.0*vt2;
+			double dv = 2.0*vmax/(static_cast<double>(nbins - 1));
+			helper.front() = 0.0;
+
+			double vv = -vmax/vt2;
+			for (int i=1; i < helper.size(); i++)
+			{
+				if (quiet_start_exponent == 0)
+				{
+					helper.at(i) = helper.at(i-1) + std::exp(-0.5*vv*vv);
+					vv += dv/vt2;
+					helper.at(i) +=  std::exp(-0.5*vv*vv);
+				}
+				else
+				{					
+					double vvnv2 = std::pow(vv, static_cast<double>(quiet_start_exponent));
+					helper.at(i) = helper.at(i-1) + vvnv2*std::exp(-0.5*vv*vv);
+					vv += dv/vt2;
+					vvnv2 = std::pow(vv, static_cast<double>(quiet_start_exponent));
+					helper.at(i) +=  vvnv2*std::exp(-0.5*vv*vv);
+				}
+			}
+
+			double df = helper.back()/population_size;
+
+			auto it_helper = helper.begin();
+			for (int i=0; i<population_size; i++)
+			{
+				double fv = (i + 0.5)*df;
+				while (fv >= *(it_helper+1)) 
+				{
+					it_helper++;
+					if (it_helper == helper.end()) 
+						perror("distribution function error");
+				}
+				velocity->at(i) += dv* (std::distance(helper.begin(), it_helper)
+										 + (fv - *it_helper)/(*(it_helper+1) - *it_helper)) - vmax;
+			}
 		}
 
-		double xdown = icdf[index_down];
-		double xup = icdf[index_up];
-		x = dx*(index_down + (x-xdown)/(xup-xdown));
+		if (vt1 != 0.0)
+			for (auto & vel_x : *velocity)
+				vel_x 	+= vt1*RandomTools::Generate_randomly_normal(0.0, 1.0);
 	}
+
 }

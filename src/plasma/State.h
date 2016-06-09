@@ -21,9 +21,6 @@
 #include "parameterization/MacroParameterization.h"
 #include "tools/CurveDiagnostic.h"
 #include "tools/ScatterDiagnostic.h"
- 
-#include <chrono>
-typedef std::chrono::microseconds timeunit;
 
 /* Forward declarations */
 class MacroParameterization;
@@ -59,6 +56,8 @@ class State
 		/* getter */
 		std::shared_ptr<double> get_simulation_time()	const 	{ return _simulation_time;	}
 		double 	get_kinetic_energy(int population_index) 	const { return _populations.at(population_index)->get_kinetic_energy(); }
+		int get_number_of_particles(int population_index) const { return _populations.at(population_index)->get_size();	};
+		double get_total_weight(int population_index) const { return _populations.at(population_index)->get_total_weight();	};
 
 		/* getters for the diagnostics ========================================================== */
 		std::vector<std::vector<double> * >	get_vector_of_position_arrays() const;
@@ -74,6 +73,7 @@ class State
 		friend std::ostream& operator<<( std::ostream& os, const State& state);
 
 		/* method =============================================================================== */
+
 		void set_new_number_of_particles(const int population_index, const int new_population_size);
 		void Load(const MacroParameterization & parameterization);
 		void Prepare(const bool toggle_half_step = true);
@@ -94,10 +94,10 @@ class State
 			{
 				population->Weigh(*_fields);
 			}
-
-		/* Account for BCs */
-		_fields->_charge.front() 	*= 2.;
-		_fields->_charge.back()		*= 2.;
+			
+			/* Account for BCs */
+			_fields->_charge.front() 	*= 2.;
+			_fields->_charge.back()		*= 2.;
 		}
 
 		void Accelerate(double factor = 1.0)

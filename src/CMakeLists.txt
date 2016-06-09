@@ -19,6 +19,6 @@ ADD_LIBRARY(PSCALE STATIC ${source_files})
 ######################################################################################
 ### 3) Link the librairies for your library
 ######################################################################################
-TARGET_LINK_LIBRARIES( PSCALE ${XGRAFIX_LIBRARIES} ${FFTW_LIBRARIES})
+TARGET_LINK_LIBRARIES( PSCALE ${XGRAFIX_LIBRARIES} ${FFTW_LIBRARIES} ${UMFPACK_LIBRARIES})
 
 ######################################################################################

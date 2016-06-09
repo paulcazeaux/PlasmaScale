@@ -23,6 +23,7 @@ SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS}")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/module")
 find_package(FFTW)
 find_package(XGRAFIX)
+find_package(UMFPACK)
 
 
 ######################################################################################
@@ -31,7 +32,7 @@ find_package(XGRAFIX)
 ### include required modules & utilities
 #####################################################################################
 
-include_directories(${FFTW_INCLUDES} ${XGRAFIX_INCLUDES})
+include_directories(${FFTW_INCLUDES} ${XGRAFIX_INCLUDES} ${UMFPACK_INCLUDES})
 include(CMakeBackwardCompatibilityCXX)
 include(CheckLibraryExists)
            

@@ -24,9 +24,7 @@
 #include <chrono>
 
 /* Declarations */
-
-typedef std::chrono::microseconds timeunit;
-
+ 
 class WaveletRepresentation : public Representation
 {
 	protected:

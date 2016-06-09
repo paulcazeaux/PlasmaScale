@@ -10,6 +10,8 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 			_record_microsteps(parameterization._record_microsteps),
 			_distributions(std::move(parameterization._distributions)),
 			_stack_ion_distribution(std::move(parameterization._stack_ion_distribution)),
+			_stack_ion_number(std::move(parameterization._stack_ion_number)),
+			_stack_electron_number(std::move(parameterization._stack_electron_number)),
 			_stack_electron_energy(std::move(parameterization._stack_electron_energy)),
             _stack_index(parameterization._stack_index),
 			_record_times(std::move(parameterization._record_times)),
@@ -32,6 +34,8 @@ MacroParameterizationWavelets& MacroParameterizationWavelets::operator=(MacroPar
 
 	_distributions = std::move(parameterization._distributions);
 	_stack_ion_distribution = std::move(parameterization._stack_ion_distribution);
+	_stack_ion_number = std::move(parameterization._stack_ion_number);
+	_stack_electron_number = std::move(parameterization._stack_electron_number);
 	_stack_electron_energy = std::move(parameterization._stack_electron_energy);
     _stack_index = parameterization._stack_index;
 
@@ -62,6 +66,8 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 
 	int number_of_microsteps = _plasma->_number_of_microsteps;
 	_stack_ion_distribution.reserve(number_of_microsteps+1);
+	_stack_ion_number.reserve(number_of_microsteps+1);
+	_stack_electron_number.reserve(number_of_microsteps+1);
 	_stack_electron_energy.reserve(number_of_microsteps+1);
     _stack_index = 0;
 
@@ -91,7 +97,7 @@ MacroParameterizationWavelets::MacroParameterizationWavelets(MacroParameterizati
 		J_T.push_back(Eigen::Triplet<double>(i, i,  2*scaling));
 		J_T.push_back(Eigen::Triplet<double>(i, i+1, -scaling));
 	}
-		/* Neumann condition at x = _length */
+		/* (inhomogeneous) Neumann condition at x = _length */
 	J_T.push_back(Eigen::Triplet<double>(_grid_end, _grid_end, scaling));
 	J_T.push_back(Eigen::Triplet<double>(_grid_end, _grid_end-1, -scaling));
 
@@ -127,7 +133,9 @@ void MacroParameterizationWavelets::Load(State & state) const
 		std::vector<double>::iterator position 		= positions.at(population_index)->begin();
 		std::vector<double>::iterator velocity 		= velocities.at(population_index)->begin();
 		std::vector<double>::iterator weight 		= weights.at(population_index)->begin();
-		int population_size = this->get_population_size(population_index);
+		
+		int population_size = _population_sizes.at(population_index);
+		state.set_new_number_of_particles(population_index, population_size);
 		_distributions.at(population_index)->Load(population_size, position, velocity, weight);
 	}
 	state.Prepare(true);
@@ -143,34 +151,33 @@ void MacroParameterizationWavelets::SetAccField(State & state)
 
 void MacroParameterizationWavelets::RestrictAndPushback(const State & state, const double delay)
 {
-	/***********************************************************************/
-	/* Now we weigh the particles and compute the moments on the fine grid */
-	/***********************************************************************/
+    if (_stack_index >= _stack_ion_distribution.size())
+        _stack_ion_distribution.emplace_back(_plasma, _lower_velocities.at(0), _upper_velocities.at(0), _depth, _reference_densities.at(0));
+	if (_stack_index >= _stack_ion_number.size())
+		_stack_ion_number.emplace_back(0.);
+	if (_stack_index >= _stack_electron_number.size())
+		_stack_electron_number.emplace_back(0.);
+	if (_stack_index >= _stack_electron_energy.size())
+		_stack_electron_energy.emplace_back(0.);
+
+	/************************************************************************/
+	/* Now we weigh the particles and compute the moments on the macro grid */
+	/************************************************************************/
     /* First, we initialize the arrays */
 	std::vector<double>::iterator 	ion_position 		= state.get_vector_of_position_arrays().front()->begin();
 	std::vector<double>::iterator	ion_velocity 		= state.get_vector_of_velocity_arrays().front()->begin();
 	std::vector<double>::iterator 	ion_weight 			= state.get_vector_of_weight_arrays().front()->begin();
-	int ion_population_size = * state.get_vector_of_sizes().front();
-    if (_stack_index >= _stack_ion_distribution.size())
-        _stack_ion_distribution.emplace_back(_plasma, _lower_velocities.at(0), _upper_velocities.at(0), _depth, _reference_densities.at(0));
+	int ion_population_size = state.get_number_of_particles(0);
+
     
-    int size = _grid_end;
-    _stack_ion_distribution.at(_stack_index).set_grid_end(size);
-    
-	/* Then we weigh the particles and restrict the values to the macroscopic grid using a linear smoothing. */
+    _stack_ion_distribution.at(_stack_index).set_grid_end(_macro_grid_end);
 	if (delay != 0)
 		_stack_ion_distribution.at(_stack_index).Weigh(ion_population_size, ion_position, ion_velocity, ion_weight, delay, _accfield);
 	else
 		_stack_ion_distribution.at(_stack_index).Weigh(ion_population_size, ion_position, ion_velocity, ion_weight);
 
-	while (size > _macro_grid_end)
-	{
-		_stack_ion_distribution.at(_stack_index).Coarsen();
-		size = _stack_ion_distribution.at(_stack_index).get_grid_end();
-	}
-
-	if (_stack_index >= _stack_electron_energy.size())
-		_stack_electron_energy.emplace_back(0.);
+	_stack_ion_number.at(_stack_index) = state.get_total_weight(0);
+	_stack_electron_number.at(_stack_index) = state.get_total_weight(1);
 	_stack_electron_energy.at(_stack_index) = state.get_kinetic_energy(1);	
 
 	if (_record_microsteps)
@@ -187,7 +194,6 @@ void MacroParameterizationWavelets::Lift()
 	int size = _grid_end+1;
 	*dynamic_cast<ActiveWaveletRepresentation*>(_distributions.front().get()) = _stack_ion_distribution.front();
 
-
 	/*-------------------------------------------------------------*/
 	/*	  We lift all these quantities to the fine grid    */
 	/*-------------------------------------------------------------*/
@@ -203,13 +209,14 @@ void MacroParameterizationWavelets::Lift()
 	static std::vector<double>	ion_density = std::vector<double>(size),
 							  	ion_velocity = std::vector<double>(size),
 							 	exp_potential = std::vector<double>(size);
-	static 	Eigen::SimplicialCholesky<Eigen::SparseMatrix<double> > PoissonSolver;
+	static 	Eigen::UmfPackLU<Eigen::SparseMatrix<double> > PoissonSolver;
 
 	Eigen::Map<Eigen::VectorXd> Ion_density(ion_density.data(), size);
 	Eigen::Map<Eigen::VectorXd> Exp_potential(exp_potential.data(), size);
 	Eigen::VectorXd Residual(size), Potential(size), Update(size);
 
 	_distributions.front()->GetDensityVelocity(ion_density, ion_velocity);
+
 	/* Calculate thermal velocity for the electrons from the projected kinetic energy */
 	double vt2 =  2*_stack_electron_energy.front()/(_unit_masses.at(1) * _population_sizes.at(1));
 
@@ -220,15 +227,22 @@ void MacroParameterizationWavelets::Lift()
 		vt2 -= ion_density.at(i)*std::pow(ion_velocity.at(i), 2.0)/N;
 	}
 	double thermal_velocity = std::sqrt(vt2);
-	std::cout << "Calculated thermal velocity:\t" << thermal_velocity << std::endl;
 
+	/* Calculate derivative at x = _length due to escaped particles */
+	double end_deriv = _stack_ion_number.front()/_reference_densities.at(0) - _stack_electron_number.front()/_reference_densities.at(1);
+	end_deriv /= _plasma->_dx;
+	
+	/* Initialize solver variables */
 	Eigen::SparseMatrix<double> Jr = std::pow(thermal_velocity/_thermal_velocities.at(1), 2.0) * _J;
-	Potential = (Ion_density.array()+1e-15).log();
+	Potential = (Ion_density.array()+1.).log();
 	Exp_potential = Potential.array().exp();
-	Residual = Exp_potential - Ion_density + Jr*Potential;
+	Residual = Exp_potential - Ion_density;
+	Residual(0) *= .5;  Residual(size-1) *= .5;
+	Residual(size-1) += end_deriv;
+	Residual += Jr*Potential;
 
 	/* Newton's method loop */
-	double tol2 = 1e-30, iter_max = 1000;
+	double tol2 = 1e-20, iter_max = 100;
 	for (int count=0; count<iter_max; count++)
 	{
 		Eigen::SparseMatrix<double> Je = Jr;
@@ -237,24 +251,29 @@ void MacroParameterizationWavelets::Lift()
 		Je.coeffRef(size-1, size-1) += .5* Exp_potential(size-1);
 		
 		PoissonSolver.compute(Je);
-
-		Residual(0) *= .5; 
-		Residual(size-1) *= .5;
 		Update = PoissonSolver.solve(Residual);
 
 		Potential -= Update;
 		Exp_potential = Potential.array().exp();
-		Residual = Exp_potential - Ion_density + Jr*Potential;
+		Residual = Exp_potential - Ion_density;
+		Residual(0) *= .5;  Residual(size-1) *= .5;
+		Residual(size-1) += end_deriv;
+		Residual += Jr*Potential;
 	
-		if (Residual.squaredNorm() < tol2)
+		if (count > 90)
+			std::cout << "Newton iteration count: " << count << "\t|\tResidual norm:\t" << Residual.norm() << "\t|\tStep norm:\t" << Update.norm() << std::endl;
+		if (Update.squaredNorm() < tol2)
 			break;
 	}
-
 
 	/*-------------------------------------------------------------*/
 	/* Deduce the electron density from the Boltzmann distribution */
 	/*-------------------------------------------------------------*/
 	_distributions.back()->SetAdiabaticValues(exp_potential, ion_velocity, thermal_velocity);
+
+	/* Set the new sizes of each population */
+	_population_sizes.at(0) = static_cast<int>(_stack_ion_number.front()+.5);
+	_population_sizes.at(1) = static_cast<int>(_stack_electron_number.front()+.5);
 }
 
 void MacroParameterizationWavelets::Step(State & state)
@@ -318,9 +337,11 @@ void MacroParameterizationWavelets::Step(State & state)
 		std::vector<double>::iterator position 		= state.get_vector_of_position_arrays().at(1)->begin();
 		std::vector<double>::iterator velocity 		= state.get_vector_of_velocity_arrays().at(1)->begin();
 		std::vector<double>::iterator weight 		= state.get_vector_of_weight_arrays().at(1)->begin();
-		int population_size = this->get_population_size(1);
 
+		int population_size = static_cast<int>(_stack_electron_number.front()+.5);
+		_population_sizes.at(1) = population_size;
 		state.set_new_number_of_particles(1, population_size);
+
 		_distributions.at(1)->Load(population_size, position, velocity, weight);
 		state.Prepare(1, false);
 			stop = std::chrono::high_resolution_clock::now();
@@ -336,6 +357,7 @@ void MacroParameterizationWavelets::Step(State & state)
 	}
 	else
 	{
+
 		/***********************************************************/
 		/* Case of Lagrangian equation-free projective integration */
 		/***********************************************************/
@@ -343,15 +365,13 @@ void MacroParameterizationWavelets::Step(State & state)
 		double current_time = *simulation_time;
 	    double ratio = static_cast<double>(_plasma->_macro_to_micro_dt_ratio - number_of_microsteps);
 		static ActiveWaveletRepresentation slope;
-		double slope_energy;
-
+		double slope_ion_number, slope_electron_number, slope_energy;
 		/* Explicit Euler integration */
 		/* Obtain the ion acceleration field for approximation of the characteristics */
 			start = std::chrono::high_resolution_clock::now();
 		this->SetAccField(state);
 			stop = std::chrono::high_resolution_clock::now();
 			field_time += std::chrono::duration_cast<timeunit>(stop - start);
-
 		if (_record_microsteps)
 			_record_times.clear();
 		/* Now we advance while measuring the coarse data for a set number of microsteps */
@@ -360,7 +380,6 @@ void MacroParameterizationWavelets::Step(State & state)
 		this->RestrictAndPushback(state, ratio + number_of_microsteps);
 				stop = std::chrono::high_resolution_clock::now();
 				pushback_time += std::chrono::duration_cast<timeunit>(stop - start);
-
 		for (int i=0; i<number_of_microsteps; i++)
 		{
 				start = std::chrono::high_resolution_clock::now();
@@ -380,18 +399,28 @@ void MacroParameterizationWavelets::Step(State & state)
 		/* First we calculate the slope using the mean-square estimate */
 			start = std::chrono::high_resolution_clock::now();
 		double slope_factor = static_cast<double>(6*ratio)/static_cast<double>(number_of_microsteps*(number_of_microsteps+1)*(number_of_microsteps+2));
-		slope = slope_factor*number_of_microsteps*(_stack_ion_distribution.at(number_of_microsteps)-_stack_ion_distribution.front());
-		slope_energy = slope_factor*number_of_microsteps*(_stack_electron_energy.at(number_of_microsteps)-_stack_electron_energy.front());
+		slope 					= slope_factor*number_of_microsteps*(_stack_ion_distribution.at(number_of_microsteps)-_stack_ion_distribution.front());
+
+		slope_ion_number 		= slope_factor*number_of_microsteps*(_stack_ion_number.at(number_of_microsteps)-_stack_ion_number.front());
+		slope_electron_number 	= slope_factor*number_of_microsteps*(_stack_electron_number.at(number_of_microsteps)-_stack_electron_number.front());
+		slope_energy 			= slope_factor*number_of_microsteps*(_stack_electron_energy.at(number_of_microsteps)-_stack_electron_energy.front());
+
 		for (int i=1; 2*i<number_of_microsteps; i++)
 		{
-			slope += slope_factor*(number_of_microsteps-2*i)*(_stack_ion_distribution.at(number_of_microsteps-i)-_stack_ion_distribution.at(i));
-			slope_energy += slope_factor*(number_of_microsteps-2*i)*(_stack_electron_energy.at(number_of_microsteps-i)-_stack_electron_energy.at(i));
+			slope 					+= slope_factor*(number_of_microsteps-2*i)*(_stack_ion_distribution.at(number_of_microsteps-i)-_stack_ion_distribution.at(i));
+
+			slope_ion_number 		+= slope_factor*(number_of_microsteps-2*i)*(_stack_ion_number.at(number_of_microsteps-i)-_stack_ion_number.at(i));
+			slope_electron_number 	+= slope_factor*(number_of_microsteps-2*i)*(_stack_electron_number.at(number_of_microsteps-i)-_stack_electron_number.at(i));
+			slope_energy 			+= slope_factor*(number_of_microsteps-2*i)*(_stack_electron_energy.at(number_of_microsteps-i)-_stack_electron_energy.at(i));
 		}
 
 		/* We take a projective Euler step following this slope */
 	    std::swap(_stack_ion_distribution.front(), _stack_ion_distribution.at(number_of_microsteps));
 		_stack_ion_distribution.front() += slope;
-		_stack_electron_energy.front() = _stack_electron_energy.at(number_of_microsteps) + slope_energy;
+
+		_stack_ion_number.front() 		= _stack_ion_number.at(number_of_microsteps) + slope_ion_number;
+		_stack_electron_number.front() 	= _stack_electron_number.at(number_of_microsteps) + slope_electron_number;
+		_stack_electron_energy.front() 	= _stack_electron_energy.at(number_of_microsteps) + slope_energy;
 			stop = std::chrono::high_resolution_clock::now();
 			algebra_time += std::chrono::duration_cast<timeunit>(stop - start);
 
@@ -421,32 +450,56 @@ void MacroParameterizationWavelets::Step(State & state)
 		}
 	}
 
-	/* Diagnostics: output timing info */
-	std::cout << ++count_steps <<  " | PIC time: " << PIC_time.count() << ", Field time: " << field_time.count() << ", Pushback time: " << pushback_time.count() << ", Algebra time: " << algebra_time.count() << ", Cutoff time: " << cutoff_time.count()  << ", Load time: "<< load_time.count() << ", Lift time: " << lift_time.count() << std::endl;
 	_stack_index = 0;
 	this->RestrictAndPushback(state, 0.);
-	_distributions.front()->GetDensityVelocityPressure(_ion_density, _ion_velocity, _ion_pressure);
+	_stack_ion_distribution.front().GetDensityVelocityPressure(_ion_density, _ion_velocity, _ion_pressure);
+	/* Calculate thermal velocity for the electrons from the projected kinetic energy */
+	double vt2 =  2*_stack_electron_energy.front()/(_unit_masses.at(1) * _population_sizes.at(1));
+
+	/* Approximate the correction from mean velocity effect using the ion density and velocity */
+	double N = 0.5*(_ion_density.front() + _ion_density.back()) + std::accumulate(_ion_density.begin()+1, _ion_density.end()-1, 0.);
+	vt2 -= 0.5/N*(_ion_density.front()*std::pow(_ion_velocity.front(), 2.0) + _ion_density.back()*std::pow(_ion_velocity.back(), 2.0));
+	for (int i=1; i<_macro_grid_end; i++)
+	{
+		vt2 -= _ion_density.at(i)*std::pow(_ion_velocity.at(i), 2.0)/N;
+	}
+
+	/* Diagnostics: output timing info */
+	if ((count_steps % 100) == 0)
+		std::cout << "|\tStep\t|\t Total\t|\t   PIC\t|\t Field\t|"
+						<< "\tPushback\t|\tAlgebra\t|\tCutoff\t|"
+						<< "\t  Load\t|\t  Lift\t||\t Thermal vel\t||"
+						<< "\tGlob. charge\t|" << std::endl;
+	std::cout << "|\t" 	<< std::setw(4) << ++count_steps  
+		<< "\t|\t" 		<< std::setw(6) << (PIC_time + field_time + pushback_time + algebra_time + cutoff_time + load_time + lift_time).count() 
+		<< "\t|\t" 		<< std::setw(6) << PIC_time.count() 
+		<< "\t|\t" 		<< std::setw(6) << field_time.count() 
+		<< "\t|\t" 		<< std::setw(8) << pushback_time.count() 
+		<< "\t|\t" 		<< std::setw(7) << algebra_time.count() 
+		<< "\t|\t" 		<< std::setw(6) << cutoff_time.count()  
+		<< "\t|\t" 		<< std::setw(6) << load_time.count() 
+		<< "\t|\t" 		<< std::setw(6) << lift_time.count() 
+		<< "\t||\t" 	<< std::sqrt(vt2) 
+		<< "\t||\t" 	<< _stack_ion_number.front()/_reference_densities.at(0) - _stack_electron_number.front()/_reference_densities.at(1) 
+		<< "\t|" 		<< std::endl;
+}
+
+
+void MacroParameterizationWavelets::WriteData(State & state, std::fstream & fout)
+{
+	const int downsampling = 0;
+
+	_stack_index = 0;
+	this->RestrictAndPushback(state, 0.);
+	_stack_ion_distribution.front().GetDensityVelocityPressure(_ion_density, _ion_velocity, _ion_pressure);
 
 		/* Diagnostic: extract electron parameters */
 	std::vector<double>::iterator 	electron_position 		= state.get_vector_of_position_arrays().back()->begin();
 	std::vector<double>::iterator	electron_velocity 		= state.get_vector_of_velocity_arrays().back()->begin();
 	std::vector<double>::iterator 	electron_weight 		= state.get_vector_of_weight_arrays().back()->begin();
-	int electron_population_size = * state.get_vector_of_sizes().back();
+	int electron_population_size = state.get_number_of_particles(1);
+    _distributions.back()->set_grid_end(_macro_grid_end);
 	_distributions.back()->Weigh(electron_population_size, electron_position, electron_velocity, electron_weight);
-
-	/* Diagnostic: extract electron velocity distribution */
-	// std::vector<std::vector<double> > profile_by_population;
-	// state.ComputeVelocityProfile(profile_by_population);
-	// std::cout << "t = " << count_steps <<  " | Velocity profile: " << std::endl;
-	// for (auto val: profile_by_population.back())
-	// std::cout << val << "\t";
-	// std::cout << std::endl;
-}
-
-
-void MacroParameterizationWavelets::WriteData(std::fstream & fout)
-{
-	const int downsampling = 0;
 
 	if (!_record_microsteps)
 	{
@@ -457,16 +510,12 @@ void MacroParameterizationWavelets::WriteData(std::fstream & fout)
 	}
 	else
 	{
-		if (_record_times.size()!=_plasma->_number_of_microsteps*2+4)
-			return;
-
 		for (int i=0; i<_record_times.size(); i++)
 		{
 			fout << "t = " << _record_times.at(i) << std::endl;
 			_record_ion_distribution.at(i).DWT(downsampling);
 			fout << _record_ion_distribution.at(i);
 		}
-
 	}
 }
 
@@ -504,7 +553,7 @@ void MacroParameterizationWavelets::CalculateTotalMoment(const State & state)
 	{
 		std::vector<double>::iterator velocity 		= velocities.at(population_index)->begin();
 		std::vector<double>::iterator weight 		= weights.at(population_index)->begin();
-		int population_size = this->get_population_size(population_index);
+		int population_size = state.get_number_of_particles(population_index);
 		double m = _unit_masses.at(population_index)/dt;
 
 		for (int i=0; i < population_size; i++) 
@@ -527,7 +576,7 @@ void MacroParameterizationWavelets::CalculateIonMoment(const State & state, doub
 
 	std::vector<double>::iterator velocity 		= velocities.front()->begin();
 	std::vector<double>::iterator weight 		= weights.front()->begin();
-	int population_size = this->get_population_size(0);
+	int population_size = state.get_number_of_particles(0);
 
 	for (int i=0; i < population_size; i++) 
 	{
@@ -551,7 +600,7 @@ void MacroParameterizationWavelets::CalculateElectronMoment(const State & state,
 
 	std::vector<double>::iterator velocity 		= velocities.back()->begin();
 	std::vector<double>::iterator weight 		= weights.back()->begin();
-	int population_size = this->get_population_size(1);
+	int population_size = state.get_number_of_particles(1);
 	for (int i=0; i < population_size; i++) 
 	{
 		double v = *(velocity+i);

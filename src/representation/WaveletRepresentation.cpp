@@ -84,13 +84,13 @@ void WaveletRepresentation::Weigh(int size,
 								std::vector<double>::iterator 	weights)
 {
 	this->Reset();
+    double idx =  static_cast<double>(_grid_end)/_plasma->_length;
 
 	for (int i=0; i<size; i++)
 	{
-		double pos = position[i];
-		int xbin = _plasma->find_index_on_grid(pos);
+		int xbin = static_cast<int>(std::abs(position[i]) * idx);
 
-		if (xbin>=0 && xbin<_grid_end)
+		if (xbin<=_grid_end)
 		{
 			double weight = weights[i];
 			int vbin = static_cast<int>((velocity[i]/_plasma->_dt - _vmin)*_dv);
@@ -102,8 +102,8 @@ void WaveletRepresentation::Weigh(int size,
 			_histogram.at(xbin).at(vbin) += weight;
 		}
 	}
-    
-    double n0 = 1./(_reference_density*_plasma->_dx);
+
+	double n0 = idx/_reference_density;
     for (auto & cell : _histogram)
         for (auto & value : cell)
             value *= n0;
@@ -118,53 +118,36 @@ void WaveletRepresentation::Weigh(int size,
 {
 	assert(accfield.size() == _grid_end+1);
 	this->Reset();
+    double idx =  static_cast<double>(_grid_end)/_plasma->_length;
 
 	for (int i=0; i<size; i++)
 	{
 		double pos = position[i] + delay*velocity[i];
-		if (pos>=0)
+		double vel = velocity[i];
+		if (pos < 0)
 		{
-			int xbin = _plasma->find_index_on_grid(pos);
-
-			if (xbin>=0 && xbin<_grid_end)
-			{
-				double s = _plasma->find_position_in_cell(pos);
-				double vel = velocity[i] + delay*Tools::EvaluateP1Function(accfield, xbin, s);
-
-				double weight = weights[i];
-				int vbin = static_cast<int>((vel/_plasma->_dt - _vmin)*_dv);
-				if (vbin < 0)
-					vbin = 0;
-				if (vbin > _number_of_bins-1)
-					vbin = _number_of_bins-1;
-
-				_histogram.at(xbin).at(vbin) += weight;
-			}
+			pos = -pos;
+			vel = -vel;
 		}
-		else
+
+		int xbin = static_cast<int>(pos);
+
+		if (xbin<=_grid_end)
 		{
-			pos = - pos;
+			vel += delay*Tools::EvaluateP1Function(accfield, _plasma->find_index_on_grid(pos), _plasma->find_position_in_cell(pos));
 
-			int xbin = _plasma->find_index_on_grid(pos);
+			double weight = weights[i];
+			int vbin = static_cast<int>((vel/_plasma->_dt - _vmin)*_dv);
+			if (vbin < 0)
+				vbin = 0;
+			if (vbin > _number_of_bins-1)
+				vbin = _number_of_bins-1;
 
-			if (xbin>=0 && xbin<_grid_end)
-			{
-				double s = _plasma->find_position_in_cell(pos);
-				double vel = - velocity[i] + delay*Tools::EvaluateP1Function(accfield, xbin, s);
-
-				double weight = weights[i];
-				int vbin = static_cast<int>((vel/_plasma->_dt - _vmin)*_dv);
-				if (vbin < 0)
-					vbin = 0;
-				if (vbin > _number_of_bins-1)
-					vbin = _number_of_bins-1;
-
-				_histogram.at(xbin).at(vbin) += weight;
-			}
+			_histogram.at(xbin).at(vbin) += weight;
 		}
 	}
 
-	double n0 = 1./(_reference_density*_plasma->_dx);
+	double n0 = idx/_reference_density;
     for (auto & cell : _histogram)
         for (auto & value : cell)
             value *= n0;
@@ -216,50 +199,23 @@ void WaveletRepresentation::Load(int size,
 
 	double dn = 1./static_cast<double>(size);
 	double fv = 0.5*dn;
-	double xs = 0.;			
+	double xs = 0.;
+	double x0 = 0.5/size;	
 
 	for (int i=0; i<size; i++)
 	{
-		/************************************************************************/
-		/* bit-reversed scrambling to reduce the correlation with the positions */
-		/************************************************************************/
-		
-		double xsi = 0.5;
-		xs -= 0.5;
-		while (xs >= 0.0)
-		{
-			xsi *= 0.5;
-			xs -= xsi;
-		} 
-		xs += 2.0*xsi;
-
-		/**********************************/
-    	/* Binary search for the position */
-    	/**********************************/
-
-		int index_down = 0;
-		int index_up = _grid_end;
-		while (index_up - index_down > 1)
-		{
-			int index_mid = (index_up + index_down)/2;
-			if (xs < icdf_pos[index_mid])
-				index_up = index_mid;
-			else
-				index_down = index_mid;
-		}
-
-		double xdown = icdf_pos[index_down];
-		double xup = icdf_pos[index_up];
-		double pos = _plasma->_dx*(index_down + (xs-xdown)/(xup-xdown));
+		double pos = (x0+xs)*_plasma->_length;
 
 		int bin = _plasma->find_index_on_grid(pos);
+		double s = _plasma->find_position_in_cell(pos);
+        double dens = Tools::EvaluateP1Function(density, bin, s);
 
 		/**********************************/
     	/* Binary search for the velocity */
     	/**********************************/
 
-		index_down = 0;
-		index_up = _number_of_bins;
+		int index_down = 0;
+		int index_up = _number_of_bins;
 		while (index_up - index_down > 1)
 		{
 			int index_mid = (index_up + index_down)/2;
@@ -274,8 +230,24 @@ void WaveletRepresentation::Load(int size,
 
 		position[i] = pos;
 		velocity[i] = (vel.at(index_down) + _dv*(fv - fvdown)/(fvup - fvdown));
-		weights[i]  = 1.;
+		weights[i]  = dens;
+
+		/************************************************************************/
+		/* bit-reversed scrambling to reduce the correlation with the positions */
+		/************************************************************************/
+		
+		double xsi = 0.5;
+		xs -= 0.5;
+		while (xs >= 0.0)
+		{
+			xsi *= 0.5;
+			xs -= xsi;
+		} 
+		xs += 2.0*xsi;
 	}
+
+	double w0 = size / std::accumulate(weights, weights+size, 0.);
+	for (int i=0; i<size; i++) weights[i] *= w0;
 }
 
 void WaveletRepresentation::Coarsen()
@@ -349,7 +321,7 @@ void WaveletRepresentation::GetDensityVelocity(std::vector<double> & density, st
 
 	if (_is_transformed) this->iDWT();
 
-	for (int n=0; n<_grid_end; n++)
+	for (int n=0; n<=_grid_end; n++)
 	{
 		double mean = 0.;
 		double dens = 0.;
@@ -376,7 +348,7 @@ void WaveletRepresentation::GetDensityVelocityPressure(std::vector<double> & den
 
 	if (_is_transformed) this->iDWT();
 
-	for (int n=0; n<_grid_end; n++)
+	for (int n=0; n<=_grid_end; n++)
 	{
 		double dens = 0.;
 		double mean = 0.;
@@ -433,8 +405,8 @@ void WaveletRepresentation::DWT(const int J)
 	for (int n=0; n<=_grid_end; n++)
 	{
 		size = _number_of_bins;
-		if (std::accumulate(_coefficients.at(n).begin(), _coefficients.at(n).end(), 0.) > 1e-10)
-		{
+		// if (std::accumulate(_coefficients.at(n).begin(), _coefficients.at(n).end(), 0.) > 1e-10)
+		// {
 			for (int j = 0 ; j<std::min(J, _depth); j++)
 			{
 				std::fill_n(tmp.begin(), size, 0.);
@@ -450,7 +422,7 @@ void WaveletRepresentation::DWT(const int J)
 				}
 				std::copy(tmp.begin(), tmp.begin()+2*size, _coefficients.at(n).begin());
 			}
-		}
+		// }
 	}
 	_is_transformed = true;
 }
@@ -583,7 +555,6 @@ void WaveletRepresentation::Cutoff(int cutoff)
         {
         	/* DWT */
             this->DWT(_depth - cutoff);
-
             for (int n=0; n<=_grid_end; n++)
                 std::fill(_coefficients.at(n).begin()+L , _coefficients.at(n).end(), 0.);
             

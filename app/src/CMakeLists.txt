@@ -26,6 +26,6 @@ ADD_DEPENDENCIES(PlasmaScale PSCALE)
 ######################################################################################
 ### 4) Link the librairies for your executable
 ######################################################################################
-TARGET_LINK_LIBRARIES( PlasmaScale PSCALE ${XGRAFIX_LIBRARIES} ${FFTW_LIBRARIES})
+TARGET_LINK_LIBRARIES( PlasmaScale PSCALE ${XGRAFIX_LIBRARIES} ${FFTW_LIBRARIES} ${UMFPACK_LIBRARIES})
 
 ######################################################################################

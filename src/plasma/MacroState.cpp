@@ -45,8 +45,7 @@ void MacroState::SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &dia
 
 void MacroState::WriteData(std::fstream & fout)
 {
-
 	if (!_plasma->_record_microsteps)
 		fout << std::endl << "t = " << *_simulation_time << std::endl;
-	_parameterization->WriteData(fout);
+	_parameterization->WriteData(*_micro_state, fout);
 }

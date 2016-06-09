@@ -22,6 +22,7 @@
 #include "representation/MaxwellianRepresentationP1.h"
  
 #include <iostream>
+#include <iomanip>
 #include <exception>
 #include <stdexcept>
 #include <cassert>
@@ -31,13 +32,14 @@
 #include <cmath>
  
 #include <eigen3/Eigen/Sparse>
+#include <eigen3/Eigen/UmfPackSupport>
 
 #include <ctime>
 #include <chrono>
 
 /* Declarations */
 
-typedef std::chrono::microseconds timeunit;
+typedef std::chrono::milliseconds timeunit;
 typedef WaveletRepresentationP1 ActiveWaveletRepresentation;
 typedef MaxwellianRepresentationP1 ActiveMaxwellianRepresentation;
 
@@ -58,6 +60,8 @@ class MacroParameterizationWavelets : public MacroParameterization
 		/* Active variables : assuming that the ion population is the first population */
 		/* Data points storing the information used to determine the derivative */
 		std::vector<ActiveWaveletRepresentation> 					_stack_ion_distribution;
+		std::vector<double> 											_stack_ion_number;
+		std::vector<double> 											_stack_electron_number;
 		std::vector<double> 										_stack_electron_energy;
 		int 														_stack_index;
 
@@ -99,7 +103,7 @@ class MacroParameterizationWavelets : public MacroParameterization
 		virtual void Step(State & state);
 
 		virtual void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics);
-		virtual void WriteData(std::fstream & fout);
+		virtual void WriteData(State & state, std::fstream & fout);
 
 		void CalculateTotalMoment(const State & state);
 		void CalculateIonMoment(const State & state, double & ion_particle_moment, double & ion_distr_moment);

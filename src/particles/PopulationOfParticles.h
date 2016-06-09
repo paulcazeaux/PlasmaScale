@@ -87,6 +87,7 @@ class PopulationOfParticles
 		double	get_unit_charge()							const { return _unit_charge;}
 		double	get_unit_mass()								const { return _unit_mass;	}
 		int 	get_size()									const { return _population_size;	}
+		int 	get_total_weight()							const { return _total_weight;	}
 
 		double	get_kinetic_energy()						const { return _kinetic_energy;	}
 		double	get_moment()								const { return _moment;	}

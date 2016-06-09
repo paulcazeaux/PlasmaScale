@@ -31,12 +31,20 @@ echo "==========================================================================
 
 InputFile=/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/plasmaexpansion.inp
 
-ExportFile=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Size_2000/null
+ExportFile=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Gaussian_vti=.1/Reference
 rm ${ExportFile}.dmp ${ExportFile}.out
-./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 2 -s 60 -nox > ${ExportFile}.out
+./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 1 -s 56 -nox > ${ExportFile}.out
 open ${ExportFile}.out
 
-# ExportFolder=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Test_ndt_Size_500/
+# InputFile=/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/plasmaexpansion.inp
+
+# ExportFile=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Gaussian_vti=.1/t-Gaussian3
+# rm ${ExportFile}.dmp ${ExportFile}.out
+# ./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 8 -s 56 -nox > ${ExportFile}.out
+# open ${ExportFile}.out
+
+
+# ExportFolder=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Gaussian/
 
 # ndt=1
 # while [  $ndt -lt 45  ]; do
@@ -45,9 +53,9 @@ open ${ExportFile}.out
 # 	w
 # 	q" | ex ${InputFile}
 
-# 	ExportFile=${ExportFolder}${ndt}_coframe_512
+# 	ExportFile=${ExportFolder}${ndt}_test_ndt
 # 	rm ${ExportFile}.dmp ${ExportFile}.out
-# 	./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 25 -s 100 -nox > ${ExportFile}.out &
+# 	./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 1 -s 10 -nox > ${ExportFile}.out &
 
 # 	let ndt=ndt+1
 # 	sleep 5
@@ -57,9 +65,9 @@ open ${ExportFile}.out
 # 	w
 # 	q" | ex ${InputFile}
 
-# 	ExportFile=${ExportFolder}${ndt}_coframe_512
+# 	ExportFile=${ExportFolder}${ndt}_test_ndt
 # 	rm ${ExportFile}.dmp ${ExportFile}.out
-# 	./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 25 -s 100 -nox > ${ExportFile}.out &
+# 	./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 1 -s 10 -nox > ${ExportFile}.out &
 
 # 	let ndt=ndt+1
 # 	sleep 5
@@ -69,9 +77,9 @@ open ${ExportFile}.out
 # 	w
 # 	q" | ex ${InputFile}
 
-# 	ExportFile=${ExportFolder}${ndt}_coframe_512
+# 	ExportFile=${ExportFolder}${ndt}_test_ndt
 # 	rm ${ExportFile}.dmp ${ExportFile}.out
-# 	./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 25 -s 100  -nox > ${ExportFile}.out &
+# 	./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 1 -s 10 -nox > ${ExportFile}.out &
 
 # 	let ndt=ndt+1
 # 	sleep 5
@@ -81,9 +89,9 @@ open ${ExportFile}.out
 # 	w
 # 	q" | ex ${InputFile}
 
-# 	ExportFile=${ExportFolder}${ndt}_coframe_512
+# 	ExportFile=${ExportFolder}${ndt}_test_ndt
 # 	rm ${ExportFile}.dmp ${ExportFile}.out
-# 	./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 25 -s 100  -nox > ${ExportFile}.out
+# 	./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 1 -s 10 -nox > ${ExportFile}.out
 
 # 	let ndt=ndt+1
 # 	sleep 5

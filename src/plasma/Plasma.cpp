@@ -44,17 +44,19 @@ Plasma::Plasma( double length, double dt, int number_of_microsteps, int macro_to
 
 	std::vector<Eigen::Triplet<double>> M;
 
-	/* Dirichlet condition at x = 0 */
+	/* Neumann condition at x = 0 */
 	double scaling = _epsilon/(_dx*_dx);
-	for (int i=0; i<grid_end-1; i++)
+
+	M.push_back(Eigen::Triplet<double>(0, 0, scaling));
+	M.push_back(Eigen::Triplet<double>(0, 1, -scaling));
+
+	for (int i=1; i<grid_end; i++)
 	{
-		if (i>0) M.push_back(Eigen::Triplet<double>(i, i-1, -scaling));
+		M.push_back(Eigen::Triplet<double>(i, i-1, -scaling));
 		M.push_back(Eigen::Triplet<double>(i, i,  2*scaling));
-		M.push_back(Eigen::Triplet<double>(i, i+1, -scaling));
+		if (i+1<grid_end) M.push_back(Eigen::Triplet<double>(i, i+1, -scaling));
 	}
-	/* Neumann condition at x = _length */
-	M.push_back(Eigen::Triplet<double>(grid_end-1, grid_end-1, scaling));
-	M.push_back(Eigen::Triplet<double>(grid_end-1, grid_end-2, -scaling));
+	/* Dirichlet condition at x = _length */
 
 	_M = SpMat(grid_end, grid_end);
 	_M.setFromTriplets(M.begin(), M.end());
@@ -116,14 +118,19 @@ void 	Plasma::Poisson_Solver(std::vector<double> & charge, std::vector<double> &
 	assert(charge.size() == _grid_end+1 && potential.size() == _grid_end+1);
 
 	/* Account for BCs */
-	potential.at(0) = 0;
-	charge.at(_grid_end) *= .5;
+	// potential.at(0) = 0;
+	// charge.at(_grid_end) *= .5
+	potential.at(_grid_end) = 0;
+	charge.at(0) *= .5;
 
 	/* Use Eigen Cholesky solver */
-	Eigen::Map<Eigen::VectorXd> charge_map(charge.data()+1, _grid_end);
-	Eigen::Map<Eigen::VectorXd> potential_map(potential.data()+1, _grid_end);
+	// Eigen::Map<Eigen::VectorXd> charge_map(charge.data()+1, _grid_end);
+	// Eigen::Map<Eigen::VectorXd> potential_map(potential.data()+1, _grid_end);
+	Eigen::Map<Eigen::VectorXd> charge_map(charge.data(), _grid_end);
+	Eigen::Map<Eigen::VectorXd> potential_map(potential.data(), _grid_end);
 	potential_map = _solver.solve(charge_map);
 
 	/* Reset to the original charge */
-	charge.at(_grid_end) *= 2.;
+	// charge.at(_grid_end) *= 2.;
+	charge.at(0) *= 2.;
 }

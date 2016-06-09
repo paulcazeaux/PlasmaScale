@@ -88,7 +88,7 @@ class MacroParameterization
 		virtual int		GetNumberOfBins(int index)		const;
 
 		virtual void SetupDiagnostics(std::vector<std::unique_ptr<Diagnostic> > &diagnostics) {}
-		virtual void WriteData(std::fstream & fout) {}
+		virtual void WriteData(State & state, std::fstream & fout) {}
 		virtual void RecordMicroSteps(std::fstream & fout) {}
 };
 

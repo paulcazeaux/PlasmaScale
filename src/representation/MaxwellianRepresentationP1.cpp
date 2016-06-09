@@ -9,6 +9,7 @@ void MaxwellianRepresentationP1::Weigh(int size,
 								std::vector<double>::iterator  	velocity,
 								std::vector<double>::iterator 	weights)
 {
+    double idx =  static_cast<double>(_grid_end)/_plasma->_length;
 	this->Reset();
 
 	static std::vector<double> velocitysq;
@@ -17,14 +18,14 @@ void MaxwellianRepresentationP1::Weigh(int size,
 
 	for (int i=0; i<size; i++)
 	{		
-		double pos = position[i];
+		double pos = position[i]*idx;
 		double weight = weights[i];
 		double vel = velocity[i];
 
-		int xbin = _plasma->find_index_on_grid(pos);
+		int xbin = static_cast<int>(pos);
 		if (xbin >=0 && xbin < _grid_end)
 		{
-			double right_weight =  _plasma->find_position_in_cell(pos) * weight;
+			double right_weight =  (pos - static_cast<double>(xbin)) * weight;
 			double left_weight = weight - right_weight;
 
 			_density.at(xbin) += left_weight;
@@ -37,7 +38,7 @@ void MaxwellianRepresentationP1::Weigh(int size,
 		}
 	}
 	
-	double n0 = 1./(_reference_density*_plasma->_dx);
+	double n0 = _grid_end/(_plasma->_length*_reference_density);
 	double dt = _plasma->_dt;
 	for (int n=0; n<=_grid_end; n++)
 	{
@@ -60,6 +61,7 @@ void MaxwellianRepresentationP1::Weigh(int size,
 								const std::vector<double> & accfield)
 {
 	double dt = _plasma->_dt;
+    double idx =  static_cast<double>(_grid_end)/_plasma->_length;
 	this->Reset();
 
 	static std::vector<double> velocitysq;
@@ -69,54 +71,34 @@ void MaxwellianRepresentationP1::Weigh(int size,
 	for (int i=0; i<size; i++)
 	{		
 		double pos = position[i] + delay*velocity[i];
-		if (pos>=0)
-		{
-			int xbin = _plasma->find_index_on_grid(pos);
-		
-			if (xbin < _grid_end)
-			{
-				double s = _plasma->find_position_in_cell(pos);
-				
-				double vel = velocity[i] + delay*Tools::EvaluateP1Function(accfield, xbin, s);
-				double weight = weights[i];
-				double right_weight =  s * weight;
-				double left_weight = weight - right_weight;
-	
-				_density.at(xbin) += left_weight;
-				_velocity.at(xbin) += left_weight * vel;
-				velocitysq.at(xbin) += left_weight * vel * vel;
-	
-				_density.at(xbin+1) += right_weight;
-				_velocity.at(xbin+1) += right_weight * vel;
-				velocitysq.at(xbin+1) += right_weight * vel * vel;
-			}
-		}
-		else
+		double vel = velocity[i];
+		if (pos<0)
 		{
 			pos = -pos;
-			int xbin = _plasma->find_index_on_grid(pos);
-		
-			if (xbin < _grid_end)
-			{
-				double s = _plasma->find_position_in_cell(pos);
-				
-				double vel = - velocity[i] + delay*Tools::EvaluateP1Function(accfield, xbin, s);
-				double weight = weights[i];
-				double right_weight =  s * weight;
-				double left_weight = weight - right_weight;
-	
-				_density.at(xbin) += left_weight;
-				_velocity.at(xbin) += left_weight * vel;
-				velocitysq.at(xbin) += left_weight * vel * vel;
-	
-				_density.at(xbin+1) += right_weight;
-				_velocity.at(xbin+1) += right_weight * vel;
-				velocitysq.at(xbin+1) += right_weight * vel * vel;
-			}
+			vel = -vel;
+		}
+
+		int xbin = static_cast<int>(pos * idx);
+		if (xbin < _grid_end)
+		{
+			double s = pos - static_cast<double>(xbin);
+			
+			vel += delay*Tools::EvaluateP1Function(accfield, _plasma->find_index_on_grid(pos), _plasma->find_position_in_cell(pos));
+			double weight = weights[i];
+			double right_weight =  (pos*idx - xbin) * weight;
+			double left_weight = weight - right_weight;
+
+			_density.at(xbin) += left_weight;
+			_velocity.at(xbin) += left_weight * vel;
+			velocitysq.at(xbin) += left_weight * vel * vel;
+
+			_density.at(xbin+1) += right_weight;
+			_velocity.at(xbin+1) += right_weight * vel;
+			velocitysq.at(xbin+1) += right_weight * vel * vel;
 		}
 	}
 
-	double n0 = 1./(_reference_density*_plasma->_dx);
+	double n0 = _grid_end/(_plasma->_length*_reference_density);
 	for (int n=0; n<=_grid_end; n++)
 	{
 		if (_density.at(n)>0)
@@ -150,10 +132,27 @@ void MaxwellianRepresentationP1::Load(int size,
 	double fv = 0.5*dn;
 
 	double xs = 0.;		
+	double x0 = .5/size;
 	int index = 0;
 
 	for (int i=0; i<size; i++)
 	{
+		double pos = (x0+xs)*_plasma->_length;
+
+		int bin = _plasma->find_index_on_grid(pos);
+		double s = _plasma->find_position_in_cell(pos);
+        double dens = Tools::EvaluateP1Function(_density, bin, s);
+
+		/* Guard against accidents */
+        if (dens == 0.0)  s = 0.5;
+
+		while (fv > _quiet_start_icdf.at(index+1)) ++index;
+
+		position[i] = pos;
+		weights[i]  = dens;
+		velocity[i] = Tools::EvaluateP1Function(_velocity, bin, s) + Tools::EvaluateP1Function(_thermal_velocity, bin, s) * (_quiet_start_vel.at(index) + dv*(fv - _quiet_start_icdf.at(index))/(_quiet_start_icdf.at(index+1) - _quiet_start_icdf.at(index)));
+		fv += dn;
+
 		/************************************************************************/
 		/* bit-reversed scrambling to reduce the correlation with the positions */
 		/************************************************************************/
@@ -166,34 +165,8 @@ void MaxwellianRepresentationP1::Load(int size,
 			xs -= xsi;
 		} 
 		xs += 2.0*xsi;
-
-		/*****************/
-    	/* Binary search */
-    	/*****************/
-
-		int index_down = 0;
-		int index_up = _grid_end;
-		while (index_up - index_down > 1)
-		{
-			int index_mid = (index_up + index_down)/2;
-			if (xs < icdf[index_mid])
-				index_up = index_mid;
-			else
-				index_down = index_mid;
-		}
-
-		double xdown = icdf[index_down];
-		double xup = icdf[index_up];
-		double pos = _plasma->_dx*(index_down + (xs-xdown)/(xup-xdown));
-
-		int bin = _plasma->find_index_on_grid(pos);
-		double s = _plasma->find_position_in_cell(pos);
-
-		while (fv > _quiet_start_icdf.at(index+1)) ++index;
-
-		position[i] = pos;
-		weights[i]  = 1.;
-		velocity[i] = Tools::EvaluateP1Function(_velocity, bin, s) + Tools::EvaluateP1Function(_thermal_velocity, bin, s) * (_quiet_start_vel.at(index) + dv*(fv - _quiet_start_icdf.at(index))/(_quiet_start_icdf.at(index+1) - _quiet_start_icdf.at(index)));
-		fv += dn;
 	}
+
+	double w0 = size / std::accumulate(weights, weights+size, 0.);
+	for (int i=0; i<size; i++) weights[i] *= w0;
 }

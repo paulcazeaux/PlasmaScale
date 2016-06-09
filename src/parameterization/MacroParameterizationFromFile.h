@@ -13,6 +13,7 @@
 #define DEF_PLASMASCALE_MACROPARAMETERIZATIONFROMFILE
 
 #include "parameterization/MacroParameterization.h"
+#include "tools/Tools.h"
 #include "tools/RandomTools.h"
 #include "plasma/State.h"
 #include <cmath>
