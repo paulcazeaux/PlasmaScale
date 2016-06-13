@@ -31,17 +31,17 @@ echo "==========================================================================
 
 InputFile=/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/plasmaexpansion.inp
 
-ExportFile=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Gaussian_vti=.1/Reference
-rm ${ExportFile}.dmp ${ExportFile}.out
-./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 1 -s 56 -nox > ${ExportFile}.out
-open ${ExportFile}.out
-
-# InputFile=/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/plasmaexpansion.inp
-
-# ExportFile=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Gaussian_vti=.1/t-Gaussian3
+# ExportFile=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Gaussian/Reference
 # rm ${ExportFile}.dmp ${ExportFile}.out
 # ./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 8 -s 56 -nox > ${ExportFile}.out
 # open ${ExportFile}.out
+
+InputFile=/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/plasmaexpansion.inp
+
+ExportFile=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Gaussian/EFPI_x4096_250
+rm ${ExportFile}.dmp ${ExportFile}.out
+./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 8 -s 56 -nox > ${ExportFile}.out
+open ${ExportFile}.out
 
 
 # ExportFolder=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Gaussian/
