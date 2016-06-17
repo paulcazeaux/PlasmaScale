@@ -223,7 +223,7 @@ void MacroParameterizationFromFile::Load(State & state) const
 	for (double & rho: ion_density) 
 		rho *= n0;
 
-	Potential = Ion_density.array().log();
+	Potential = (1e-6 + Ion_density.array()).log();
 	Exp_potential = Potential.array().exp();
 	Residual = Exp_potential - Ion_density ;
 	Residual(0) *= .5;  Residual(grid_end) *= .5;

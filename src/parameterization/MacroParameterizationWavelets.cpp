@@ -168,7 +168,6 @@ void MacroParameterizationWavelets::RestrictAndPushback(const State & state, con
 	std::vector<double>::iterator	ion_velocity 		= state.get_vector_of_velocity_arrays().front()->begin();
 	std::vector<double>::iterator 	ion_weight 			= state.get_vector_of_weight_arrays().front()->begin();
 	int ion_population_size = state.get_number_of_particles(0);
-
     
     _stack_ion_distribution.at(_stack_index).set_grid_end(_macro_grid_end);
 	if (delay != 0)
@@ -234,7 +233,7 @@ void MacroParameterizationWavelets::Lift()
 	
 	/* Initialize solver variables */
 	Eigen::SparseMatrix<double> Jr = std::pow(thermal_velocity/_thermal_velocities.at(1), 2.0) * _J;
-	Potential = (Ion_density.array()+1.).log();
+	Potential = (Ion_density.array()+1e-6).log();
 	Exp_potential = Potential.array().exp();
 	Residual = Exp_potential - Ion_density;
 	Residual(0) *= .5;  Residual(size-1) *= .5;
