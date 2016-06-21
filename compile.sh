@@ -29,20 +29,19 @@ echo "==========================================================================
 echo "                                     EXECUTION                                       "
 echo "====================================================================================="
 
-InputFile=/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/plasmaexpansion.inp
+InputFile=~/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/plasmaexpansion.inp
 
-# ExportFile=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Gaussian/Reference
+# ExportFile=~/Gaussian_20/Reference
 # rm ${ExportFile}.dmp ${ExportFile}.out
-# ./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 8 -s 56 -nox > ${ExportFile}.out
+# ./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 1 -s 30 -nox > ${ExportFile}.out
 # open ${ExportFile}.out
 
 InputFile=/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/plasmaexpansion.inp
 
-ExportFile=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Gaussian/EFPI_x4096_250
+ExportFile=~/Gaussian_20/EFPI_x2048_250
 rm ${ExportFile}.dmp ${ExportFile}.out
-./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 8 -s 56 -nox > ${ExportFile}.out
+./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 1 -s 30 -nox > ${ExportFile}.out
 open ${ExportFile}.out
-
 
 # ExportFolder=/Users/cazeaux/Desktop/Output/PlasmaExpansion/Gaussian/
 

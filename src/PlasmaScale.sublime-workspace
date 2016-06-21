@@ -399,7 +399,15 @@
 			"file": "parameterization/MacroParameterizationWavelets.h",
 			"settings":
 			{
-				"buffer_size": 3959,
+				"buffer_size": 4141,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "parameterization/MacroParameterizationFromFile.cpp",
+			"settings":
+			{
+				"buffer_size": 12104,
 				"line_ending": "Unix"
 			}
 		},
@@ -407,7 +415,7 @@
 			"file": "parameterization/MacroParameterizationWavelets.cpp",
 			"settings":
 			{
-				"buffer_size": 23828,
+				"buffer_size": 27034,
 				"line_ending": "Unix"
 			}
 		},
@@ -423,7 +431,7 @@
 			"file": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/compile.sh",
 			"settings":
 			{
-				"buffer_size": 3470,
+				"buffer_size": 3694,
 				"line_ending": "Unix"
 			}
 		}
@@ -703,6 +711,8 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"_init_occupation",
+			"r0",
 			"abs",
 			"greater",
 			"abs",
@@ -828,9 +838,7 @@
 			"velocity_x",
 			"y_",
 			"_y",
-			"y",
-			"cyclo",
-			"PopulationOfParticles\\("
+			"y"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -938,8 +946,8 @@
 						"selection":
 						[
 							[
-								947,
-								947
+								1124,
+								1124
 							]
 						],
 						"settings":
@@ -951,13 +959,13 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 4,
 					"type": "text"
 				}
 			]
 		},
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
@@ -966,15 +974,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 3959,
+						"buffer_size": 4141,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								1086,
+								1086
 							]
 						],
 						"settings":
@@ -986,24 +994,24 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 5,
 					"type": "text"
 				},
 				{
 					"buffer": 2,
-					"file": "parameterization/MacroParameterizationWavelets.cpp",
+					"file": "parameterization/MacroParameterizationFromFile.cpp",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 23828,
+						"buffer_size": 12104,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								9777,
+								9777
 							]
 						],
 						"settings":
@@ -1017,36 +1025,31 @@
 					},
 					"stack_index": 2,
 					"type": "text"
-				}
-			]
-		},
-		{
-			"selected": 0,
-			"sheets":
-			[
+				},
 				{
 					"buffer": 3,
-					"file": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/plasmaexpansion.inp",
+					"file": "parameterization/MacroParameterizationWavelets.cpp",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 932,
+						"buffer_size": 27034,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								377,
-								377
+								12743,
+								12743
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/Text/Plain text.tmLanguage"
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 4734.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 3,
@@ -1060,19 +1063,53 @@
 			[
 				{
 					"buffer": 4,
-					"file": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/compile.sh",
+					"file": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/plasmaexpansion.inp",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 3470,
+						"buffer_size": 932,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								430,
-								430
+								706,
+								706
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 65.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 5,
+					"file": "/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/compile.sh",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3694,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1640,
+								1640
 							]
 						],
 						"settings":
@@ -1083,10 +1120,10 @@
 							"word_wrap": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 181.0,
+						"translation.y": 596.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 4,
+					"stack_index": 0,
 					"type": "text"
 				}
 			]
@@ -1132,13 +1169,13 @@
 		"cols":
 		[
 			0.0,
-			0.498120530036,
+			0.552750655495,
 			1.0
 		],
 		"rows":
 		[
 			0.0,
-			0.637949875608,
+			0.480185155026,
 			1.0
 		]
 	},
@@ -1193,7 +1230,7 @@
 		],
 		"width": 0.0
 	},
-	"selected_group": 0,
+	"selected_group": 3,
 	"settings":
 	{
 	},
