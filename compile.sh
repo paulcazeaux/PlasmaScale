@@ -30,9 +30,9 @@ echo "                                     EXECUTION                            
 echo "====================================================================================="
 
 InputFile=/Users/cazeaux/Dropbox/Workplace/Archive/EPFL/Plasma/PlasmaScale/app/cfg/ionwave.inp
-ExportFile=/Users/cazeaux/Desktop/Output/NewTest/Size_4/EFPI_Coframe_x512_150
+ExportFile=/Users/cazeaux/Desktop/StabTest
 rm ${ExportFile}.dmp ${ExportFile}.out
-./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 1 -s 200 -nox  > ${ExportFile}.out
+./app/${TARGET} -i ${InputFile} -d ${ExportFile}.dmp -dp 1 -s 350 -nox  > ${ExportFile}.out
 open ${ExportFile}.out
 
 

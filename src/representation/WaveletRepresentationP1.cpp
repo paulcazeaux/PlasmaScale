@@ -20,10 +20,17 @@ void WaveletRepresentationP1::Weigh(int size,
 		int xbin = _plasma->find_index_on_grid(pos);
 		double cellpos = _plasma->find_position_in_cell(pos);
 
-		int vbin = static_cast<int>((vmin+velocity[i])*idv)&(_number_of_bins-1); // Periodization in v
 
-		_histogram.at(xbin).at(vbin) += (1.-cellpos)*weights[i];
-		_histogram.at((xbin+1)&(_grid_size-1)).at(vbin) += cellpos*weights[i];
+		double vel = (vmin+velocity[i])*idv - .5;
+
+		int vbin = static_cast<int>(vel)&(_number_of_bins-1); // Periodization in v
+		int vbin1 = (vbin+1)&(_number_of_bins-1); // Periodization in v
+		double t = vel - static_cast<int>(vel);
+
+		_histogram.at(xbin)[vbin] += (1.-t)*(1.-cellpos)*weights[i];
+		_histogram.at((xbin+1)&(_grid_size-1))[vbin] += (1.-t)*cellpos*weights[i];
+		_histogram.at(xbin)[vbin1] += t*(1.-cellpos)*weights[i];
+		_histogram.at((xbin+1)&(_grid_size-1))[vbin1] += t*cellpos*weights[i];
 
 	}
     
@@ -60,12 +67,16 @@ void WaveletRepresentationP1::Weigh(int size,
 		double cellpos = _plasma->find_position_in_cell(pos);
 
 		vel += delay*Tools::EvaluateP1Function(accfield, xbin, cellpos);
+		vel = (vmin+vel)*idv - .5;
 
+		int vbin = static_cast<int>(vel)&(_number_of_bins-1); // Periodization in v
+		int vbin1 = (vbin+1)&(_number_of_bins-1); // Periodization in v
+		double t = vel - static_cast<int>(vel);
 
-		int vbin = static_cast<int>((vmin+vel)*idv)&(_number_of_bins-1); // Periodization in v
-
-		periodic_helper.at(xbin)[vbin] += (1.-cellpos)*weights[i];
-		periodic_helper.at(xbin+1)[vbin] += cellpos*weights[i];
+		periodic_helper.at(xbin)[vbin] += (1.-t)*(1.-cellpos)*weights[i];
+		periodic_helper.at(xbin+1)[vbin] += (1.-t)*cellpos*weights[i];
+		periodic_helper.at(xbin)[vbin1] += t*(1.-cellpos)*weights[i];
+		periodic_helper.at(xbin+1)[vbin1] += t*cellpos*weights[i];
 	}
     
     for (auto & cell : _histogram)

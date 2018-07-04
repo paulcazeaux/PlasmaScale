@@ -458,6 +458,7 @@ void MacroParameterizationWavelets::Lift()
 
 void MacroParameterizationWavelets::Step(State & state)
 {
+	std::cout.precision(8);
 
 	static int count_steps = 0;
 	timeunit field_time(0), PIC_time(0), algebra_time(0), load_time(0), lift_time(0), pushback_time(0), cutoff_time(0);
@@ -620,6 +621,12 @@ void MacroParameterizationWavelets::Step(State & state)
 
 		/* Finally we lift the distribution to the fine grid and we load the particles */
 		_stack_index = 1;
+			double ion_particle_moment, ion_distr_moment, electron_moment; 
+			this->CalculateIonMoment(state, ion_particle_moment, ion_distr_moment);
+			this->CalculateElectronMoment(state, electron_moment);
+			std::cout << ++count_steps <<  " | Final particle ion moment: " << ion_particle_moment << "; Distribution ion moment: " << ion_distr_moment  << "; Electron moment: " << electron_moment << "; Total moment: " << ion_particle_moment + electron_moment << std::endl;
+
+
 			start = std::chrono::high_resolution_clock::now();
 		this->Lift();
 			stop = std::chrono::high_resolution_clock::now();
@@ -642,7 +649,7 @@ void MacroParameterizationWavelets::Step(State & state)
 	std::swap(_current_step_ion_distribution, _stack_ion_distribution.front());
 
 	/* Diagnostics: output timing info */
-	std::cout << ++count_steps <<  " | PIC time: " << PIC_time.count() << ", Field time: " << field_time.count() << ", Pushback time: " << pushback_time.count() << ", Algebra time: " << algebra_time.count() << ", Cutoff time: " << cutoff_time.count()  << ", Load time: "<< load_time.count() << ", Lift time: " << lift_time.count() << std::endl;
+	// std::cout << ++count_steps <<  " | PIC time: " << PIC_time.count() << ", Field time: " << field_time.count() << ", Pushback time: " << pushback_time.count() << ", Algebra time: " << algebra_time.count() << ", Cutoff time: " << cutoff_time.count()  << ", Load time: "<< load_time.count() << ", Lift time: " << lift_time.count() << std::endl;
 
 	/* Diagnostic: extract electron parameters */
 	std::vector<double>::iterator 	electron_position 		= state.get_vector_of_position_arrays().back()->begin();
@@ -652,12 +659,6 @@ void MacroParameterizationWavelets::Step(State & state)
 
 	_distributions.back()->Weigh(electron_population_size, electron_position, electron_velocity, electron_weight);
 
-	// double ion_particle_moment, ion_distr_moment, electron_moment; 
-
-	// this->CalculateIonMoment(state, ion_particle_moment, ion_distr_moment);
-	// this->CalculateElectronMoment(state, electron_moment);
-	// this->CalculateTotalMoment(state);
-	// std::cout << ++count_steps <<  " | Final particle ion moment: " << ion_particle_moment << "; Electron moment: " << electron_moment << "; Total moment: " << _total_moment << std::endl;
 
 	// /* Diagnostic: extract electron velocity distribution */
 	// std::vector<std::vector<double> > profile_by_population;
